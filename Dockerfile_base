@@ -1,0 +1,55 @@
+# syntax=docker/dockerfile:1.4
+# Base image for vuno_lung_CAD; supporting GA10x GPUs GPUs (compute capability >= 8.6)
+# Differ to the legacy base image, x86 with official ubuntu Distributions is assumed as a base environment.
+# so unnecessary build process to support multi-cpu architecture is omitted.
+
+FROM nvcr.io/nvidia/cuda:11.2.2-cudnn8-devel-ubuntu20.04
+MAINTAINER mi.chest@vuno.co
+
+############################################
+
+# Set timezone
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install tzdata
+ENV TZ=Asia/Seoul
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN dpkg-reconfigure --frontend noninteractive tzdata
+
+RUN apt-get update && apt-get -y --no-install-recommends install \
+    ca-certificates \
+    sudo \
+    python3-dev \
+    python3-pip \
+    python3-setuptools \
+    software-properties-common \
+    libgdcm-tools \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    bzip2 \
+    gcc \
+    g++ \
+    cmake \
+    swig \
+    git \
+    libgl1-mesa-glx \
+    libcairo2-dev \
+    pkg-config
+
+# pip install
+RUN pip3 install --upgrade pip
+RUN pip3 install pytest pytest-env gputil
+RUN pip3 install cupy-cuda112==9.6.0
+RUN pip3 install tensorflow==2.7.0
+RUN pip3 install torch==1.9.0+cu111 torchvision==0.10.0+cu111 -f https://download.pytorch.org/whl/torch_stable.html
+RUN pip3 install numpy==1.21.6
+
+# SITK에서 빌드 결과물 가져오기
+COPY --link --from=vunolungteam/vuno-lung-cad-server:SITK   /usr/src/SimpleElastix /usr/src/SimpleElastix
+WORKDIR /usr/src/SimpleElastix/build/SimpleITK-build/Wrapping/Python/Packaging
+RUN python3 setup.py install
+
+COPY requirements.txt /usr/local/requirements.txt
+RUN pip3 install -r /usr/local/requirements.txt
+ENV PYTHONPATH="/usr/src"
+
+WORKDIR /usr/src
