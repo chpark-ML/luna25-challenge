@@ -1,14 +1,14 @@
-from typing import Dict, Tuple
-
-from pathlib import Path
+import argparse
 import json
 from glob import glob
-import SimpleITK
-import numpy as np
-from scipy.special import logit
+from pathlib import Path
+from typing import Dict, Tuple
+
 import joblib
+import numpy as np
+import SimpleITK
 from processor import MalignancyProcessor
-import argparse
+from scipy.special import logit
 
 
 def transform(input_image, point):
@@ -24,15 +24,8 @@ def transform(input_image, point):
     tNumpyOrigin
 
     """
-    return np.array(
-        list(
-            reversed(
-                input_image.TransformContinuousIndexToPhysicalPoint(
-                    list(reversed(point))
-                )
-            )
-        )
-    )
+    return np.array(list(reversed(input_image.TransformContinuousIndexToPhysicalPoint(list(reversed(point))))))
+
 
 def itk_image_to_numpy_image(input_image):
     """
@@ -72,7 +65,9 @@ def itk_image_to_numpy_image(input_image):
 
 
 class NoduleProcessor:
-    def __init__(self, ct_image_file, nodule_locations, clinical_information, mode="2D", model_name="LUNA25-baseline-2D"):
+    def __init__(
+        self, ct_image_file, nodule_locations, clinical_information, mode="2D", model_name="LUNA25-baseline-2D"
+    ):
         """
         Parameters
         ----------
@@ -84,12 +79,11 @@ class NoduleProcessor:
         """
         self._image_file = ct_image_file
         self.nodule_locations = nodule_locations
-        self.clinical_information =clinical_information
+        self.clinical_information = clinical_information
         self.mode = mode
         self.model_name = model_name
 
         self.processor = MalignancyProcessor(mode=mode, suppress_logs=True, model_name=model_name)
-
 
     def predict(self, input_image: SimpleITK.Image, coords: np.array) -> Dict:
         """
@@ -114,7 +108,6 @@ class NoduleProcessor:
             malignancy_risks.append(malignancy_risk)
 
         malignancy_risks = np.array(malignancy_risks)
-
 
         malignancy_risks = list(malignancy_risks)
 
@@ -146,22 +139,15 @@ class NoduleProcessor:
             "name": "Points of interest",
             "type": "Multiple points",
             "points": [],
-            "version": {
-                "major": 1,
-                "minor": 0
-            }
+            "version": {"major": 1, "minor": 0},
         }
 
         # Populate the "points" section dynamically
         coords = np.flip(coords, axis=1)
         for i in range(len(annotationIDs)):
             results["points"].append(
-                    {
-                    "name": annotationIDs[i],
-                    "point": coords[i].tolist(),
-                    "probability": float(output[i])
-                    }
-                )
+                {"name": annotationIDs[i], "point": coords[i].tolist(), "probability": float(output[i])}
+            )
         return results
 
 
@@ -179,16 +165,18 @@ def run(mode="2D", model_name="LUNA25-baseline-2D"):
     # # Read a resource file: the model weights
     # with open(RESOURCE_PATH / "some_resource.txt", "r") as f:
     #     print(f.read())
-    
+
     # Validate access to GPU
     _show_torch_cuda_info()
-    
+
     # Run your algorithm here
-    processor = NoduleProcessor(ct_image_file=input_chest_ct,
-                                nodule_locations=input_nodule_locations,
-                                clinical_information=input_clinical_information,
-                                mode=mode,
-                                model_name=model_name)
+    processor = NoduleProcessor(
+        ct_image_file=input_chest_ct,
+        nodule_locations=input_nodule_locations,
+        clinical_information=input_clinical_information,
+        mode=mode,
+        model_name=model_name,
+    )
     malignancy_risks = processor.process()
 
     # Save your output
@@ -197,7 +185,7 @@ def run(mode="2D", model_name="LUNA25-baseline-2D"):
         content=malignancy_risks,
     )
     print(f"Completed writing output to {OUTPUT_PATH}")
-    print(f"Output: {malignancy_risks}") 
+    print(f"Output: {malignancy_risks}")
     return 0
 
 
@@ -215,19 +203,11 @@ def write_json_file(*, location, content):
 
 def load_image_path(*, location):
     # Use SimpleITK to read a file
-    input_files = (
-        glob(str(location / "*.tif"))
-        + glob(str(location / "*.tiff"))
-        + glob(str(location / "*.mha"))
-    )
+    input_files = glob(str(location / "*.tif")) + glob(str(location / "*.tiff")) + glob(str(location / "*.mha"))
 
-    assert (
-                len(input_files) == 1
-            ), "Please upload only one .mha file per job for grand-challenge.org"
-    
+    assert len(input_files) == 1, "Please upload only one .mha file per job for grand-challenge.org"
+
     result = input_files[0]
-
-    
 
     return result
 
@@ -253,12 +233,11 @@ if __name__ == "__main__":
     args.add_argument("--input_path", type=str, default="/input")
     args.add_argument("--output_path", type=str, default="/output")
     args = args.parse_args()
-    
+
     INPUT_PATH = Path(args.input_path)
     OUTPUT_PATH = Path(args.output_path)
     RESOURCE_PATH = Path("./resources")
-    
+
     mode = args.mode
     model_name = "LUNA25-baseline-2D-20250225"
-    raise SystemExit(run(mode= mode,
-                         model_name=model_name))
+    raise SystemExit(run(mode=mode, model_name=model_name))

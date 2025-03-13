@@ -1,22 +1,25 @@
 """
 Inference script for predicting malignancy of lung nodules
 """
-import numpy as np
+
+import logging
+import math
+import os
+
 import dataloader
+import numpy as np
 import torch
 import torch.nn as nn
-from torchvision import models
-from models.model_3d import I3D
 from models.model_2d import ResNet18
-import os
-import math
-import logging
+from models.model_3d import I3D
+from torchvision import models
 
 logging.basicConfig(
     level=logging.DEBUG,
     format="[%(levelname)s][%(asctime)s] %(message)s",
     datefmt="%I:%M:%S",
 )
+
 
 # define processor
 class MalignancyProcessor:

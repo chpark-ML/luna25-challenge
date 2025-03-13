@@ -1,13 +1,14 @@
-
 from pathlib import Path
+
 import numpy as np
+import numpy.linalg as npl
+import pandas as pd
+import scipy.ndimage as ndi
 import torch
 import torch.utils.data as data
-from torch.utils.data import DataLoader
-import numpy.linalg as npl
-import scipy.ndimage as ndi
 from experiment_config import config
-import pandas as pd
+from torch.utils.data import DataLoader
+
 
 def _calculateAllPermutations(itemList):
     if len(itemList) == 1:
@@ -79,9 +80,7 @@ def volumeTransform(
           already).
     """
     if "offset" in argv:
-        raise ValueError(
-            "Cannot supply 'offset' to scipy.ndimage.affine_transform - already used by this function"
-        )
+        raise ValueError("Cannot supply 'offset' to scipy.ndimage.affine_transform - already used by this function")
     if "output_shape" in argv:
         raise ValueError(
             "Cannot supply 'output_shape' to scipy.ndimage.affine_transform - already used by this function"
@@ -94,9 +93,7 @@ def volumeTransform(
         voxelCenter = (np.array(image.shape) - 1) / 2.0
     else:
         if len(center) != image.ndim:
-            raise ValueError(
-                "center point has not the same dimensionality as the image"
-            )
+            raise ValueError("center point has not the same dimensionality as the image")
 
         # Transform center to voxel coordinates
         voxelCenter = np.asarray(center) / voxel_spacing
@@ -121,13 +118,8 @@ def volumeTransform(
 
     # Normalize the transform matrix
     transform_matrix = np.array(transform_matrix)
-    transform_matrix = (
-        transform_matrix.T
-        / np.sqrt(np.sum(transform_matrix * transform_matrix, axis=1))
-    ).T
-    transform_matrix = np.linalg.inv(
-        transform_matrix.T
-    )  # Important normalization for shearing matrices!!
+    transform_matrix = (transform_matrix.T / np.sqrt(np.sum(transform_matrix * transform_matrix, axis=1))).T
+    transform_matrix = np.linalg.inv(transform_matrix.T)  # Important normalization for shearing matrices!!
 
     # The forwardMatrix transforms coordinates from input image space into result image space
     forward_matrix = np.dot(
@@ -142,9 +134,7 @@ def volumeTransform(
         image_axes = [[0 - o, x - 1 - o] for o, x in zip(voxelCenter, image.shape)]
         image_corners = _calculateAllPermutations(image_axes)
 
-        transformed_image_corners = map(
-            lambda x: np.dot(forward_matrix, x), image_corners
-        )
+        transformed_image_corners = map(lambda x: np.dot(forward_matrix, x), image_corners)
         output_shape = [
             1 + int(np.ceil(2 * max(abs(x_max), abs(x_min))))
             for x_min, x_max in zip(
@@ -155,15 +145,12 @@ def volumeTransform(
     else:
         # Check output_shape
         if len(output_shape) != transform_matrix.shape[1]:
-            raise ValueError(
-                "output dimensions must match dimensionality of the transform matrix"
-            )
+            raise ValueError("output dimensions must match dimensionality of the transform matrix")
     output_shape = np.array(output_shape)
 
     # Calculate the backwards matrix which will be used for the slice extraction
     backwards_matrix = npl.inv(forward_matrix)
     target_image_offset = voxelCenter - backwards_matrix.dot((output_shape - 1) / 2.0)
-
 
     return ndi.affine_transform(
         image,
@@ -195,14 +182,14 @@ def rotateMatrixZ(cosAngle, sinAngle):
 
 class CTCaseDataset(data.Dataset):
     """LUNA25 baseline dataset
-            Args:
-            data_dir (str): path to the nodule_blocks data directory
-            dataset (pd.DataFrame): dataframe with the dataset information
-            translations (bool): whether to apply random translations
-            rotations (tuple): tuple with the rotation ranges
-            size_px (int): size of the patch in pixels
-            size_mm (int): size of the patch in mm
-            mode (str): 2D or 3D
+    Args:
+    data_dir (str): path to the nodule_blocks data directory
+    dataset (pd.DataFrame): dataframe with the dataset information
+    translations (bool): whether to apply random translations
+    rotations (tuple): tuple with the rotation ranges
+    size_px (int): size of the patch in pixels
+    size_mm (int): size of the patch in mm
+    mode (str): 2D or 3D
 
     """
 
@@ -225,7 +212,6 @@ class CTCaseDataset(data.Dataset):
         self.size_px = size_px
         self.size_mm = size_mm
         self.mode = mode
-
 
     def __getitem__(self, idx):  # caseid, z, y, x, label, radius
 
@@ -250,7 +236,6 @@ class CTCaseDataset(data.Dataset):
         if self.translations == True:
             radius = 2.5
             translations = radius if radius > 0 else None
-        
 
         if self.mode == "2D":
             output_shape = (1, self.size_px, self.size_px)
@@ -298,7 +283,6 @@ class CTCaseDataset(data.Dataset):
         fmt_str = "Dataset " + self.__class__.__name__ + "\n"
         fmt_str += "    Number of datapoints: {}\n".format(self.__len__())
         return fmt_str
-    
 
 
 def sample_random_coordinate_on_sphere(radius):
@@ -311,6 +295,7 @@ def sample_random_coordinate_on_sphere(radius):
 
     # Normalise numbers and multiply number by radius of sphere
     return random_nums / np.sqrt(np.sum(random_nums * random_nums)) * radius
+
 
 def extract_patch(
     CTData,
@@ -337,15 +322,9 @@ def extract_patch(
         angleZ = np.multiply(np.pi / 180.0, np.random.randint(zmin, zmax, 1))[0]
 
         transformMatrixAug = np.eye(3)
-        transformMatrixAug = np.dot(
-            transformMatrixAug, rotateMatrixX(np.cos(angleX), np.sin(angleX))
-        )
-        transformMatrixAug = np.dot(
-            transformMatrixAug, rotateMatrixY(np.cos(angleY), np.sin(angleY))
-        )
-        transformMatrixAug = np.dot(
-            transformMatrixAug, rotateMatrixZ(np.cos(angleZ), np.sin(angleZ))
-        )
+        transformMatrixAug = np.dot(transformMatrixAug, rotateMatrixX(np.cos(angleX), np.sin(angleX)))
+        transformMatrixAug = np.dot(transformMatrixAug, rotateMatrixY(np.cos(angleY), np.sin(angleY)))
+        transformMatrixAug = np.dot(transformMatrixAug, rotateMatrixZ(np.cos(angleZ), np.sin(angleZ)))
 
         transform_matrix = np.dot(transform_matrix, transformMatrixAug)
 
@@ -360,10 +339,7 @@ def extract_patch(
     # Normalize transform matrix
     thisTransformMatrix = transform_matrix
 
-    thisTransformMatrix = (
-        thisTransformMatrix.T
-        / np.sqrt(np.sum(thisTransformMatrix * thisTransformMatrix, axis=1))
-    ).T
+    thisTransformMatrix = (thisTransformMatrix.T / np.sqrt(np.sum(thisTransformMatrix * thisTransformMatrix, axis=1))).T
 
     invSrcMatrix = np.linalg.inv(srcWorldMatrix)
 
@@ -384,7 +360,7 @@ def extract_patch(
         output_voxel_spacing=np.array(voxel_spacing),
         order=1,
         prefilter=False,
-    ) 
+    )
 
     if mode == "2D":
         # replicate the channel dimension
@@ -394,6 +370,7 @@ def extract_patch(
         patch = np.expand_dims(patch, axis=0)
 
     return patch
+
 
 def get_data_loader(
     data_dir,
@@ -434,11 +411,12 @@ def get_data_loader(
 
     return data_loader
 
+
 def test():
     # Test the dataloader
+    import matplotlib.pyplot as plt
     import pandas as pd
     from experiment_config import config
-    import matplotlib.pyplot as plt
 
     dataset = pd.read_csv(config.CSV_DIR_VALID)
 
@@ -456,6 +434,7 @@ def test():
 
     for i, data in enumerate(train_loader):
         print(i, data["image"].shape, data["label"].shape)
+
 
 if __name__ == "__main__":
     test()

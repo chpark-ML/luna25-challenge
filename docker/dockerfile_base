@@ -1,0 +1,432 @@
+# syntax=docker/dockerfile:1.4  # COPY --link
+ARG BUILD_MODE
+ARG CUDA_VERSION
+ARG CUDNN_VERSION
+ARG IMAGE_FLAVOR
+ARG LINUX_DISTRO
+ARG DISTRO_VERSION
+ARG BUILD_IMAGE=nvidia/cuda:${CUDA_VERSION}-${CUDNN_VERSION}-devel-${LINUX_DISTRO}${DISTRO_VERSION}
+ARG TRAIN_IMAGE=nvidia/cuda:${CUDA_VERSION}-${CUDNN_VERSION}-${IMAGE_FLAVOR}-${LINUX_DISTRO}${DISTRO_VERSION}
+ARG GIT_IMAGE=bitnami/git:latest
+
+# `CONDA_MANAGER` may be either `mamba` or `conda`.
+ARG CONDA_MANAGER
+
+# python version
+ARG PYTHON_VERSION
+
+########################################################################
+FROM ${GIT_IMAGE} AS curl-conda
+# An image used solely to download `conda` from the internet.
+
+# Use a different CONDA_URL for a different CPU architecture or specific version.
+# The Anaconda `defaults` channel is no longer free for commercial use.
+# Using Miniforge is strongly recommended. Viva la Open Source!
+# Use Miniconda only if absolutely necessary.
+# The defaults channel will be removed and the conda-forge channel will be used.
+# https://conda.io/en/latest/license.html
+# https://www.anaconda.com/terms-of-service
+# https://www.anaconda.com/end-user-license-agreement-miniconda
+
+ARG CONDA_URL
+WORKDIR /tmp/conda
+RUN curl -fksSL -o /tmp/conda/miniconda.sh ${CONDA_URL}
+
+########################################################################
+FROM ${BUILD_IMAGE} AS install-conda
+
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# Python won’t try to write `.pyc` or `.pyo` files on the import of source modules.
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Force stdin, stdout and stderr to be totally unbuffered. Good for logging.
+ENV PYTHONUNBUFFERED=1
+
+# Allows UTF-8 characters as outputs in Docker.
+ENV PYTHONIOENCODING=UTF-8
+
+# Shortcut to simplify downstream installation.
+ARG CONDA_MANAGER
+ENV conda=/opt/conda/bin/${CONDA_MANAGER}
+
+# Packages from `conda` have higher priority during the build and fetch stages.
+ENV PATH=/opt/conda/bin:${PATH}
+
+# The `.condarc` file in the installation directory portably configures the
+# `conda-forge` channel and removes the `defaults` channel if Miniconda is used.
+# No effect if Miniforge is used as this is the default anyway.
+# Clean out package and `__pycache__` directories to save space.
+# Configure aliases to use `conda` Python instead of system Python
+# without prepending `/opt/conda/bin` to the `${PATH}`.
+RUN --mount=type=bind,from=curl-conda,source=/tmp/conda,target=/tmp/conda \
+    /bin/bash /tmp/conda/miniconda.sh -b -p /opt/conda && \
+    printf "channels:\n  - conda-forge\n  - nodefaults\nssl_verify: false\n" > /opt/conda/.condarc
+
+RUN $conda install -y python=${PYTHON_VERSION} && \
+    $conda clean -fya && \
+    find /opt/conda -type d -name '__pycache__' | xargs rm -rf
+
+########################################################################
+FROM ${GIT_IMAGE} AS fetch-pure
+
+# Z-Shell related libraries.
+ARG PURE_URL=https://github.com/sindresorhus/pure.git
+ARG ZSHA_URL=https://github.com/zsh-users/zsh-autosuggestions
+ARG ZSHS_URL=https://github.com/zsh-users/zsh-syntax-highlighting.git
+
+RUN git clone --depth 1 ${PURE_URL} /opt/zsh/pure
+RUN git clone --depth 1 ${ZSHA_URL} /opt/zsh/zsh-autosuggestions
+RUN git clone --depth 1 ${ZSHS_URL} /opt/zsh/zsh-syntax-highlighting
+
+########################################################################
+FROM install-conda AS build-base
+# Get build requirements. Set package versions manually if compatibility issues arise.
+ARG BUILD_REQS=/tmp/conda/build-requirements.txt
+COPY --link ./requirements/train-conda-build.requirements.txt ${BUILD_REQS}
+
+# Conda packages are preferable to system packages because they
+# are much more likely to be the latest (and the greatest!) packages.
+# Use fixed version numbers if versioning issues cause build failures.
+# `sed 's/\.//; s/\..*//'` extracts `magma` versions from CUDA versions.
+# For example, 11.5.1 becomes 115 and 10.2 becomes 102.
+# Using the MatchSpec syntax for the magma-cuda package,
+# which is only available from the PyTorch channel.
+# All other packages should come from the `conda-forge` channel.
+# The Intel(R) Math Kernel Library (MKL) places some restrictions on its use,
+# though there are no restrictions on commercial use.
+# See the Intel(R) Simplified Software License (ISSL) for details.
+# Other Intel software such as the Intel OpenMP^* Runtime Library (iomp)
+# are licensed under the Intel End User License Agreement for Developer Tools.
+# See URL below for Intel licenses & EULAs.
+# https://www.intel.com/content/www/us/en/developer/articles/license/end-user-license-agreement.html
+# Also, non-Intel CPUs may face slowdowns if MKL is used in the backend.
+ARG MKL_MODE
+ARG CUDA_VERSION
+ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
+RUN --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
+    if [ "${MKL_MODE}" = "include" ]; then \
+    {   echo 'mkl'; \
+        echo 'mkl-include'; \
+    } >> ${BUILD_REQS}; \
+    elif [ "${MKL_MODE}" = "exclude" ]; then \
+      echo 'nomkl' >> ${BUILD_REQS}; \
+    else echo "Invalid `MKL_MODE`: ${MKL_MODE}." && exit -1; fi && \
+    echo "pytorch::magma-cuda$(echo ${CUDA_VERSION} | sed 's/\.//; s/\..*//')" >> ${BUILD_REQS} && \
+    $conda install -y --file ${BUILD_REQS}
+
+# Use Jemalloc as the system memory allocator for efficient memory management.
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
+# See the documentation for an explanation of the following configuration.
+# https://android.googlesource.com/platform/external/jemalloc_new/+/6e6a93170475c05ebddbaf3f0df6add65ba19f01/TUNING.md
+ENV MALLOC_CONF=background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000
+
+# The Docker Daemon cache memory may be insufficient to hold the entire cache.
+# A small Garbage Collection (GC) `defaultKeepStorage` value may slow builds
+# by removing the caches of previous builds, forcing the compiler to recompile.
+# The default GC size is often smaller than the compiler cache size of PyTorch.
+# To configure GC settings, edit the Docker Daemon configuration JSON file.
+# This is available in Settings -> Docker Engine on Docker Desktop for Windows.
+# https://docs.docker.com/engine/reference/commandline/dockerd/#daemon-configuration-file
+# https://github.com/docker/cli/issues/2325
+WORKDIR /opt/ccache
+# Force `ccache` to use the faster `direct_mode`.
+# N.B. Direct mode is enabled merely by defining `CCACHE_DIRECT`.
+ENV CCACHE_DIRECT=True
+ENV PATH=/opt/conda/bin/ccache:${PATH}
+# Ensure that `ccache` is used by `cmake`.
+ENV CMAKE_C_COMPILER_LAUNCHER=ccache
+ENV CMAKE_CXX_COMPILER_LAUNCHER=ccache
+ENV CMAKE_CUDA_COMPILER_LAUNCHER=ccache
+
+# Use LLD as the default linker for faster linking. Also update dynamic links.
+RUN ccache --set-config=cache_dir=/opt/ccache && ccache --max-size 0 && \
+    ln -sf /opt/conda/bin/ld.lld /usr/bin/ld && \
+    ldconfig
+
+########################################################################
+FROM ${GIT_IMAGE} AS clone-torch
+
+# Updating git submodules is not fail-safe.
+# If the build fails during `git clone`, just try again.
+# The failure is likely due to networking issues.
+# See https://stackoverflow.com/a/8573310/9289275
+ARG PYTORCH_VERSION_TAG
+ARG TORCH_URL=https://github.com/pytorch/pytorch.git
+# Minimize downloads by only cloning shallow branches and not the full `git` history.
+# Use at most 8 jobs for cloning the repository and its submodules.
+RUN git clone --jobs $(( 8 < $(nproc) ? 8: $(nproc) )) --depth 1 \
+        --single-branch --shallow-submodules --recurse-submodules \
+        --branch ${PYTORCH_VERSION_TAG} ${TORCH_URL} /opt/pytorch
+
+########################################################################
+FROM build-base AS build-torch
+
+WORKDIR /opt/pytorch
+COPY --link --from=clone-torch /opt/pytorch /opt/pytorch
+
+# Workaround for the header dependency bug in `nvcc`.
+# Making this an `ENV` to allow downstream stages to use it as well.
+ENV CMAKE_CUDA_COMPILER_LAUNCHER="python;/opt/pytorch/tools/nvcc_fix_deps.py;ccache"
+
+# Build wheel for installation in later stages.
+# Install PyTorch for subsidiary libraries (e.g., TorchVision).
+RUN --mount=type=cache,target=/opt/ccache \
+    python setup.py bdist_wheel -d /tmp/dist && \
+    python setup.py install
+
+########################################################################
+FROM install-conda AS build-pillow
+# This stage is derived from `install-conda` instead of `build-base`
+# as it is very lightweight and does not require many dependencies.
+RUN $conda install -y libjpeg-turbo zlib && $conda clean -fya
+
+# Specify the `Pillow-SIMD` version if necessary. The variable is not used yet.
+# Set as `PILLOW_SIMD_VERSION="==VERSION_NUMBER"` for use in the current setup.
+ARG PILLOW_SIMD_VERSION
+# The condition ensures that AVX2 instructions are built only if available.
+# May cause issues if the image is used on a machine with a different SIMD ISA.
+RUN if [ ! "$(lscpu | grep -q avx2)" ]; then CC="cc -mavx2"; fi && \
+    python -m pip wheel --no-deps --wheel-dir /tmp/dist \
+        Pillow-SIMD${PILLOW_SIMD_VERSION}
+
+########################################################################
+FROM ${GIT_IMAGE} AS clone-vision
+
+ARG TORCHVISION_VERSION_TAG
+ARG VISION_URL=https://github.com/pytorch/vision.git
+RUN git clone --jobs $(( 8 < $(nproc) ? 8: $(nproc) )) --depth 1 \
+        --single-branch --shallow-submodules --recurse-submodules \
+        --branch ${TORCHVISION_VERSION_TAG} ${VISION_URL} /opt/vision
+
+########################################################################
+FROM build-torch AS build-vision
+
+WORKDIR /opt/vision
+COPY --link --from=clone-vision /opt/vision /opt/vision
+
+# Install Pillow-SIMD before TorchVision build and add it to `/tmp/dist`.
+# Pillow will be uninstalled if it is present.
+RUN --mount=type=bind,from=build-pillow,source=/tmp/dist,target=/tmp/dist \
+    python -m pip uninstall -y pillow && \
+    python -m pip install --no-deps /tmp/dist/*
+
+RUN --mount=type=cache,target=/opt/ccache \
+    python setup.py bdist_wheel -d /tmp/dist
+
+########################################################################
+FROM install-conda AS fetch-torch
+
+# For users who wish to download wheels instead of building them.
+ARG PYTORCH_INDEX_URL
+ARG PYTORCH_FETCH_NIGHTLY
+ARG PYTORCH_VERSION
+RUN if [ -z ${PYTORCH_FETCH_NIGHTLY} ]; then \
+        python -m pip wheel \
+            --no-deps --wheel-dir /tmp/dist \
+            --index-url ${PYTORCH_INDEX_URL} \
+            torch==${PYTORCH_VERSION}; \
+    else \
+        python -m pip wheel --pre \
+            --no-deps --wheel-dir /tmp/dist \
+            --index-url ${PYTORCH_INDEX_URL} \
+            torch; \
+    fi
+
+########################################################################
+FROM install-conda AS fetch-vision
+
+ARG PYTORCH_INDEX_URL
+ARG PYTORCH_FETCH_NIGHTLY
+ARG TORCHVISION_VERSION
+RUN if [ -z ${PYTORCH_FETCH_NIGHTLY} ]; then \
+        python -m pip wheel \
+            --no-deps --wheel-dir /tmp/dist \
+            --index-url ${PYTORCH_INDEX_URL} \
+            torchvision==${TORCHVISION_VERSION}; \
+    else \
+        python -m pip wheel --pre \
+            --no-deps --wheel-dir /tmp/dist \
+            --index-url ${PYTORCH_INDEX_URL} \
+            torchvision; \
+    fi
+
+########################################################################
+FROM ${BUILD_IMAGE} AS train-stash
+
+# This stage prevents direct contact between the `train` stage and external files.
+# Other files such as `.deb` package files may also be stashed here.
+COPY --link requirements/train-apt.requirements.txt /tmp/apt/requirements.txt
+
+########################################################################
+FROM ${BUILD_IMAGE} AS train-builds-include
+# A convenience stage to gather build artifacts (wheels, etc.) for the train stage.
+# If other source builds are included later on, gather them here as well.
+# All pip wheels are located in `/tmp/dist`.
+# Using an image other than `BUILD_IMAGE` may contaminate
+# `/opt/conda` and other key directories.
+
+# The `train` stage is the one actually used for training.
+# It is designed to be separate from the `build` stage,
+# with only the build artifacts (e.g., pip wheels) copied over.
+COPY --link --from=install-conda /opt/conda /opt/conda
+COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
+COPY --link --from=build-vision  /tmp/dist  /tmp/dist
+COPY --link --from=fetch-pure    /opt/zsh   /opt/zsh
+
+########################################################################
+FROM ${BUILD_IMAGE} AS train-builds-exclude
+# No compiled libraries copied over in exclude mode except Pillow-SIMD.
+# Note that `fetch` stages are derived from the `install-conda` stage
+# with no dependency on the `build-base` stage. This skips installation
+# of any build-time dependencies, saving both time and space.
+
+COPY --link --from=install-conda /opt/conda /opt/conda
+COPY --link --from=build-pillow  /tmp/dist  /tmp/dist
+COPY --link --from=fetch-torch   /tmp/dist  /tmp/dist
+COPY --link --from=fetch-vision  /tmp/dist  /tmp/dist
+COPY --link --from=fetch-pure    /opt/zsh   /opt/zsh
+
+########################################################################
+FROM train-builds-${BUILD_MODE} AS train-builds
+# Gather Python packages built in previous stages and
+# install using both conda and pip with a single file.
+# Using a separate stage allows for build modularity
+# and parallel installation with system packages.
+
+ARG INDEX_URL
+ARG EXTRA_INDEX_URL
+ARG TRUSTED_HOST
+ARG PIP_CONFIG_FILE=/opt/conda/pip.conf
+RUN {   echo "[global]"; \
+        echo "index-url=${INDEX_URL}"; \
+        echo "extra-index-url=${EXTRA_INDEX_URL}"; \
+        echo "trusted-host=${TRUSTED_HOST}"; \
+    } > ${PIP_CONFIG_FILE}
+
+# `CONDA_MANAGER` should be either `mamba` or `conda`.
+# See the `install-conda` stage above for details.
+ARG CONDA_MANAGER
+ARG conda=/opt/conda/bin/${CONDA_MANAGER}
+# Using `PIP_CACHE_DIR` and `CONDA_PKGS_DIRS`, both of which are
+# native cache directory variables, to cache installations.
+# Unclear which path `pip` inside a `conda` install uses for caching, however.
+# https://pip.pypa.io/en/stable/topics/caching
+# https://conda.io/projects/conda/en/latest/user-guide/configuration/use-condarc.html#specify-package-directories-pkgs-dirs
+# Remove `__pycache__` directories to save a bit of space.
+ARG PIP_CACHE_DIR=/root/.cache/pip
+ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
+ARG CONDA_ENV_FILE=/tmp/train/environment.yaml
+COPY --link ./requirements/train-environment.yaml ${CONDA_ENV_FILE}
+RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
+    --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
+    find /tmp/dist -name '*.whl' | sed 's/^/      - /' >> ${CONDA_ENV_FILE} && \
+    $conda env update --file ${CONDA_ENV_FILE}
+
+RUN $conda clean -fya && find /opt/conda -type d -name '__pycache__' | xargs rm -rf
+
+# Enable Intel MKL optimizations on AMD CPUs.
+# https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
+RUN echo 'int mkl_serv_intel_cpu_true() {return 1;}' > /opt/conda/fakeintel.c && \
+    gcc -shared -fPIC -o /opt/conda/libfakeintel.so /opt/conda/fakeintel.c
+
+########################################################################
+FROM ${BUILD_IMAGE} AS train-base
+
+# maintainer
+LABEL email="bch0322@gmail.com"
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV PYTHONIOENCODING=UTF-8
+ARG PYTHONDONTWRITEBYTECODE=1
+ARG PYTHONUNBUFFERED=1
+
+# set timezone
+ENV TZ="Asia/Seoul"
+RUN apt-get update && DEBIAN_FRONTEND=noninterative apt-get install tzdata
+RUN ln -fs /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN dpkg-reconfigure --frontend noninteractive tzdata
+
+ARG TZ
+ARG DEB_OLD
+ARG DEB_NEW
+
+# Using `sed` and `xargs` to imitate the behavior of a requirements file.
+# The `--mount=type=bind` temporarily mounts a directory from another stage.
+# `apt` requirements are copied from the `train-stash` stage instead of from
+# `train-builds` to allow parallel installation with `conda`.
+# Intentionally ignoring the `apt` issue in Docker to reduce clutter and maybe space.
+# https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/reference.md#example-cache-apt-packages
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    --mount=type=bind,from=train-stash,source=/tmp/apt,target=/tmp/apt \
+    ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone && \
+    if [ ${DEB_NEW} ]; then sed -i "s%${DEB_OLD}%${DEB_NEW}%g" /etc/apt/sources.list; fi && \
+    apt-get update && sed -e 's/#.*//g' -e 's/\r//g' /tmp/apt/requirements.txt | \
+    xargs apt-get install -y --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
+
+# Get conda
+COPY --link --from=train-builds /opt/conda /opt/conda
+
+# The `ZDOTDIR` variable specifies where to look for `zsh` configuration files.
+# See the `zsh` manual for details. https://zsh-manual.netlify.app/files
+ENV ZDOTDIR=/root
+
+# Setting the prompt to `pure`, which is available on all terminals without additional settings.
+# This is a personal preference and users may use any prompt that they wish (e.g., `oh-my-zsh`).
+ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
+ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
+COPY --link --from=train-builds /opt/zsh/pure ${PURE_PATH}
+COPY --link --from=train-builds /opt/zsh/zsh-syntax-highlighting ${ZSHS_PATH}
+
+ARG TMUX_HIST_LIMIT=50000
+RUN {   echo "fpath+=${PURE_PATH}"; \
+        echo "autoload -Uz promptinit; promptinit"; \
+        # Change the `tmux` path color to cyan since
+        # the default blue is unreadable on a dark terminal.
+        echo "zmodload zsh/nearcolor"; \
+        echo "zstyle :prompt:pure:path color cyan"; \
+        echo "prompt pure"; \
+    } >> ${ZDOTDIR}/.zshrc && \
+    # Add autosuggestions from terminal history. May be somewhat distracting.
+    # echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Add custom `zsh` aliases and settings.
+    {   echo "alias ll='ls -lh'"; \
+        echo "alias wns='watch nvidia-smi'"; \
+        echo "alias hist='history 1'"; \
+    } >> ${ZDOTDIR}/.zshrc && \
+    # Syntax highlighting must be activated at the end of the `.zshrc` file.
+    echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Configure `tmux` to use `zsh` as a non-login shell on startup.
+    {   echo "set -g default-command $(which zsh)"; \
+        echo "set -g history-limit ${TMUX_HIST_LIMIT}"; \
+    } >> /etc/tmux.conf && \
+    # For some reason, `tmux` does not read `/etc/tmux.conf`.
+    echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf' >> ${ZDOTDIR}/.zprofile && \
+    # Change `ZDOTDIR` directory permissions to allow configuration sharing.
+    chmod 755 ${ZDOTDIR} && \
+    # Clear out `/tmp` and restore its default permissions.
+    rm -rf /tmp && mkdir /tmp && chmod 1777 /tmp && \
+    ldconfig  # Update dynamic link cache.
+
+# Use Intel OpenMP with optimizations. See the documentation for details.
+# https://intel.github.io/intel-extension-for-pytorch/cpu/latest/tutorials/performance_tuning/tuning_guide.html
+# Intel OpenMP thread blocking time in ms.
+ENV KMP_BLOCKTIME=0
+# Configure CPU thread affinity.
+# ENV KMP_AFFINITY="granularity=fine,compact,1,0"
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so${LD_PRELOAD:+:${LD_PRELOAD}}
+
+# Enable Intel MKL optimizations on AMD CPUs. https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
+ENV MKL_DEBUG_CPU_TYPE=5
+ENV LD_PRELOAD=/opt/conda/libfakeintel.so${LD_PRELOAD:+:${LD_PRELOAD}}
+
+# Use Jemalloc for efficient memory management.
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
+ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
+
+ENV PATH=/opt/conda/bin:${PATH}
+
+CMD ["/bin/bash"]

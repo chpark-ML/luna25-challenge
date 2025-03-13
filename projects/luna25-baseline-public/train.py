@@ -1,20 +1,22 @@
 """
 Script for training a ResNet18 or I3D to classify a pulmonary nodule as benign or malignant.
 """
+
+import argparse
+import logging
+import random
+import warnings
+from datetime import datetime
+
+import numpy as np
+import pandas
+import sklearn.metrics as metrics
+import torch
+from dataloader import get_data_loader
+from experiment_config import config
 from models.model_2d import ResNet18
 from models.model_3d import I3D
-from dataloader import get_data_loader
-import logging
-import numpy as np
-import torch
-import sklearn.metrics as metrics
 from tqdm import tqdm
-import warnings
-import random
-import pandas
-from experiment_config import config
-from datetime import datetime
-import argparse
 
 torch.backends.cudnn.benchmark = True
 
@@ -23,6 +25,7 @@ logging.basicConfig(
     format="[%(levelname)s][%(asctime)s] %(message)s",
     datefmt="%I:%M:%S",
 )
+
 
 def make_weights_for_balanced_classes(labels):
     """Making sampling weights for the data samples
@@ -43,7 +46,6 @@ def train(
     train_csv_path,
     valid_csv_path,
     exp_save_root,
-
 ):
     """
     Train a ResNet18 or an I3D model
@@ -60,19 +62,11 @@ def train(
 
     print()
 
-    logging.info(
-        f"Number of malignant training samples: {train_df.label.sum()}"
-    )
-    logging.info(
-        f"Number of benign training samples: {len(train_df) - train_df.label.sum()}"
-    )
+    logging.info(f"Number of malignant training samples: {train_df.label.sum()}")
+    logging.info(f"Number of benign training samples: {len(train_df) - train_df.label.sum()}")
     print()
-    logging.info(
-        f"Number of malignant validation samples: {valid_df.label.sum()}"
-    )
-    logging.info(
-        f"Number of benign validation samples: {len(valid_df) - valid_df.label.sum()}"
-    )
+    logging.info(f"Number of malignant validation samples: {valid_df.label.sum()}")
+    logging.info(f"Number of benign validation samples: {len(valid_df) - valid_df.label.sum()}")
 
     # create a training data loader
     weights = make_weights_for_balanced_classes(train_df.label.values)
@@ -160,13 +154,9 @@ def train(
             epoch_loss += loss.item()
             epoch_len = len(train_df) // train_loader.batch_size
             if step % 100 == 0:
-                logging.info(
-                    "{}/{}, train_loss: {:.4f}".format(step, epoch_len, loss.item())
-                )
+                logging.info("{}/{}, train_loss: {:.4f}".format(step, epoch_len, loss.item()))
         epoch_loss /= step
-        logging.info(
-            "epoch {} average train loss: {:.4f}".format(epoch + 1, epoch_loss)
-        )
+        logging.info("epoch {} average train loss: {:.4f}".format(epoch + 1, epoch_loss))
 
         # validate
 
@@ -196,9 +186,7 @@ def train(
                 epoch_len = len(valid_df) // valid_loader.batch_size
 
             epoch_loss /= step
-            logging.info(
-                "epoch {} average valid loss: {:.4f}".format(epoch + 1, epoch_loss)
-            )
+            logging.info("epoch {} average valid loss: {:.4f}".format(epoch + 1, epoch_loss))
 
             y_pred = torch.sigmoid(y_pred.reshape(-1)).data.cpu().numpy().reshape(-1)
             y = y.data.cpu().numpy().reshape(-1)
@@ -238,17 +226,13 @@ def train(
             )
         counter += 1
 
-    logging.info(
-        "train completed, best_metric: {:.4f} at epoch: {}".format(
-            best_metric, best_metric_epoch
-        )
-    )
+    logging.info("train completed, best_metric: {:.4f} at epoch: {}".format(best_metric, best_metric_epoch))
 
 
 if __name__ == "__main__":
-    
-    parser = argparse.ArgumentParser(description='LUNA25 Challenge')
-    parser.add_argument('--device', type=str, default='cuda:7')
+
+    parser = argparse.ArgumentParser(description="LUNA25 Challenge")
+    parser.add_argument("--device", type=str, default="cuda:7")
     args = parser.parse_args()
 
     experiment_name = f"{config.EXPERIMENT_NAME}-{config.MODE}-{datetime.today().strftime('%Y%m%d-%H%M%S')}"
@@ -261,4 +245,4 @@ if __name__ == "__main__":
         train_csv_path=config.CSV_DIR_TRAIN,
         valid_csv_path=config.CSV_DIR_VALID,
         exp_save_root=exp_save_root,
-        )
+    )

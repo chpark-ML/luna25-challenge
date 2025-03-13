@@ -1,0 +1,47 @@
+# Black 설정 섹션
+[tool.black]
+# 최대 줄 길이 설정 (기본값: 88)
+line-length = 120
+# 지원하는 Python 버전 지정 (여러 버전 가능)
+target-version = ['py37', 'py38', 'py39']
+# 포함할 파일 패턴 (정규식)
+include = '\.pyi?$'
+# 제외할 파일 패턴 (정규식)
+exclude = '''
+/(
+    \.git         # Git 디렉터리
+  | \.hg          # Mercurial 디렉터리
+  | \.mypy_cache  # MyPy 캐시 디렉터리
+  | \.pytest_cache # pytest 캐시 디렉터리
+  | \.vscode      # VS Code 설정 디렉터리
+  | \.idea        # IntelliJ IDEA 설정 디렉터리
+  | \.venv        # 가상 환경 디렉터리
+  | _build        # 빌드 디렉터리
+  | buck-out      # Buck 아웃풋 디렉터리
+  | build         # 빌드 디렉터리
+  | dist          # 배포 디렉터리
+)/
+'''
+
+# isort 설정 섹션
+[tool.isort]
+# Black과 호환되도록 프로파일 설정
+profile = "black"
+# 최대 줄 길이 설정 (Black과 동일하게 맞춤)
+line_length = 120
+# 여러 줄 출력 형식 (3: 수직 정렬)
+multi_line_output = 3
+# 트레일링 콤마 포함 여부 설정
+include_trailing_comma = true
+# 첫 번째 파티 모듈 지정 (프로젝트의 첫 번째 파티 모듈 이름)
+known_first_party = ["your_project"]
+# 세 번째 파티 모듈 지정
+known_third_party = ["django", "flask", "requests"]
+# 기본 섹션 설정 (THIRDPARTY: 세 번째 파티 모듈)
+default_section = "THIRDPARTY"
+# 무시할 디렉터리 목록
+skip = ["migrations", "node_modules", "venv"]
+# 무시할 파일 패턴 (글로벌 패턴)
+skip_glob = ["*/migrations/*"]
+# 'as' 키워드를 사용하는 import 문을 결합할지 여부
+combine_as_imports = true

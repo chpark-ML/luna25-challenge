@@ -1,0 +1,33 @@
+# syntax=docker/dockerfile:1.4  # COPY --link
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE} AS train
+
+# args
+ARG GID
+ARG UID
+ARG USR
+ARG GRP
+ARG PASSWD=hello
+ARG WORKDIR_PATH
+ARG HOME=/home/${USR}
+ENV PYTHONPATH=${WORKDIR_PATH}
+ENV PATH=${WORKDIR_PATH}:/opt/conda/bin:$PATH
+
+# user
+RUN groupadd -f -g ${GID} ${GRP} && \
+    useradd -l --shell $(which zsh) --create-home -u ${UID} -g ${GRP} \
+        -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
+    echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+RUN chown ${UID}:${GID} /opt/conda
+
+# Install requirements
+COPY ./requirements/requirements_research.txt /requirements_research.txt
+RUN pip3 install --no-cache-dir --no-deps -r /requirements_research.txt
+
+# Enable mouse scrolling for tmux by uncommenting.
+# iTerm2 users should change settings to use scrolling properly.
+RUN echo "set -g mouse on" >> ${HOME}/.tmux.conf
+
+WORKDIR ${WORKDIR_PATH}
+
+CMD ["/bin/zsh"]
