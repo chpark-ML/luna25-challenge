@@ -1,0 +1,28 @@
+{
+    "name": "Points of interest",
+    "type": "Multiple points",
+    "points": [
+        {
+            "name": "214478_1_19990102",
+            "point": [
+                -64.78,
+                64.5,
+                -52.46
+            ],
+            "probability": 0.4782746732234955
+        },
+        {
+            "name": "107328_1_19990102",
+            "point": [
+                -78.49,
+                79.86,
+                -152.83
+            ],
+            "probability": 0.48625418543815613
+        }
+    ],
+    "version": {
+        "major": 1,
+        "minor": 0
+    }
+}
