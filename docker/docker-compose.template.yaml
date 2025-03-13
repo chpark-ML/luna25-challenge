@@ -4,7 +4,7 @@ networks:
     external: true
 
 services:
-  ${SERVICE_NAME}-base:
+  ${SERVICE_NAME_BASE}:
     image: ${IMAGE_NAME_BASE}
     environment: # Equivalent to `--env`
       CUDA_DEVICE_ORDER: PCI_BUS_ID
@@ -22,19 +22,19 @@ services:
         BUILD_MODE: ${BUILD_MODE:-exclude}
         LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
         DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
-        CUDA_VERSION: ${CUDA_VERSION:-12.4.1}
+        CUDA_VERSION: ${CUDA_VERSION:-11.8.0}
         CUDNN_VERSION: ${CUDNN_VERSION:-cudnn}
         IMAGE_FLAVOR: ${IMAGE_FLAVOR:-devel}
-        PYTHON_VERSION: 3.12
-        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.0.0}
-        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.15.0}
+        PYTHON_VERSION: 3.10
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.4.1}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.19.1}
         # Variables for downloading PyTorch instead of building.
-        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu117}
+        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu124}
         # Set `PYTORCH_FETCH_NIGHTLY` to any value to fetch the nightly binaries.
         # Also remember to change the index url to the nightly version.
         PYTORCH_FETCH_NIGHTLY: ${PYTORCH_FETCH_NIGHTLY:+--pre}
-        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.5.0}
-        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.20.0}
+        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.4.1}
+        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.19.1}
         MKL_MODE: ${MKL_MODE:-include} # MKL_MODE can be `include` or `exclude`.
         CONDA_URL: ${CONDA_URL}
         CONDA_MANAGER: ${CONDA_MANAGER:-conda}  # either mamba or conda
@@ -44,8 +44,8 @@ services:
         EXTRA_INDEX_URL: ${INDEX_URL:-https://pypi.ngc.nvidia.com}
         TRUSTED_HOST: ${TRUSTED_HOST:-pypi.ngc.nvidia.com}
 
-  ${SERVICE_NAME}-research:
-    hostname: ${SERVICE_NAME}-research
+  ${SERVICE_NAME_RESEARCH}:
+    hostname: ${SERVICE_NAME_RESEARCH}-research
     image: ${IMAGE_NAME_RESEARCH}
     container_name: ${CONTAINER_NAME_RESEARCH}
     network_mode: host # Use the same network as the host, may cause security issues.

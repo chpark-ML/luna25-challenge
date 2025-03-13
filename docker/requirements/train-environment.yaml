@@ -26,18 +26,17 @@ dependencies: # Use conda packages if possible.
   - libpng # TorchVision dependency.
   - matplotlib
   - mlflow
-  - numpy==1.22.3 # Intel optimized NumPy is not available on PyPI.
-  - omegaconf==2.3.0
+  - numpy==1.26.4 # Intel optimized NumPy is not available on PyPI.
+  - omegaconf
   - optuna
   - pandas
   - pymongo
   - rich
-  - redis==5.0.8
   - scikit-image
   - scikit-learn
-  - seaborn==0.13.2
+  - seaborn
   - sympy # A PyTorch dependency.
-  - torchaudio==2.0.1
+  - torchaudio
   - tqdm
   - typing_extensions # A PyTorch dependency.
 
@@ -77,3 +76,4 @@ dependencies: # Use conda packages if possible.
   - pip
   - pip:
       - pyre-check
+      - redis
