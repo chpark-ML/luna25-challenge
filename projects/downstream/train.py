@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Metrics(comm_train.Metrics):
     loss: float = np.inf
+    eval_metrics: dict = None
+    threshold: dict = None
 
     def __str__(self):
         return f"loss_{self.loss:.4f}"
@@ -189,7 +191,7 @@ class Trainer(comm_train.Trainer):
                 self.log_metrics(
                     RunMode.TRAIN.value,
                     global_step,
-                    Metrics(loss.detach()),
+                    Metrics(loss.detach(), {}, {}),
                     log_prefix=f"[{epoch}/{self.max_epoch}] [{i}/{len(loader)}]",
                     mlflow_log_prefix="STEP",
                     duration=batch_time,
@@ -203,7 +205,7 @@ class Trainer(comm_train.Trainer):
         self.scheduler[ModelName.CLASSIFIER].step("epoch")
 
         train_loss = torch.stack(train_losses).sum().item()
-        return Metrics(train_loss / len(loader))
+        return Metrics(train_loss / len(loader), {}, {})
 
     def optimizing_metric(self, metrics: Metrics):
         return metrics.loss
@@ -326,7 +328,7 @@ class Trainer(comm_train.Trainer):
 
         self.scheduler[ModelName.CLASSIFIER].step("epoch_val", loss)
 
-        return Metrics(loss)
+        return Metrics(loss, dict_metrics, self.dict_threshold)
 
     @torch.no_grad()
     def test_epoch(self, epoch, loader, export_results=False) -> Metrics:
@@ -334,4 +336,4 @@ class Trainer(comm_train.Trainer):
         logits, probs, annots = self._inference(loader)
         loss, dict_metrics = self.get_metrics(logits, probs, annots)
 
-        return Metrics(loss)
+        return Metrics(loss, dict_metrics, self.dict_threshold)
