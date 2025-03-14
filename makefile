@@ -137,6 +137,7 @@ OVERRIDE_TEXT = $\
 	\n    volumes:$\
 	\n      - ${HOME}:/mnt/home$\
 	\n      - /nvme1:/nvme1$\
+	\n      - /team:/team$\
 	\n
 
 # env
