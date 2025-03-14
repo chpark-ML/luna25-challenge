@@ -25,7 +25,6 @@ dependencies: # Use conda packages if possible.
   - libjpeg-turbo # TorchVision dependency.
   - libpng # TorchVision dependency.
   - matplotlib
-  - mlflow
   - numpy==1.26.4 # Intel optimized NumPy is not available on PyPI.
   - omegaconf
   - optuna
@@ -75,5 +74,6 @@ dependencies: # Use conda packages if possible.
   # Source compiled packages are installed via pip.
   - pip
   - pip:
+      - mlflow
       - pyre-check
       - redis
