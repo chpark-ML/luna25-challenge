@@ -161,3 +161,13 @@ cython_debug/
 
 # Ignore exported/saved images
 *.tar.gz
+
+# MacOS files
+.DS_Store
+
+# VS Code settings
+.vscode/
+
+# Docker
+docker-compose.override.yaml
+docker-compose.yaml

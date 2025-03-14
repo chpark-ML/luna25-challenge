@@ -1,0 +1,27 @@
+_target_: projects.downstream.train.Trainer
+
+# hyper params
+max_epoch: 200
+early_stop_patience: null
+
+grad_clip_max_norm: 1.0
+
+# loss, threshold
+thresholding_mode_representative: youden
+thresholding_mode: all
+
+# operation
+gpus: auto
+log_every_n_steps: 50
+test_epoch_start: ${trainer.max_epoch}
+resume_from_checkpoint: null
+benchmark: False
+deterministic: True
+fast_dev_run: False
+use_amp: False
+
+# pretrained model
+fine_tune_info:
+  enable: False
+  pretrained_encoder:
+  freeze_encoder: True
