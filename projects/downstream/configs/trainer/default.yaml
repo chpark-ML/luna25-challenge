@@ -1,7 +1,7 @@
 _target_: projects.downstream.train.Trainer
 
 # hyper params
-max_epoch: 200
+max_epoch: 10
 early_stop_patience: null
 
 grad_clip_max_norm: 1.0

@@ -3,10 +3,10 @@ defaults:
   - _self_
   - trainer: default
   - loader: luna25
-  - criterion: loss
-  - model: unet_3d_cls
-  - optim: adamw
-  - scheduler: one_cycle_lr
+  - criterion: bce_with_logits
+  - model: model_2d
+  - optim: adam
+  - scheduler: none
   - experiment_tool: mlflow
 
 run_modes:

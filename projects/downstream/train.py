@@ -82,7 +82,7 @@ class Trainer(comm_train.Trainer):
             # Set steps per epoch for the scheduler if specified
             if isinstance(config.scheduler, (omegaconf.DictConfig, dict)):
                 for scheduler_indicator, config_scheduler in config.scheduler.items():
-                    if "steps_per_epoch" in config_scheduler:
+                    if hasattr(config_scheduler, "steps_per_epoch"):
                         config.scheduler[scheduler_indicator]["steps_per_epoch"] = len(loaders[RunMode.TRAIN])
             else:
                 raise NotImplementedError
@@ -106,8 +106,6 @@ class Trainer(comm_train.Trainer):
                             )
             else:
                 raise NotImplementedError
-                # optimizers = hydra.utils.instantiate(config.optim, models.parameters())
-                # schedulers = hydra.utils.instantiate(config.scheduler, optimizer=optimizers)
 
         # Set criterion, and its alpha based on training data
         criterion = hydra.utils.instantiate(config.criterion)
@@ -138,13 +136,13 @@ class Trainer(comm_train.Trainer):
             self.optimizer[ModelName.CLASSIFIER].zero_grad()
             patch_image = data[DataKeys.IMAGE].to(self.device)
             _check_any_nan(patch_image)
-            annot = data[DataKeys.LABEL].to(self.device)
+            annot = data[DataKeys.LABEL].to(self.device).float()
 
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
                 logits = self.model[ModelName.CLASSIFIER](patch_image)
                 logits = logits.view(-1, 1)  # considering the prediction tensor can be either (B,) or (B, 1)
-                loss = self.criterion(logits, annot, is_logit=True, is_logistic=True)
+                loss = self.criterion(logits, annot)
                 train_losses.append(loss.detach())
 
             # set trace for checking nan values
@@ -243,7 +241,7 @@ class Trainer(comm_train.Trainer):
         self.dict_threshold = dict_threshold
 
     def get_metrics(self, logits, probs, annots):
-        losses = self.criterion(logits, annots, is_logit=True, is_logistic=True)
+        losses = self.criterion(logits, annots)
         result_dict = self.get_binary_classification_metrics(
             probs,
             annots,
@@ -253,8 +251,8 @@ class Trainer(comm_train.Trainer):
 
         return losses.detach(), result_dict
 
+    @staticmethod
     def get_binary_classification_metrics(
-        self,
         prob: torch.Tensor,
         annot: torch.Tensor,
         threshold: dict,
@@ -300,7 +298,7 @@ class Trainer(comm_train.Trainer):
             _check_any_nan(patch_image)
 
             # annotation
-            annot = data[DataKeys.LABEL].to(self.device)
+            annot = data[DataKeys.LABEL].to(self.device).float()
 
             # inference
             logits = self.model[ModelName.CLASSIFIER](patch_image)
