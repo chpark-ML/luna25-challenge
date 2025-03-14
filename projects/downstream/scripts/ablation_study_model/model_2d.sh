@@ -2,18 +2,17 @@
 
 # args
 gpu_num=${1:-0}
-batch_size=4
 
-run_name=baseline_debug
+model_name=model_2d
+model_mode=2D
+
+run_name=baseline_${model_name}
 
 cd /opt/challenge/projects/downstream
 HYDRA_FULL_ERROR=1 python3 main.py \
   experiment_tool.experiment_name=lct-malignancy \
   experiment_tool.run_group=baseline \
   experiment_tool.run_name=${run_name} \
-  loader.batch_size=${batch_size} \
-  trainer.gpus=${gpu_num} \
-  loader.num_workers=0 \
-  loader.prefetch_factor=null \
-  +debug=True
-
+  model=${model_name} \
+  loader.dataset.model_mode=${model_mode} \
+  trainer.gpus=${gpu_num}

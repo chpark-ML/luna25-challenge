@@ -299,7 +299,7 @@ class CTCaseDataset(data.Dataset):
         self.translations = translations
         self.size_px = size_px
         self.size_mm = size_mm
-        self.mode = model_mode
+        self.model_mode = model_mode
 
     def __getitem__(self, idx):  # caseid, z, y, x, label, radius
         pd = self.dataset.iloc[idx]
@@ -321,7 +321,7 @@ class CTCaseDataset(data.Dataset):
             radius = 2.5
             translations = radius if radius > 0 else None
 
-        if self.mode == "2D":
+        if self.model_mode == "2D":
             output_shape = (1, self.size_px, self.size_px)
         else:
             output_shape = (self.size_px, self.size_px, self.size_px)
@@ -341,7 +341,7 @@ class CTCaseDataset(data.Dataset):
             rotations=self.rotations,
             translations=translations,
             coord_space_world=False,
-            mode=self.mode,
+            mode=self.model_mode,
         )
 
         # ensure same datatype...

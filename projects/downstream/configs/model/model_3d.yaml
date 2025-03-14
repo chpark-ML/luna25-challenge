@@ -1,0 +1,7 @@
+model_C:
+  _target_: projects.common.models.model_3d.I3D
+  num_classes: 1
+  input_channels: 3
+  pre_trained: True
+  pre_trained_model_path: /team/team_blu3/lung/data/2_public/LUNA25_Original/model_rgb.pth
+  freeze_bn: True

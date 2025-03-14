@@ -142,8 +142,9 @@ class Trainer(comm_train.Trainer):
 
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
-                output = self.model[ModelName.CLASSIFIER](patch_image)
-                loss = self.criterion(output, annot, is_logit=True, is_logistic=True)
+                logits = self.model[ModelName.CLASSIFIER](patch_image)
+                logits = logits.view(-1, 1)  # considering the prediction tensor can be either (B,) or (B, 1)
+                loss = self.criterion(logits, annot, is_logit=True, is_logistic=True)
                 train_losses.append(loss.detach())
 
             # set trace for checking nan values
@@ -303,6 +304,7 @@ class Trainer(comm_train.Trainer):
 
             # inference
             logits = self.model[ModelName.CLASSIFIER](patch_image)
+            logits = logits.view(-1, 1)  # considering the prediction tensor can be either (B,) or (B, 1)
 
             list_logits.append(logits)
             list_annots.append(annot)

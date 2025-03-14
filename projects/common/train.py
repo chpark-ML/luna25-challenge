@@ -36,7 +36,7 @@ def get_loaders(config):
             _sampler = None
             loaders[mode] = hydra.utils.instantiate(
                 config.loader,
-                dataset={"model_mode": mode},
+                dataset={"mode": mode},
                 sampler=_sampler,
                 drop_last=True,
                 shuffle=True,
@@ -44,7 +44,7 @@ def get_loaders(config):
         else:
             loaders[mode] = hydra.utils.instantiate(
                 config.loader,
-                dataset={"model_mode": mode},
+                dataset={"mode": mode},
                 drop_last=False,
                 shuffle=False,
             )
