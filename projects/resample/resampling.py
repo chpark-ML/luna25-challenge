@@ -23,7 +23,7 @@ def load_mha(file_path):
 def resample_image(volume, spacing, new_spacing=(1.0, 1.0, 1.0)):
     vol_tensor = torch.tensor(volume, dtype=torch.float32).unsqueeze(0).unsqueeze(0)  # (1, 1, z, y, x)
     scale_factors = torch.tensor(
-        [spacing[2] / new_spacing[0], spacing[1] / new_spacing[1], spacing[0] / new_spacing[2]]
+        [spacing[0] / new_spacing[0], spacing[1] / new_spacing[1], spacing[2] / new_spacing[2]]
     )
     size = [int(dim * scale) for dim, scale in zip(volume.shape, scale_factors)]
     resampled = torch.nn.functional.interpolate(vol_tensor, size=size, mode="trilinear", align_corners=False)
