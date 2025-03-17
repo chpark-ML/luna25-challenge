@@ -34,9 +34,9 @@ def save_to_h5(output_path, volume, resampled, spacing, new_spacing, origin):
     with h5py.File(output_path, "w") as h5f:
         h5f.create_dataset("volume_image", data=volume)
         h5f.create_dataset("resampled_image", data=resampled)
-        h5f.attrs("original_spacing", data=spacing)
-        h5f.attrs("resampled_spacing", data=new_spacing)
-        h5f.attrs("origin", data=origin)
+        h5f.attrs["original_spacing"] = spacing
+        h5f.attrs["resampled_spacing"] = new_spacing
+        h5f.attrs["origin"] = origin
 
 
 def process_mha_to_h5(mha_dir, output_dir, new_spacing=(1.0, 1.0, 1.0)):
