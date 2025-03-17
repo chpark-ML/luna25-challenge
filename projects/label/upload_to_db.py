@@ -1,0 +1,97 @@
+import argparse
+
+import h5py
+import numpy as np
+import pandas as pd
+import pymongo
+from joblib import Parallel, delayed
+
+_VUNO_LUNG_DB = "mongodb://172.31.10.111:27017"
+_TARGET_DB = "lct"
+_TARGET_COLLECTION = "LUNA25-Malignancy"
+
+
+def insert_to_DB(df_chunk):
+    _CLIENT = pymongo.MongoClient(_VUNO_LUNG_DB)
+    for index, row in df_chunk.iterrows():
+        patient_id = row.at["PatientID"]
+        series_instance_uid = row.at["SeriesInstanceUID"]
+        studydate = row.at["StudyDate"]
+        original_nodule_coord = [row.at["CoordZ"], row.at["CoordY"], row.at["CoordX"]]
+        # lesion_id = row.at["LesionID"]
+        # annotation_id = row.at["AnnotationID"]
+        label = row.at["Label"]
+        age_at_study = row.at["Age_at_StudyDate"]
+        gender = row.at["Gender"]
+        origin = [row.at["z_origin"], row.at["y_origin"], row.at["x_origin"]]
+        origina_spacing = [row.at["z_spacing"], row.at["y_spacing"], row.at["x_spacing"]]
+        dicom_path = f"/team/team_blu3/lung/data/2_public/LUNA25_Original/luna25_images/{series_instance_uid}.mha"
+        resampled_h5_path = f"/team/team_blu3/lung/data/2_public/LUNA25_resampled/{series_instance_uid}.h5"
+        fold = row.at["fold"]
+
+        # get r_coord
+        with h5py.File(resampled_h5_path, "r") as hf:
+            dicom_pixels = hf["volume_image"]
+            d_coord = origin
+            resampled_pixels = hf["resampled_image"]
+            spacing = hf.attrs["original_spacing"]
+            resampled_spacing = hf.attrs["resampled_spacing"]
+            original_spacing = hf.attrs["original_spacing"]
+            r_coord = resampled_pixels.shape
+
+        # insert a document to the collection
+        dict_info = {
+            "patient_id": patient_id,
+            "series_instance_uid": series_instance_uid,
+            "studydate": studydate,
+            "h5_path": resampled_h5_path,
+            "fold": fold,
+            "label": label,
+            "age_at_study": age_at_study,
+            "gender": gender,
+            "r_coord": r_coord,
+            "original_spacing": original_spacing,
+            "resampled_spacing": resampled_spacing,
+        }
+
+        query = {
+            "series_instance_uid": {"$in": [series_instance_uid]},
+            "r_coord": {"$in": [r_coord]},
+        }
+        docs = [x for x in _CLIENT[_TARGET_DB][_TARGET_COLLECTION].find(query, {})]
+        collection = _CLIENT[_TARGET_DB][_TARGET_COLLECTION]
+        if len(docs) == 1:
+            _filter = {"_id": docs[0]["_id"]}
+            newvalues = {"$set": dict_info}
+            collection.update_one(_filter, newvalues)
+        else:
+            collection.insert_one(dict_info)
+
+
+def insert_to_DB_in_parallel(df, num_jobs=1):
+    # DataFrame을 청크로 나누어 처리
+    chunk_size = len(df) // num_jobs
+    chunks = [df.iloc[i : i + chunk_size] for i in range(0, len(df), chunk_size)]
+
+    # 각 청크를 병렬로 처리하고 결과를 합치기
+    Parallel(n_jobs=num_jobs)(delayed(insert_to_DB)(chunk) for chunk in chunks)
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="Insert asan dataset to DB")
+    parser.add_argument(
+        "--csv_path",
+        type=str,
+        default="../../data_eda/LUNA25_Public_Training_Development_Data_fold.csv",
+        help="Path to csv file",
+    )
+    parser.add_argument("--chunk_size", type=int, default=10, help="Chunk size for parallel processing")
+    args = parser.parse_args()
+
+    df = pd.read_csv(args.csv_path)
+
+    # insert to DB
+    chunk_size = args.chunk_size
+    insert_to_DB_in_parallel(df, num_jobs=chunk_size)
+    print("Insertion to DB is done")
