@@ -32,7 +32,7 @@ def save_to_h5(output_path, volume, resampled, spacing):
     with h5py.File(output_path, "w") as h5f:
         h5f.create_dataset("volume_image", data=volume)
         h5f.create_dataset("resampled_image", data=resampled)
-        h5f.create_dataset("spacing", data=spacing)
+        h5f.create_dataset("original_spacing", data=spacing)
 
 
 def process_mha_to_h5(mha_dir, output_dir, new_spacing=(1.0, 1.0, 1.0)):
@@ -43,7 +43,7 @@ def process_mha_to_h5(mha_dir, output_dir, new_spacing=(1.0, 1.0, 1.0)):
             volume, spacing, origin, direction = load_mha(file_path)
             resampled, resampled_spacing = resample_image(volume, spacing, new_spacing)
             output_path = os.path.join(output_dir, file.replace(".mha", ".h5"))
-            save_to_h5(output_path, volume, resampled, resampled_spacing)
+            save_to_h5(output_path, volume, resampled, spacing)
             print(f"Saved: {output_path}")
 
 
