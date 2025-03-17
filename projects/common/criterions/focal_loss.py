@@ -50,7 +50,7 @@ class FocalLoss(nn.Module):
             one_hot = torch.zeros_like(pt).scatter(1, target_int, 1)
             smoothed_target = one_hot * (1 - self.smoothing) + self.smoothing / num_classes  # (B * N, C)
         else:
-            smoothed_target = target  # (B * N, C)
+            smoothed_target = torch.zeros_like(pt).scatter(1, target_int, 1)
 
         # Focal loss
         loss = -1 * ((1 - pt) ** self.gamma * logpt * smoothed_target).sum(dim=1, keepdims=True)  # (B * N, 1)
