@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import pymongo
 from joblib import Parallel, delayed
+from tqdm import tqdm
 
 _VUNO_LUNG_DB = "mongodb://172.31.10.111:27017"
 _TARGET_DB = "lct"
@@ -13,14 +14,14 @@ _TARGET_COLLECTION = "LUNA25-Malignancy"
 
 def insert_to_DB(df_chunk):
     _CLIENT = pymongo.MongoClient(_VUNO_LUNG_DB)
-    for index, row in df_chunk.iterrows():
+    for index, row in tqdm(df_chunk.iterrows(), total=len(df_chunk)):
         patient_id = row.at["PatientID"]
         series_instance_uid = row.at["SeriesInstanceUID"]
         studydate = row.at["StudyDate"]
         original_nodule_coord = [row.at["CoordZ"], row.at["CoordY"], row.at["CoordX"]]
         # lesion_id = row.at["LesionID"]
         # annotation_id = row.at["AnnotationID"]
-        label = row.at["Label"]
+        label = row.at["label"]
         age_at_study = row.at["Age_at_StudyDate"]
         gender = row.at["Gender"]
         origin = [row.at["z_origin"], row.at["y_origin"], row.at["x_origin"]]
@@ -50,8 +51,8 @@ def insert_to_DB(df_chunk):
             "age_at_study": age_at_study,
             "gender": gender,
             "r_coord": r_coord,
-            "original_spacing": original_spacing,
-            "resampled_spacing": resampled_spacing,
+            "original_spacing": original_spacing.tolist(),
+            "resampled_spacing": resampled_spacing.tolist(),
         }
 
         query = {
