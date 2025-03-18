@@ -35,10 +35,9 @@ def insert_to_DB(df_chunk):
             dicom_pixels = hf["volume_image"]
             d_coord = origin
             resampled_pixels = hf["resampled_image"]
-            spacing = hf.attrs["original_spacing"]
             resampled_spacing = hf.attrs["resampled_spacing"]
             original_spacing = hf.attrs["original_spacing"]
-            r_coord = resampled_pixels.shape
+            resampled_dicom_shape = resampled_pixels.shape
 
         # insert a document to the collection
         dict_info = {
@@ -50,14 +49,16 @@ def insert_to_DB(df_chunk):
             "label": label,
             "age_at_study": age_at_study,
             "gender": gender,
-            "r_coord": r_coord,
+            "resampled_dicom_shape": resampled_dicom_shape,
             "original_spacing": original_spacing.tolist(),
             "resampled_spacing": resampled_spacing.tolist(),
+            "nodule_coord": original_nodule_coord,
         }
 
         query = {
             "series_instance_uid": {"$in": [series_instance_uid]},
-            "r_coord": {"$in": [r_coord]},
+            "resampled_dicom_shape": {"$in": [resampled_dicom_shape]},
+            "nodule_coord": {"$in": [original_nodule_coord]},
         }
         docs = [x for x in _CLIENT[_TARGET_DB][_TARGET_COLLECTION].find(query, {})]
         collection = _CLIENT[_TARGET_DB][_TARGET_COLLECTION]
@@ -87,10 +88,11 @@ if __name__ == "__main__":
         default="../../data_eda/LUNA25_Public_Training_Development_Data_fold.csv",
         help="Path to csv file",
     )
-    parser.add_argument("--chunk_size", type=int, default=10, help="Chunk size for parallel processing")
+    parser.add_argument("--chunk_size", type=int, default=100, help="Chunk size for parallel processing")
     args = parser.parse_args()
 
     df = pd.read_csv(args.csv_path)
+    print(len(df))
 
     # insert to DB
     chunk_size = args.chunk_size
