@@ -91,11 +91,17 @@ if __name__ == "__main__":
         default="../../data_eda/LUNA25_Public_Training_Development_Data_fold.csv",
         help="Path to csv file",
     )
+    parser.add_argument("--clean_documents", type=bool, default=False)
     parser.add_argument("--chunk_size", type=int, default=100, help="Chunk size for parallel processing")
     args = parser.parse_args()
 
     df = pd.read_csv(args.csv_path)
     print(len(df))
+    
+    if args.clean_documents:
+        client = pymongo.MongoClient(_VUNO_LUNG_DB)
+        col = client[_TARGET_DB][_TARGET_COLLECTION]
+        col.delete_many({})
 
     # insert to DB
     chunk_size = args.chunk_size
