@@ -25,6 +25,7 @@ def insert_to_DB(df_chunk):
         age_at_study = row.at["Age_at_StudyDate"]
         gender = row.at["Gender"]
         origin = [row.at["z_origin"], row.at["y_origin"], row.at["x_origin"]]
+        transform = [row.at["z_transform"], row.at["y_transform"], row.at["x_transform"]]
         origina_spacing = [row.at["z_spacing"], row.at["y_spacing"], row.at["x_spacing"]]
         dicom_path = f"/team/team_blu3/lung/data/2_public/LUNA25_Original/luna25_images/{series_instance_uid}.mha"
         resampled_h5_path = f"/team/team_blu3/lung/data/2_public/LUNA25_resampled/{series_instance_uid}.h5"
@@ -49,6 +50,7 @@ def insert_to_DB(df_chunk):
             "label": label,
             "age_at_study": age_at_study,
             "gender": gender,
+            "transform": transform,
             "resampled_dicom_shape": resampled_dicom_shape,
             "original_spacing": original_spacing.tolist(),
             "resampled_spacing": resampled_spacing.tolist(),
