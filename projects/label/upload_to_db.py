@@ -58,8 +58,9 @@ def insert_to_DB(df_chunk):
         }
 
         query = {
+            "patient_id": {"$in": [patient_id]},
             "series_instance_uid": {"$in": [series_instance_uid]},
-            "resampled_dicom_shape": {"$in": [resampled_dicom_shape]},
+            "studydate": {"$in": [studydate]},
             "nodule_coord": {"$in": [original_nodule_coord]},
         }
         docs = [x for x in _CLIENT[_TARGET_DB][_TARGET_COLLECTION].find(query, {})]
