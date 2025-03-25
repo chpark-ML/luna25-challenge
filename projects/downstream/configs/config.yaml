@@ -2,6 +2,7 @@
 defaults:
   - _self_
   - trainer: default
+  - inputs: default.yaml
   - loader: luna25
   - criterion: focal_loss
   - model: model_2d
