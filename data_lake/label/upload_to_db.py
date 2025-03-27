@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Insert asan dataset to DB")
     parser.add_argument(
-        "--csv_path",
+        "--original_csv_path",
         type=str,
         default="../../data_eda/LUNA25_Public_Training_Development_Data_fold.csv",
         help="Path to csv file",
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     parser.add_argument("--chunk_size", type=int, default=100, help="Chunk size for parallel processing")
     args = parser.parse_args()
 
-    df = pd.read_csv(args.csv_path)
+    df = pd.read_csv(args.original_csv_path)
     print(len(df))
 
     if args.clean_documents:
