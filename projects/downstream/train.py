@@ -12,7 +12,8 @@ import tqdm
 from sklearn import metrics
 
 import projects.common.train as comm_train
-from projects.common.enums import ModelName, RunMode, ThresholdMode
+from projects.common.enums import ModelName, ThresholdMode
+from shared_lib.enums import RunMode
 from projects.downstream.datasets.luna25 import DataKeys
 
 logger = logging.getLogger(__name__)

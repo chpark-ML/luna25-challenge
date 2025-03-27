@@ -15,7 +15,7 @@ from omegaconf import OmegaConf
 
 from data_lake.dataset_handler import DatasetHandler
 from projects.common.constant import DB_ADDRESS
-from projects.common.enums import RunMode
+from shared_lib.enums import RunMode
 
 logger = logging.getLogger(__name__)
 _VUNO_LUNG_DB = DB_ADDRESS
@@ -287,6 +287,7 @@ class CTCaseDataset(data.Dataset):
         dataset_infos=None,
         target_dataset_train=None,
         target_dataset_val_test=None,
+        augmentation=None,
     ):
         self.mode: RunMode = RunMode(mode) if isinstance(mode, str) else mode
 
@@ -322,8 +323,8 @@ class CTCaseDataset(data.Dataset):
         metadata = np.load(metadata_path, allow_pickle=True).item()
 
         origin = metadata["origin"]
-        spacing = metadata["spacing"]
-        transform = metadata["transform"]
+        spacing = pd.original_spacing
+        transform = pd.transform
 
         translations = None
         if self.translations == True:

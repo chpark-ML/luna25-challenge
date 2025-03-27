@@ -7,6 +7,12 @@ shared we will collect them in this module.
 from enum import Enum, IntEnum
 
 
+class RunMode(Enum):
+    TRAIN = "train"
+    VALIDATE = "val"
+    TEST = "test"
+
+
 class Axis3d(IntEnum):
     """Values correspond to data layout"""
 
@@ -21,12 +27,6 @@ class CTPlane(Enum):
     axial = 0
     coronal = 1
     sagittal = 2
-
-
-class RunMode(Enum):
-    TRAIN = "train"
-    VALIDATE = "val"
-    TEST = "test"
 
 
 class BaseBestModelStandard(Enum):

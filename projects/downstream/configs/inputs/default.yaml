@@ -48,10 +48,7 @@ dataset:
       val_fold: [ 5 ]
       test_fold: [ 6 ]
       collection_name: LUNA25-Malignancy
-      field_name_mapper:
-        confidence_label: num_mask
-        diameter_label: c_diameter_resampled
-      used_ratio: 1
+      query:
 
 batch_size: 32
 num_workers: 4
