@@ -11,6 +11,15 @@ _VUNO_LUNG_DB = "mongodb://172.31.10.111:27017"
 _TARGET_DB = "lct"
 _TARGET_COLLECTION = "LUNA25-Malignancy"
 
+def world_2_voxel(world_coordinates, origin, spacing):
+    stretched_voxel_coordinates = np.absolute(np.array(world_coordinates) - np.array(origin))
+    voxel_coordinates = stretched_voxel_coordinates / np.array(spacing)
+    return voxel_coordinates.tolist()
+
+def calcu_coord(D_COORD, SPACING, _RESAMPLED_SPACING):
+    r_coord_zyx = [D_COORD[i] * (SPACING[i] / _RESAMPLED_SPACING[i]) for i in range(3)]
+    return r_coord_zyx
+
 
 def insert_to_DB(df_chunk):
     _CLIENT = pymongo.MongoClient(_VUNO_LUNG_DB)
