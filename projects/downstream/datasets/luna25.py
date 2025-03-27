@@ -275,22 +275,10 @@ def extract_patch(
 
 
 class CTCaseDataset(data.Dataset):
-    """LUNA25 baseline dataset
-    Args:
-    data_dir (str): path to the nodule_blocks data directory
-    dataset (pd.DataFrame): dataframe with the dataset information
-    translations (bool): whether to apply random translations
-    rotations (tuple): tuple with the rotation ranges
-    size_px (int): size of the patch in pixels
-    size_mm (int): size of the patch in mm
-    model_mode (str): 2D or 3D
-
-    """
-
     def __init__(
             self,
             mode: Union[str, RunMode],
-            model_mode: str = "2D",
+            mode_model: str = "2D",
             patch_size: list = None,
             translations: bool = None,
             rotations: tuple = None,
@@ -303,18 +291,22 @@ class CTCaseDataset(data.Dataset):
     ):
         self.mode: RunMode = RunMode(mode) if isinstance(mode, str) else mode
 
-        ## TODO: mode, mongoDB에서 가져오기
-        _get_data_df(mode=mode, target_dataset=target_dataset_train, dataset_infos=dataset_infos)
+        # load dataset
+        if self.mode == RunMode.TRAIN:
+            self.target_dataset = OmegaConf.to_container(target_dataset_train, resolve=True)
+        else:
+            self.target_dataset = OmegaConf.to_container(target_dataset_val_test, resolve=True)
+        self.dataset = self.get_meta_df(dataset_infos=dataset_infos)
 
         self.patch_size = patch_size
         self.rotations = ast.literal_eval(rotations) if isinstance(rotations, str) else rotations
         self.translations = translations
         self.size_px = size_px
         self.size_mm = size_mm
-        self.model_mode = model_mode
+        self.model_mode = mode_model
 
-    def get_meta_df(self, dataset_infos: dict, target_dataset: list):
-        target_dataset_infos = {dataset: dataset_infos[dataset] for dataset in target_dataset}
+    def get_meta_df(self, dataset_infos: dict):
+        target_dataset_infos = {dataset: dataset_infos[dataset] for dataset in self.target_dataset}
         df = DatasetHandler().fetch_multiple_datasets(
             dataset_infos=target_dataset_infos, mode=self.mode
         )
@@ -395,6 +387,7 @@ if __name__ == "__main__":
 
     run_modes = [RunMode(m) for m in config.run_modes] if "run_modes" in config else [x for x in RunMode]
     loaders = {
-        mode: hydra.utils.instantiate(config.loader, dataset={"mode": mode}, drop_last=False, shuffle=False)
+        mode: hydra.utils.instantiate(config.inputs, dataset={"mode": mode}, drop_last=False, shuffle=False)
         for mode in run_modes
     }
+
