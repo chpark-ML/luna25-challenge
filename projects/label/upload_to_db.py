@@ -97,7 +97,7 @@ if __name__ == "__main__":
 
     df = pd.read_csv(args.csv_path)
     print(len(df))
-    
+
     if args.clean_documents:
         client = pymongo.MongoClient(_VUNO_LUNG_DB)
         col = client[_TARGET_DB][_TARGET_COLLECTION]

@@ -1,16 +1,24 @@
 import ast
+import logging
 from pathlib import Path
+from typing import List, Union
 
 import hydra
 import numpy as np
 import numpy.linalg as npl
 import pandas as pd
+import pymongo
 import scipy.ndimage as ndi
 import torch
 import torch.utils.data as data
 from omegaconf import OmegaConf
 
-from projects.common.enums import RunMode
+from data_lake.dataset_handler import DatasetHandler
+from projects.common.constant import DB_ADDRESS
+from shared_lib.enums import RunMode
+
+logger = logging.getLogger(__name__)
+_VUNO_LUNG_DB = DB_ADDRESS
 
 
 class DataKeys:
@@ -267,39 +275,41 @@ def extract_patch(
 
 
 class CTCaseDataset(data.Dataset):
-    """LUNA25 baseline dataset
-    Args:
-    data_dir (str): path to the nodule_blocks data directory
-    dataset (pd.DataFrame): dataframe with the dataset information
-    translations (bool): whether to apply random translations
-    rotations (tuple): tuple with the rotation ranges
-    size_px (int): size of the patch in pixels
-    size_mm (int): size of the patch in mm
-    model_mode (str): 2D or 3D
-
-    """
-
     def __init__(
         self,
-        mode: RunMode,
-        data_dir: str,
-        dataset_path: dict,
+        mode: Union[str, RunMode],
+        mode_model: str = "2D",
         patch_size: list = None,
         translations: bool = None,
         rotations: tuple = None,
         size_px: int = 64,
         size_mm: int = 50,
-        model_mode: str = "2D",
+        dataset_infos=None,
+        target_dataset_train=None,
+        target_dataset_val_test=None,
+        augmentation=None,
     ):
         self.mode: RunMode = RunMode(mode) if isinstance(mode, str) else mode
-        self.data_dir = Path(data_dir)
-        self.dataset = pd.read_csv(dataset_path[self.mode.value])
+
+        # load dataset
+        if self.mode == RunMode.TRAIN:
+            self.target_dataset = OmegaConf.to_container(target_dataset_train, resolve=True)
+        else:
+            self.target_dataset = OmegaConf.to_container(target_dataset_val_test, resolve=True)
+        self.dataset = self.get_meta_df(dataset_infos=dataset_infos)
+
         self.patch_size = patch_size
         self.rotations = ast.literal_eval(rotations) if isinstance(rotations, str) else rotations
         self.translations = translations
         self.size_px = size_px
         self.size_mm = size_mm
-        self.model_mode = model_mode
+        self.model_mode = mode_model
+
+    def get_meta_df(self, dataset_infos: dict):
+        target_dataset_infos = {dataset: dataset_infos[dataset] for dataset in self.target_dataset}
+        df = DatasetHandler().fetch_multiple_datasets(dataset_infos=target_dataset_infos, mode=self.mode)
+
+        return df
 
     def __getitem__(self, idx):  # caseid, z, y, x, label, radius
         pd = self.dataset.iloc[idx]
@@ -313,8 +323,8 @@ class CTCaseDataset(data.Dataset):
         metadata = np.load(metadata_path, allow_pickle=True).item()
 
         origin = metadata["origin"]
-        spacing = metadata["spacing"]
-        transform = metadata["transform"]
+        spacing = pd.original_spacing
+        transform = pd.transform
 
         translations = None
         if self.translations == True:
@@ -375,6 +385,6 @@ if __name__ == "__main__":
 
     run_modes = [RunMode(m) for m in config.run_modes] if "run_modes" in config else [x for x in RunMode]
     loaders = {
-        mode: hydra.utils.instantiate(config.loader, dataset={"mode": mode}, drop_last=False, shuffle=False)
+        mode: hydra.utils.instantiate(config.inputs, dataset={"mode": mode}, drop_last=False, shuffle=False)
         for mode in run_modes
     }

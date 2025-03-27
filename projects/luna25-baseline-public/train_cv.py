@@ -17,6 +17,7 @@ from experiment_config import config
 from models.model_2d import ResNet18
 from models.model_3d import I3D
 from tqdm import tqdm
+
 from ..common.utils.utils import set_seed
 
 torch.backends.cudnn.benchmark = True
@@ -51,19 +52,19 @@ def train(
     Train a ResNet18 or an I3D model
     """
     set_seed(config.SEED)
-    
+
     experiment_name = f"{config.EXPERIMENT_NAME}-{config.MODE}-{datetime.today().strftime('%Y%m%d-%H%M%S')}"
     exp_save_root = config.EXPERIMENT_DIR / experiment_name
     exp_save_root.mkdir(parents=True, exist_ok=True)
-    
-    fold_results =[]
+
+    fold_results = []
     for fold_num in range(7):
-        
+
         logging.info(f"Training on fold {fold_num}")
-        
+
         logging.info(f"Training with {train_csv_path}")
         logging.info(f"Validating with {valid_csv_path}")
-            
+
         train_df = pandas.read_csv(train_csv_path)
         valid_df = pandas.read_csv(valid_csv_path)
 
@@ -235,12 +236,10 @@ def train(
 
         logging.info("train completed, best_metric: {:.4f} at epoch: {}".format(best_metric, best_metric_epoch))
         fold_results.append(best_metric)
-    
+
     logging.info(f"Fold results: {fold_results}")
     logging.info(f"Mean AUC: {np.mean(fold_results)}")
     logging.info(f"Standard deviation: {np.std(fold_results)}")
-    
-    
 
 
 if __name__ == "__main__":

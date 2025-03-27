@@ -1,13 +1,13 @@
 import logging
 import os
+import random
 import re
 import socket
 import warnings
 from pathlib import Path
-import random
-import numpy as np
 
 import GPUtil
+import numpy as np
 import rich.syntax
 import rich.tree
 import torch
@@ -144,6 +144,7 @@ def get_device():
 def _get_available_gpu():
     device_ids = GPUtil.getAvailable(order="memory", limit=1, maxLoad=0.5, maxMemory=0.5)
     return device_ids[0] if device_ids else "cpu"
+
 
 def set_seed(seed=42):
     torch.manual_seed(seed)

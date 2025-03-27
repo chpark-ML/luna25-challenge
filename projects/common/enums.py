@@ -1,12 +1,6 @@
 from enum import Enum
 
 
-class RunMode(Enum):
-    TRAIN = "train"
-    VALIDATE = "val"
-    TEST = "test"
-
-
 class DicomMode(Enum):
     BONE = 1
     LUNG = 2

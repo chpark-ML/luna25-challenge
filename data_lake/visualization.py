@@ -38,9 +38,7 @@ def fn_save_fig(df_chunk):
         dataset = row.at["dataset"]
         is_gt = row.at["is_gt"]
         label = row.at["confidence"]
-        r_coord = (
-            row["r_coord"] if isinstance(row["r_coord"], list) else ast.literal_eval(row["r_coord"])
-        )
+        r_coord = row["r_coord"] if isinstance(row["r_coord"], list) else ast.literal_eval(row["r_coord"])
         file_path = row.at["h5_path"]
 
         # make directory to save visualization results
@@ -55,9 +53,7 @@ def fn_save_fig(df_chunk):
         # load input images and save the 3d plot images
         with File(file_path, mode="r") as hf:
             # load input
-            img = patch_extract(
-                hf["data"], center_coord=r_coord, voxel_width=_PATCH_SIZE, pad_value=0
-            )
+            img = patch_extract(hf["data"], center_coord=r_coord, voxel_width=_PATCH_SIZE, pad_value=0)
 
             # save visualization result
             figure_title = ""

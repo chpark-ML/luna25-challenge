@@ -1,19 +1,14 @@
+_target_: torch.utils.data.DataLoader
 
 dataset:
+  _target_: projects.downstream.datasets.luna25.CTCaseDataset
   mode: train
-  patch_size: [ 48, 72, 72 ]
-  dicom_window: [ "VUNO" ]  # "VUNO", "LUNG", "MEDIASTINAL", "BONE"
-
-  # preprocessing
-  buffer: 2
-  val_shift_scale: 0
-  dataset_size_scale_factor: 1.0
-  smoothing: 0.01
-  label_gray_zone_upper_bound: 0.6
-  label_gray_zone_lower_bound: 0.4
-  random_balanced_sampling: True
-  balancing_strategy: over # over, under
-  force_to_resolve_class_imbalance: True
+  mode_model: 2D
+  patch_size: [64, 128, 128]
+  translations: True
+  rotations: ((-20, 20), (-20, 20), (-20, 20))
+  size_mm: 50
+  size_px: 64
 
   # augmentation
   augmentation:
@@ -43,7 +38,8 @@ dataset:
         max: 2.0
 
   # target_dataset list should be selected between ['luna16_neg', 'luna16_pos', 'segmed', 'asan', 'adeno']
-  target_dataset: [ 'luna25' ]
+  target_dataset_train: [ 'luna25' ]
+  target_dataset_val_test: [ 'luna25' ]
 
   # dataset query 작성에 유의할 것! 특히 '-' 유무도 에러에 영향을 줄 수 있음.
   dataset_infos:
@@ -52,12 +48,9 @@ dataset:
       val_fold: [ 5 ]
       test_fold: [ 6 ]
       collection_name: LUNA25-Malignancy
-      field_name_mapper:
-        confidence_label: num_mask
-        diameter_label: c_diameter_resampled
-      used_ratio: 1
+      query:
 
-batch_size: 8
+batch_size: 32
 num_workers: 4
 pin_memory: True
 prefetch_factor: 2
