@@ -7,6 +7,12 @@ import pymongo
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
+import numpy as np
+import os 
+import sys
+from glob import glob
+from sklearn.model_selection import StratifiedKFold
+
 _VUNO_LUNG_DB = "mongodb://172.31.10.111:27017"
 _TARGET_DB = "lct"
 _TARGET_COLLECTION = "LUNA25-Malignancy"
@@ -49,6 +55,34 @@ def add_meta_data(df):
         df.loc[idx, 'z_transform'] = str(transform[2])
         
     return df
+
+
+def split_fold(meta_df):
+    # PatientID 기준으로 그룹화
+    patient_df = meta_df.groupby('PatientID').agg(
+        StudyDate=('StudyDate', lambda x: x.mode()[0]),
+        malignancy=('label', lambda x: (x == 0).sum()),
+        benign=('label', lambda x: (x == 1).sum()),
+        Age_at_StudyDate=('Age_at_StudyDate', lambda x: x.mode()[0]),
+        Gender=('Gender', lambda x: x.mode()[0]),  # 최빈값(가장 많이 등장한 성별)
+        z_spacing_min=('z_spacing', 'min'),
+        z_spacing_max=('z_spacing', 'max')
+    ).reset_index()
+    patient_df['strat'] = patient_df['malignancy'].astype(str) + '_' + patient_df['benign'].astype(str)
+    
+    # StudyDate, label, gender, z_spacing은 골고루 분포되어 있음
+    stratify = StratifiedKFold(n_splits=7, random_state=42, shuffle=True)
+
+    random_fold = {}
+    for i, (train_index, test_index) in enumerate(stratify.split(patient_df, patient_df['strat'])):
+        random_fold.update({i: patient_df.iloc[test_index]['PatientID'].values})
+        
+    fold_df = meta_df.copy()
+    for fold_num, _idx in enumerate(random_fold.values()):
+        fold_df.loc[meta_df.PatientID.isin(_idx), "fold"] = str(fold_num)
+        
+    return fold_df
+
 
 def world_2_voxel(world_coordinates, origin, spacing):
     stretched_voxel_coordinates = np.absolute(np.array(world_coordinates) - np.array(origin))
@@ -154,6 +188,8 @@ if __name__ == "__main__":
     print(len(df))
     
     metda_df = add_meta_data(df)
+    
+    fold_df = split_fold(metda_df)
 
     if args.clean_documents:
         client = pymongo.MongoClient(_VUNO_LUNG_DB)
@@ -162,5 +198,5 @@ if __name__ == "__main__":
 
     # insert to DB
     chunk_size = args.chunk_size
-    insert_to_DB_in_parallel(df, num_jobs=chunk_size)
+    insert_to_DB_in_parallel(fold_df, num_jobs=chunk_size)
     print("Insertion to DB is done")
