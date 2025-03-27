@@ -29,7 +29,7 @@ def insert_to_DB(df_chunk):
         studydate = row.at["StudyDate"]
         original_nodule_coord = [row.at["CoordZ"], row.at["CoordY"], row.at["CoordX"]]
         # lesion_id = row.at["LesionID"]
-        # annotation_id = row.at["AnnotationID"]
+        annotation_id = row.at["AnnotationID"]
         label = row.at["label"]
         age_at_study = row.at["Age_at_StudyDate"]
         gender = row.at["Gender"]
@@ -43,27 +43,34 @@ def insert_to_DB(df_chunk):
         # get r_coord
         with h5py.File(resampled_h5_path, "r") as hf:
             dicom_pixels = hf["volume_image"]
-            d_coord = origin
+            w_coord_zyx = original_nodule_coord
             resampled_pixels = hf["resampled_image"]
             resampled_spacing = hf.attrs["resampled_spacing"]
             original_spacing = hf.attrs["original_spacing"]
             resampled_dicom_shape = resampled_pixels.shape
+            
+        d_coord_zyx = world_2_voxel(w_coord_zyx, origin, original_spacing)
+        r_coord_zyx = calcu_coord(d_coord_zyx, original_spacing, resampled_spacing)
 
         # insert a document to the collection
         dict_info = {
             "patient_id": patient_id,
             "series_instance_uid": series_instance_uid,
+            "annotation_id": annotation_id,
             "studydate": studydate,
             "h5_path": resampled_h5_path,
             "fold": fold,
             "label": label,
             "age_at_study": age_at_study,
             "gender": gender,
+            "origin": origin,
+            "d_coord_zyx": d_coord_zyx,
             "transform": transform,
             "resampled_dicom_shape": resampled_dicom_shape,
             "original_spacing": original_spacing.tolist(),
             "resampled_spacing": resampled_spacing.tolist(),
-            "nodule_coord": original_nodule_coord,
+            "w_coord_zyx": w_coord_zyx,
+            "r_coord_zyx": r_coord_zyx,
         }
 
         query = {
@@ -100,7 +107,7 @@ if __name__ == "__main__":
         default="../../data_eda/LUNA25_Public_Training_Development_Data_fold.csv",
         help="Path to csv file",
     )
-    parser.add_argument("--clean_documents", type=bool, default=False)
+    parser.add_argument("--clean_documents", type=bool, default=True)
     parser.add_argument("--chunk_size", type=int, default=100, help="Chunk size for parallel processing")
     args = parser.parse_args()
 
