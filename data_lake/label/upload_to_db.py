@@ -11,6 +11,45 @@ _VUNO_LUNG_DB = "mongodb://172.31.10.111:27017"
 _TARGET_DB = "lct"
 _TARGET_COLLECTION = "LUNA25-Malignancy"
 
+def add_meta_data(df):
+    
+    nodule_blocks_image_dir = '/team/team_blu3/lung/data/2_public/LUNA25_Original/luna25_nodule_blocks/image/'
+    nodule_blocks_metadata_dir = '/team/team_blu3/lung/data/2_public/LUNA25_Original/luna25_nodule_blocks/metadata/'
+    
+    df['nodule_block_image_shape'] = 0
+    df['x_origin'] = 0
+    df['y_origin'] = 0
+    df['z_origin'] = 0
+    df['x_spacing'] = 0
+    df['y_spacing'] = 0
+    df['z_spacing'] = 0
+    df['x_transform'] = 0
+    df['y_transform'] = 0
+    df['z_transform'] = 0
+
+    for idx, row in tqdm(df.iterrows(), total=df.shape[0]):
+        
+        annotat_id = row['AnnotationID']
+        image = np.load(os.path.join(nodule_blocks_image_dir, f'{annotat_id}.npy'))
+        metadata = np.load(os.path.join(nodule_blocks_metadata_dir, f'{annotat_id}.npy'), allow_pickle=True).item()
+        image_shape = image.shape
+        origin = metadata['origin']
+        spacing = metadata['spacing']
+        transform = metadata['transform']
+        
+        df.loc[idx, 'nodule_block_image_shape'] = str(image_shape)
+        df.loc[idx, 'x_origin'] = origin[0]
+        df.loc[idx, 'y_origin'] = origin[1]
+        df.loc[idx, 'z_origin'] = origin[2]
+        df.loc[idx, 'x_spacing'] = spacing[0]
+        df.loc[idx, 'y_spacing'] = spacing[1]
+        df.loc[idx, 'z_spacing'] = spacing[2]
+        df.loc[idx, 'x_transform'] = str(transform[0])
+        df.loc[idx, 'y_transform'] = str(transform[1])
+        df.loc[idx, 'z_transform'] = str(transform[2])
+        
+    return df
+
 def world_2_voxel(world_coordinates, origin, spacing):
     stretched_voxel_coordinates = np.absolute(np.array(world_coordinates) - np.array(origin))
     voxel_coordinates = stretched_voxel_coordinates / np.array(spacing)
@@ -104,7 +143,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--original_csv_path",
         type=str,
-        default="../../data_eda/LUNA25_Public_Training_Development_Data_fold.csv",
+        default='/team/team_blu3/lung/data/2_public/LUNA25_Original/LUNA25_Public_Training_Development_Data.csv',
         help="Path to csv file",
     )
     parser.add_argument("--clean_documents", type=bool, default=True)
@@ -113,6 +152,8 @@ if __name__ == "__main__":
 
     df = pd.read_csv(args.original_csv_path)
     print(len(df))
+    
+    metda_df = add_meta_data(df)
 
     if args.clean_documents:
         client = pymongo.MongoClient(_VUNO_LUNG_DB)
