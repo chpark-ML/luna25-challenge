@@ -1,16 +1,24 @@
 import ast
+import logging
 from pathlib import Path
+from typing import List, Union
 
 import hydra
 import numpy as np
 import numpy.linalg as npl
 import pandas as pd
+import pymongo
 import scipy.ndimage as ndi
 import torch
 import torch.utils.data as data
 from omegaconf import OmegaConf
 
+from data_lake.dataset_handler import DatasetHandler
+from projects.common.constant import DB_ADDRESS
 from projects.common.enums import RunMode
+
+logger = logging.getLogger(__name__)
+_VUNO_LUNG_DB = DB_ADDRESS
 
 
 class DataKeys:
@@ -28,13 +36,13 @@ def _calculateAllPermutations(itemList):
 
 
 def volumeTransform(
-    image,
-    voxel_spacing,
-    transform_matrix,
-    center=None,
-    output_shape=None,
-    output_voxel_spacing=None,
-    **argv,
+        image,
+        voxel_spacing,
+        transform_matrix,
+        center=None,
+        output_shape=None,
+        output_voxel_spacing=None,
+        **argv,
 ):
     """
     Parameters
@@ -193,17 +201,17 @@ def sample_random_coordinate_on_sphere(radius):
 
 
 def extract_patch(
-    CTData,
-    coord,
-    srcVoxelOrigin,
-    srcWorldMatrix,
-    srcVoxelSpacing,
-    output_shape=(64, 64, 64),
-    voxel_spacing=(50.0 / 64, 50.0 / 64, 50.0 / 64),
-    rotations=None,
-    translations=None,
-    coord_space_world=False,
-    mode="2D",
+        CTData,
+        coord,
+        srcVoxelOrigin,
+        srcWorldMatrix,
+        srcVoxelSpacing,
+        output_shape=(64, 64, 64),
+        voxel_spacing=(50.0 / 64, 50.0 / 64, 50.0 / 64),
+        rotations=None,
+        translations=None,
+        coord_space_world=False,
+        mode="2D",
 ):
     transform_matrix = np.eye(3)
 
@@ -280,26 +288,38 @@ class CTCaseDataset(data.Dataset):
     """
 
     def __init__(
-        self,
-        mode: RunMode,
-        data_dir: str,
-        dataset_path: dict,
-        patch_size: list = None,
-        translations: bool = None,
-        rotations: tuple = None,
-        size_px: int = 64,
-        size_mm: int = 50,
-        model_mode: str = "2D",
+            self,
+            mode: Union[str, RunMode],
+            model_mode: str = "2D",
+            patch_size: list = None,
+            translations: bool = None,
+            rotations: tuple = None,
+            size_px: int = 64,
+            size_mm: int = 50,
+            dataset_infos=None,
+            target_dataset_train=None,
+            target_dataset_val_test=None,
+
     ):
         self.mode: RunMode = RunMode(mode) if isinstance(mode, str) else mode
-        self.data_dir = Path(data_dir)
-        self.dataset = pd.read_csv(dataset_path[self.mode.value])
+
+        ## TODO: mode, mongoDB에서 가져오기
+        _get_data_df(mode=mode, target_dataset=target_dataset_train, dataset_infos=dataset_infos)
+
         self.patch_size = patch_size
         self.rotations = ast.literal_eval(rotations) if isinstance(rotations, str) else rotations
         self.translations = translations
         self.size_px = size_px
         self.size_mm = size_mm
         self.model_mode = model_mode
+
+    def get_meta_df(self, dataset_infos: dict, target_dataset: list):
+        target_dataset_infos = {dataset: dataset_infos[dataset] for dataset in target_dataset}
+        df = DatasetHandler().fetch_multiple_datasets(
+            dataset_infos=target_dataset_infos, mode=self.mode
+        )
+
+        return df
 
     def __getitem__(self, idx):  # caseid, z, y, x, label, radius
         pd = self.dataset.iloc[idx]

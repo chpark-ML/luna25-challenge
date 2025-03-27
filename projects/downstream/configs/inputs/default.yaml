@@ -1,5 +1,7 @@
+_target_: torch.utils.data.DataLoader
 
 dataset:
+  _target_: projects.downstream.datasets.luna25.CTCaseDataset
   mode: train
   patch_size: [ 48, 72, 72 ]
   dicom_window: [ "VUNO" ]  # "VUNO", "LUNG", "MEDIASTINAL", "BONE"
@@ -9,11 +11,6 @@ dataset:
   val_shift_scale: 0
   dataset_size_scale_factor: 1.0
   smoothing: 0.01
-  label_gray_zone_upper_bound: 0.6
-  label_gray_zone_lower_bound: 0.4
-  random_balanced_sampling: True
-  balancing_strategy: over # over, under
-  force_to_resolve_class_imbalance: True
 
   # augmentation
   augmentation:
