@@ -11,6 +11,7 @@ import pymongo
 import scipy.ndimage as ndi
 import torch
 import torch.utils.data as data
+from h5py import File
 from omegaconf import OmegaConf
 
 from data_lake.dataset_handler import DatasetHandler
@@ -27,6 +28,64 @@ class DataKeys:
     ID = "ID"
 
 
+def _get_3d_patch(image_shape=None, center=None, patchsize=None):
+    if isinstance(patchsize, int):
+        patchsize = (patchsize, patchsize, patchsize)
+
+    center = np.array(center)
+    patchsize = np.array(patchsize)
+
+    half = patchsize // 2
+    lower = np.rint(center - half).astype(int)
+    # lower = (center - half).astype(int)
+    upper = lower + patchsize
+
+    # real
+    rlower = np.maximum(lower, 0).astype(int).tolist()
+    rupper = np.minimum(upper, image_shape).astype(int).tolist()
+
+    # diff
+    dlower = np.maximum(-lower, 0)
+    dupper = np.maximum(upper - image_shape, 0)
+
+    return rlower, rupper, dlower, dupper
+
+
+def _extract_patch(
+        h5_path,
+        r_coord,
+        xy_size: int = 72,
+        z_size: int = 72,
+        center_shift_zyx: list = [0, 0, 0],
+        fill: float = -3024.0,
+) -> np.ndarray:
+    # Load cached data
+    hf_file = File(h5_path, "r")
+    patchsize = (z_size, xy_size, xy_size)
+    repr_center = [x + y for x, y in zip(r_coord, center_shift_zyx)]
+
+    file_shape = hf_file["volume_image"].shape
+    rlower, rupper, dlower, dupper = _get_3d_patch(file_shape, repr_center, patchsize=patchsize)
+
+    # Load ROI only
+    file = hf_file["volume_image"][rlower[0]: rupper[0], rlower[1]: rupper[1], rlower[2]: rupper[2]]
+
+    if file.shape != patchsize:
+        pad_width = [pair for pair in zip(dlower, dupper)]
+        file = np.pad(file, pad_width=pad_width, mode="constant", constant_values=fill)
+
+    file = file.astype("float32")
+    hf_file.close()
+
+    assert file.shape == (
+        z_size,
+        xy_size,
+        xy_size,
+    ), f"Sanity check failed: {file.shape} == ({z_size}, {xy_size}, {xy_size})"
+
+    return file
+
+
 def _calculateAllPermutations(itemList):
     if len(itemList) == 1:
         return [[i] for i in itemList[0]]
@@ -36,13 +95,13 @@ def _calculateAllPermutations(itemList):
 
 
 def volumeTransform(
-    image,
-    voxel_spacing,
-    transform_matrix,
-    center=None,
-    output_shape=None,
-    output_voxel_spacing=None,
-    **argv,
+        image,
+        voxel_spacing,
+        transform_matrix,
+        center=None,
+        output_shape=None,
+        output_voxel_spacing=None,
+        **argv,
 ):
     """
     Parameters
@@ -201,17 +260,17 @@ def sample_random_coordinate_on_sphere(radius):
 
 
 def extract_patch(
-    CTData,
-    coord,
-    srcVoxelOrigin,
-    srcWorldMatrix,
-    srcVoxelSpacing,
-    output_shape=(64, 64, 64),
-    voxel_spacing=(50.0 / 64, 50.0 / 64, 50.0 / 64),
-    rotations=None,
-    translations=None,
-    coord_space_world=False,
-    mode="2D",
+        CTData,
+        coord,
+        srcVoxelOrigin,
+        srcWorldMatrix,
+        srcVoxelSpacing,
+        output_shape=(64, 64, 64),
+        voxel_spacing=(50.0 / 64, 50.0 / 64, 50.0 / 64),
+        rotations=None,
+        translations=None,
+        coord_space_world=False,
+        mode="2D",
 ):
     transform_matrix = np.eye(3)
 
@@ -276,18 +335,18 @@ def extract_patch(
 
 class CTCaseDataset(data.Dataset):
     def __init__(
-        self,
-        mode: Union[str, RunMode],
-        mode_model: str = "2D",
-        patch_size: list = None,
-        translations: bool = None,
-        rotations: tuple = None,
-        size_px: int = 64,
-        size_mm: int = 50,
-        dataset_infos=None,
-        target_dataset_train=None,
-        target_dataset_val_test=None,
-        augmentation=None,
+            self,
+            mode: Union[str, RunMode],
+            mode_model: str = "2D",
+            patch_size: list = None,
+            translations: bool = None,
+            rotations: tuple = None,
+            size_px: int = 64,
+            size_mm: int = 50,
+            dataset_infos=None,
+            target_dataset_train=None,
+            target_dataset_val_test=None,
+            augmentation=None,
     ):
         self.mode: RunMode = RunMode(mode) if isinstance(mode, str) else mode
 
@@ -312,19 +371,23 @@ class CTCaseDataset(data.Dataset):
         return df
 
     def __getitem__(self, idx):  # caseid, z, y, x, label, radius
-        pd = self.dataset.iloc[idx]
-        label = pd.label
-        annotation_id = pd.AnnotationID
-        image_path = self.data_dir / "image" / f"{annotation_id}.npy"
-        metadata_path = self.data_dir / "metadata" / f"{annotation_id}.npy"
+        elem = self.dataset.iloc[idx]
+        label = elem["label"]
+        annotation_id = elem["annotation_id"]
+        origin = elem["origin"]
+        spacing = np.array(elem["original_spacing"])
+        transform = [ast.literal_eval(s.replace(' ', ',')) for s in elem["transform"]]
+        d_coord_zyx = elem["d_coord_zyx"]
 
-        # numpy memory map data/image case file
-        img = np.load(image_path, mmap_mode="r")
-        metadata = np.load(metadata_path, allow_pickle=True).item()
-
-        origin = metadata["origin"]
-        spacing = pd.original_spacing
-        transform = pd.transform
+        h5_path = elem.h5_path
+        img = _extract_patch(
+            h5_path,
+            d_coord_zyx,
+            xy_size=128,
+            z_size=64,
+            center_shift_zyx=[0, 0, 0],
+            fill=-3024.0,
+        )
 
         translations = None
         if self.translations == True:
