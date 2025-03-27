@@ -341,6 +341,8 @@ class CTCaseDataset(data.Dataset):
             patch_size: list = None,
             translations: bool = None,
             rotations: tuple = None,
+            size_xy: int = 128,
+            size_z: int = 64,
             size_px: int = 64,
             size_mm: int = 50,
             dataset_infos=None,
@@ -360,6 +362,8 @@ class CTCaseDataset(data.Dataset):
         self.patch_size = patch_size
         self.rotations = ast.literal_eval(rotations) if isinstance(rotations, str) else rotations
         self.translations = translations
+        self.size_xy = size_xy
+        self.size_z = size_z
         self.size_px = size_px
         self.size_mm = size_mm
         self.model_mode = mode_model
@@ -383,8 +387,8 @@ class CTCaseDataset(data.Dataset):
         img = _extract_patch(
             h5_path,
             d_coord_zyx,
-            xy_size=128,
-            z_size=64,
+            xy_size=self.size_xy,
+            z_size=self.size_z,
             center_shift_zyx=[0, 0, 0],
             fill=-3024.0,
         )

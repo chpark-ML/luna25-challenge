@@ -7,6 +7,8 @@ dataset:
   patch_size: [64, 128, 128]
   translations: True
   rotations: ((-20, 20), (-20, 20), (-20, 20))
+  size_xy: 128
+  size_z: 64
   size_mm: 50
   size_px: 64
 
