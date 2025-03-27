@@ -15,11 +15,9 @@ from h5py import File
 from omegaconf import OmegaConf
 
 from data_lake.dataset_handler import DatasetHandler
-from projects.common.constant import DB_ADDRESS
 from shared_lib.enums import RunMode
 
 logger = logging.getLogger(__name__)
-_VUNO_LUNG_DB = DB_ADDRESS
 
 
 class DataKeys:
