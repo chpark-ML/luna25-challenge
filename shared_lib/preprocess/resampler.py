@@ -45,9 +45,7 @@ def resample(dicom_pixels, original_spacing, new_spacing, mode="scipy", order=3)
         return resampled_dicom_np
 
 
-def get_real_resize_factor(
-    origin_image, origin_spacing, new_spacing, ret_zoom_factor=False, verbose=False
-):
+def get_real_resize_factor(origin_image, origin_spacing, new_spacing, ret_zoom_factor=False, verbose=False):
     """Get real_resize_factor when resample from origin_spacing to new_spacing.
     영상을 resampling하는 과정에서 new_shape는 필연적으로 float값을 갖게 되는데, 이걸 단순히
     round 처리하면 오차가 발생하게 됨. 이는 CT영상이 real-world coordinate를 repr하는 방식으로
@@ -91,11 +89,7 @@ def get_real_resize_factor(
         return real_resize_factor, new_shape
 
 
-def resample_coord_reverse(
-        resampled_coord,
-        resampled_image,
-        origin_spacing,
-        resampled_spacing):
+def resample_coord_reverse(resampled_coord, resampled_image, origin_spacing, resampled_spacing):
     """convert resampled_coord to dicom_coord
 
     Args:
@@ -110,8 +104,5 @@ def resample_coord_reverse(
         dicom_coordinate
     """
 
-    real_resize_factor, _ = get_real_resize_factor(
-        resampled_image, resampled_spacing, origin_spacing)
-    return (np.round(
-        np.asarray(resampled_coord) * np.asarray(real_resize_factor))) \
-        .astype(int)
+    real_resize_factor, _ = get_real_resize_factor(resampled_image, resampled_spacing, origin_spacing)
+    return (np.round(np.asarray(resampled_coord) * np.asarray(real_resize_factor))).astype(int)

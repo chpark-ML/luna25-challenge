@@ -69,11 +69,11 @@ class DatasetHandler:
                 projection = {DataLakeKey.DOC_ID: 0}
 
             # Load documents.
-            docs = [doc[field_name] if field_name else doc for doc in client[TARGET_DB][collection].find(query, projection)]
+            docs = [
+                doc[field_name] if field_name else doc for doc in client[TARGET_DB][collection].find(query, projection)
+            ]
             if verbose:
-                logger.info(
-                    f"Loaded {len(docs)} documents.\nCollection: {collection}\nQuery:\n{query}"
-                )
+                logger.info(f"Loaded {len(docs)} documents.\nCollection: {collection}\nQuery:\n{query}")
 
         return docs
 
@@ -82,13 +82,15 @@ class DatasetHandler:
         dfs = list()
         for dataset, dataset_info in dataset_infos.items():
             # set collection
-            assert (
-                DatasetInfoKey.COLLECTION_NAME in dataset_info.keys()
-            ), "collection name is not given."
+            assert DatasetInfoKey.COLLECTION_NAME in dataset_info.keys(), "collection name is not given."
             collection_name = dataset_info[DatasetInfoKey.COLLECTION_NAME]
 
             # set query
-            query = OmegaConf.create({}) if dataset_info[DatasetInfoKey.QUERY] is None else dataset_info[DatasetInfoKey.QUERY]
+            query = (
+                OmegaConf.create({})
+                if dataset_info[DatasetInfoKey.QUERY] is None
+                else dataset_info[DatasetInfoKey.QUERY]
+            )
             if mode:
                 fold_indices = self.get_fold_indices(mode, dataset_info)
                 # the case of luna16 dataset, the fold can be set by subset index instead of fold.
@@ -120,9 +122,7 @@ class DatasetHandler:
             # hf["dicom_pixels"], hf["data"], etc.
             if self.hfile_image_key in dataset_info.keys():
                 if self.hfile_image_key in df:
-                    raise ValueError(
-                        f"The new feature name '{self.hfile_image_key}' has already been given."
-                    )
+                    raise ValueError(f"The new feature name '{self.hfile_image_key}' has already been given.")
                 value = dataset_info[self.hfile_image_key]
                 df[self.hfile_image_key] = value if value else None
 

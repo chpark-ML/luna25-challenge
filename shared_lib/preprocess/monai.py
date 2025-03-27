@@ -38,9 +38,7 @@ def patch_rand_drop(torch_device, x, x_rep=None, max_drop=0.3, max_block_sz=0.25
             )
             x[:, rnd_r:rnd_h, rnd_c:rnd_w, rnd_s:rnd_z] = x_uninitialized
         else:
-            x[:, rnd_r:rnd_h, rnd_c:rnd_w, rnd_s:rnd_z] = x_rep[
-                :, rnd_r:rnd_h, rnd_c:rnd_w, rnd_s:rnd_z
-            ]
+            x[:, rnd_r:rnd_h, rnd_c:rnd_w, rnd_s:rnd_z] = x_rep[:, rnd_r:rnd_h, rnd_c:rnd_w, rnd_s:rnd_z]
         total_pix = total_pix + (rnd_h - rnd_r) * (rnd_w - rnd_c) * (rnd_z - rnd_s)
     return x
 

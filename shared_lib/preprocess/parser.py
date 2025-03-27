@@ -121,9 +121,7 @@ def patch_extract(
     return patch.copy()
 
 
-def normalize_planes(
-    npzarray: np.ndarray, min_hu: float = -1000.0, max_hu: float = 600.0
-) -> np.ndarray:
+def normalize_planes(npzarray: np.ndarray, min_hu: float = -1000.0, max_hu: float = 600.0) -> np.ndarray:
     if min_hu > max_hu:
         raise ValueError(f"minHU should be smaller than maxHU, but got {min_hu} > {max_hu}")
 
@@ -141,9 +139,7 @@ def normalize_dicom_values(img, lower, upper, bit_depth_type: BitDepth = None):
     return x
 
 
-def normalize_dicom_values_by_fixed_range(
-    img: np.array, lower: float, upper: float, bit_depth_type: BitDepth = None
-):
+def normalize_dicom_values_by_fixed_range(img: np.array, lower: float, upper: float, bit_depth_type: BitDepth = None):
     """
     1. clip HU values
     2. 고정 범위를 (HU windowing values) 통해 minmax 정규화 수행

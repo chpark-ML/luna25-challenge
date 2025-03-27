@@ -128,9 +128,7 @@ def _pool_worker(*, fn, predictions, max_workers, results, errors):
         try:
             # Submit the processing tasks of the predictions
             futures = [executor.submit(fn, prediction) for prediction in predictions]
-            future_to_predictions = {
-                future: item for future, item in zip(futures, predictions)
-            }
+            future_to_predictions = {future: item for future, item in zip(futures, predictions)}
 
             for future in as_completed(future_to_predictions):
                 prediction = future_to_predictions[future]

@@ -36,9 +36,7 @@ def test_get_dicom_list_read_dcm_only_not(mock_listdir, mock_isfile, mock_size):
     handler = loader.DicomHandler()
     assert not handler.params.read_dcm_only
     path_to_dir = "data_root"
-    with pytest.warns(
-        UserWarning, match="There were 2 files that were filtered out. File size threshold: 4194304"
-    ):
+    with pytest.warns(UserWarning, match="There were 2 files that were filtered out. File size threshold: 4194304"):
         dicom_list = handler._get_dicom_list(path_to_dir)
     assert dicom_list == ["data_root/file1", "data_root/y/file3"]
 

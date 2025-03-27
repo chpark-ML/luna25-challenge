@@ -36,13 +36,13 @@ def _calculateAllPermutations(itemList):
 
 
 def volumeTransform(
-        image,
-        voxel_spacing,
-        transform_matrix,
-        center=None,
-        output_shape=None,
-        output_voxel_spacing=None,
-        **argv,
+    image,
+    voxel_spacing,
+    transform_matrix,
+    center=None,
+    output_shape=None,
+    output_voxel_spacing=None,
+    **argv,
 ):
     """
     Parameters
@@ -201,17 +201,17 @@ def sample_random_coordinate_on_sphere(radius):
 
 
 def extract_patch(
-        CTData,
-        coord,
-        srcVoxelOrigin,
-        srcWorldMatrix,
-        srcVoxelSpacing,
-        output_shape=(64, 64, 64),
-        voxel_spacing=(50.0 / 64, 50.0 / 64, 50.0 / 64),
-        rotations=None,
-        translations=None,
-        coord_space_world=False,
-        mode="2D",
+    CTData,
+    coord,
+    srcVoxelOrigin,
+    srcWorldMatrix,
+    srcVoxelSpacing,
+    output_shape=(64, 64, 64),
+    voxel_spacing=(50.0 / 64, 50.0 / 64, 50.0 / 64),
+    rotations=None,
+    translations=None,
+    coord_space_world=False,
+    mode="2D",
 ):
     transform_matrix = np.eye(3)
 
@@ -276,18 +276,17 @@ def extract_patch(
 
 class CTCaseDataset(data.Dataset):
     def __init__(
-            self,
-            mode: Union[str, RunMode],
-            mode_model: str = "2D",
-            patch_size: list = None,
-            translations: bool = None,
-            rotations: tuple = None,
-            size_px: int = 64,
-            size_mm: int = 50,
-            dataset_infos=None,
-            target_dataset_train=None,
-            target_dataset_val_test=None,
-
+        self,
+        mode: Union[str, RunMode],
+        mode_model: str = "2D",
+        patch_size: list = None,
+        translations: bool = None,
+        rotations: tuple = None,
+        size_px: int = 64,
+        size_mm: int = 50,
+        dataset_infos=None,
+        target_dataset_train=None,
+        target_dataset_val_test=None,
     ):
         self.mode: RunMode = RunMode(mode) if isinstance(mode, str) else mode
 
@@ -307,9 +306,7 @@ class CTCaseDataset(data.Dataset):
 
     def get_meta_df(self, dataset_infos: dict):
         target_dataset_infos = {dataset: dataset_infos[dataset] for dataset in self.target_dataset}
-        df = DatasetHandler().fetch_multiple_datasets(
-            dataset_infos=target_dataset_infos, mode=self.mode
-        )
+        df = DatasetHandler().fetch_multiple_datasets(dataset_infos=target_dataset_infos, mode=self.mode)
 
         return df
 
@@ -390,4 +387,3 @@ if __name__ == "__main__":
         mode: hydra.utils.instantiate(config.inputs, dataset={"mode": mode}, drop_last=False, shuffle=False)
         for mode in run_modes
     }
-

@@ -54,9 +54,7 @@ def normalize_dicom_values(img, lower, upper, bit_depth_type: BitDepth = None):
     return x
 
 
-def normalize_dicom_values_by_fixed_range(
-    img: np.array, lower: float, upper: float, bit_depth_type: BitDepth = None
-):
+def normalize_dicom_values_by_fixed_range(img: np.array, lower: float, upper: float, bit_depth_type: BitDepth = None):
     """
     1. clip HU values
     2. 고정 범위를 (HU windowing values) 통해 minmax 정규화 수행

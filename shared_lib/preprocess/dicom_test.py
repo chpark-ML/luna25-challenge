@@ -13,9 +13,7 @@ def test_windowing(bit_depth_type, expected):
     in_values = [-1400, -777, -42, 167]
     image = np.stack([np.full(10, val) for val in in_values])
 
-    converted_image = preprocess_dicom._windowing(
-        image, preprocess_dicom.DicomMode.LUNG, bit_depth_type=bit_depth_type
-    )
+    converted_image = preprocess_dicom._windowing(image, preprocess_dicom.DicomMode.LUNG, bit_depth_type=bit_depth_type)
 
     for i, in_values in enumerate(in_values):
         np.testing.assert_array_almost_equal(converted_image[i], expected[i])

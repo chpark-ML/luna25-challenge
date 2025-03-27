@@ -57,9 +57,7 @@ _LOADER_PARAMS = _LOADER_PARAM_NAMES(
 for resolution_factor in range(29, 75):
     """Siemens kernel"""
     if resolution_factor < 44:  # Standard
-        _LOADER_PARAMS.kernel_priority[
-            "I{:02d}f".format(resolution_factor)
-        ] = 4  # SAFIRE for soft tissue
+        _LOADER_PARAMS.kernel_priority["I{:02d}f".format(resolution_factor)] = 4  # SAFIRE for soft tissue
         _LOADER_PARAMS.kernel_priority["B{:02d}f".format(resolution_factor)] = 3
     elif resolution_factor < 56:  # Medium / Medium Sharp
         _LOADER_PARAMS.kernel_priority["B{:02d}f".format(resolution_factor)] = 2
@@ -90,9 +88,7 @@ def uncompressor(path_to_slice, path_to_save):
 
 
 def load_scan(path, group_separator="0x0020000E", force=2, **kwargs):
-    return DicomLoader(_LOADER_PARAMS).load_dicom(
-        path, group_separator=group_separator, force=force, **kwargs
-    )
+    return DicomLoader(_LOADER_PARAMS).load_dicom(path, group_separator=group_separator, force=force, **kwargs)
 
 
 def load_mhd2numpy(path):
@@ -104,9 +100,7 @@ def load_mhd2numpy(path):
         return None, None
 
     numpy_image = sitk.GetArrayFromImage(itkimage)
-    numpy_spacing = np.array(
-        list(reversed(itkimage.GetSpacing()))
-    )  # spacing of voxels in world coordinates (mm)
+    numpy_spacing = np.array(list(reversed(itkimage.GetSpacing())))  # spacing of voxels in world coordinates (mm)
 
     return numpy_image, numpy_spacing
 
@@ -125,13 +119,9 @@ class DicomHandler:
 
     def _get_spacing_between_slices(self, dicom_paths, exit_code=0):
         try:
-            dicom_slices = [
-                dicom.read_file(x, force=True if self.force > 3 else False) for x in dicom_paths
-            ]
+            dicom_slices = [dicom.read_file(x, force=True if self.force > 3 else False) for x in dicom_paths]
             dicom_slices = sorted(dicom_slices, key=lambda x: float(x.ImagePositionPatient[2]))
-            return np.abs(
-                dicom_slices[1].ImagePositionPatient[2] - dicom_slices[2].ImagePositionPatient[2]
-            )
+            return np.abs(dicom_slices[1].ImagePositionPatient[2] - dicom_slices[2].ImagePositionPatient[2])
 
         except:
             return 0.0 if exit_code == 0 else 1.0
@@ -143,11 +133,7 @@ class DicomHandler:
             dicom_list += glob("{}/*.DCM".format(path_to_dir))
 
         else:
-            files = [
-                os.path.join(directory, f)
-                for directory, _, files in os.walk(path_to_dir)
-                for f in files
-            ]
+            files = [os.path.join(directory, f) for directory, _, files in os.walk(path_to_dir) for f in files]
 
             # Filter files that are equal or larger than max_file_size
             dicom_list = [f for f in files if os.path.getsize(f) < max_file_size]
@@ -155,8 +141,7 @@ class DicomHandler:
             filtered_num = len(files) - len(dicom_list)
             if filtered_num:
                 warnings.warn(
-                    f"There were {filtered_num} files that were filtered out. "
-                    f"File size threshold: {max_file_size}"
+                    f"There were {filtered_num} files that were filtered out. " f"File size threshold: {max_file_size}"
                 )
 
         if len(dicom_list) < 1:
@@ -180,10 +165,7 @@ class DicomHandler:
                 round_orientation = list(map(round, _slice.ImageOrientationPatient))
                 _IOP = np.array(round_orientation, dtype=np.int32)
                 _axial_direction = np.array([1, 0, 0, 0, 1, 0])
-                if (
-                    np.count_nonzero(_IOP - _axial_direction) > 0
-                    and np.count_nonzero(_IOP + _axial_direction) > 0
-                ):
+                if np.count_nonzero(_IOP - _axial_direction) > 0 and np.count_nonzero(_IOP + _axial_direction) > 0:
                     continue
 
                 # Identify whether DICOM file is compressed or not.
@@ -283,9 +265,7 @@ class DicomHandler:
                         continue
                     _msg = (
                         _msg + " - A DICOM series with no SliceThickness "
-                        "is automatically removed by `force < 4` option. "
-                        + "\n   UID :"
-                        + _group_uid
+                        "is automatically removed by `force < 4` option. " + "\n   UID :" + _group_uid
                     )
                     del self.dicom_groups[_group_uid]
                     del self.kernel_dict[_group_uid]
@@ -329,16 +309,12 @@ class DicomHandler:
                         for uid, algo in list(self.kernel_dict.items())
                         if str(algo).upper() == str(preferred_recon_algo).upper()
                     ]
-                    self.target_group_uid = min(
-                        target_candidate, key=lambda x: len(self.dicom_groups[x])
-                    )
+                    self.target_group_uid = min(target_candidate, key=lambda x: len(self.dicom_groups[x]))
                     return self.target_group_uid
 
                 except:
                     _msg = (
-                        _msg
-                        + "- A DICOM series reconstructed with the"
-                        + f" {preferred_recon_algo} cannot be found."
+                        _msg + "- A DICOM series reconstructed with the" + f" {preferred_recon_algo} cannot be found."
                     )
 
             _slice_thickness = [x for x in self.slice_thickness.values()]
@@ -373,9 +349,7 @@ class DicomHandler:
                 _msg = (
                     _msg
                     + "\n - A DICOM series using Following kernel"
-                    + " is selected as inference target: {}".format(
-                        self.kernel_dict[self.target_group_uid]
-                    )
+                    + " is selected as inference target: {}".format(self.kernel_dict[self.target_group_uid])
                 )
 
             if verbose and len(_msg) > 0:
@@ -383,13 +357,9 @@ class DicomHandler:
             return self.target_group_uid
 
         except:
-            raise DicomLoadException(
-                _msg + "\n Cannot find compatible DICOM series : {}".format(self.path_to_dir)
-            )
+            raise DicomLoadException(_msg + "\n Cannot find compatible DICOM series : {}".format(self.path_to_dir))
 
-    def _get_target_list(
-        self, uncompress=True, order_by_instance_number=False, use_multiprocessing=True
-    ):
+    def _get_target_list(self, uncompress=True, order_by_instance_number=False, use_multiprocessing=True):
         if uncompress and self.is_compressed:
             try:
                 path_to_uncompressed = tempfile.mkdtemp()
@@ -419,9 +389,7 @@ class DicomHandler:
             if use_multiprocessing:
                 pool = Pool(processes=self.params.uncompress_processor)
                 try:
-                    pool.map(
-                        partial(uncompressor, path_to_save=path_to_uncompressed), target_dicoms
-                    )
+                    pool.map(partial(uncompressor, path_to_save=path_to_uncompressed), target_dicoms)
                 finally:
                     pool.close()
                     pool.join()
@@ -440,9 +408,7 @@ class DicomHandler:
             except Exception as e:
                 raise DicomLoadException(e)
 
-            self.dicom_slices = [
-                dicom.read_file(x, force=True if self.force > 3 else False) for x in path_to_load
-            ]
+            self.dicom_slices = [dicom.read_file(x, force=True if self.force > 3 else False) for x in path_to_load]
             if self.params.delete_uncompressed:
                 try:
                     shutil.rmtree(path_to_uncompressed)
@@ -453,10 +419,7 @@ class DicomHandler:
 
         else:
             self.dicom_paths = self.dicom_groups[self.target_group_uid]
-            self.dicom_slices = [
-                dicom.read_file(x, force=True if self.force > 3 else False)
-                for x in self.dicom_paths
-            ]
+            self.dicom_slices = [dicom.read_file(x, force=True if self.force > 3 else False) for x in self.dicom_paths]
 
         zipped = list(zip(self.dicom_slices, self.dicom_paths))
         if order_by_instance_number:
@@ -503,8 +466,7 @@ class DicomHandler:
         else:
             try:
                 slice_thickness = np.abs(
-                    self.dicom_slices[1].ImagePositionPatient[2]
-                    - self.dicom_slices[2].ImagePositionPatient[2]
+                    self.dicom_slices[1].ImagePositionPatient[2] - self.dicom_slices[2].ImagePositionPatient[2]
                 )
                 spacing_between_slices = slice_thickness
 
@@ -512,9 +474,7 @@ class DicomHandler:
                 if verbose:
                     warnings.warn("Cannot find ImagePositionPatient")
                 try:
-                    slice_thickness = np.abs(
-                        self.dicom_slices[1].SliceLocation - self.dicom_slices[2].SliceLocation
-                    )
+                    slice_thickness = np.abs(self.dicom_slices[1].SliceLocation - self.dicom_slices[2].SliceLocation)
                     spacing_between_slices = slice_thickness
 
                 except:
@@ -536,14 +496,11 @@ class DicomHandler:
                     - np.array(self.dicom_slices[idx + 1].ImagePositionPatient)
                 )
                 self.NonConstant_SpacingBetweenSlices += bool(
-                    np.abs(diff[2] - spacing_between_slices) > 0.01
-                    or diff[0] > 0.001
-                    or diff[1] > 0.001
+                    np.abs(diff[2] - spacing_between_slices) > 0.01 or diff[0] > 0.001 or diff[1] > 0.001
                 )
                 if diff[0] > 0.001 or diff[1] > 0.001:
-                    _msg = (
-                        "Unsuitable ImagePositionPatient is detected. "
-                        + "(another image included?) : {}".format(idx)
+                    _msg = "Unsuitable ImagePositionPatient is detected. " + "(another image included?) : {}".format(
+                        idx
                     )
                     if verbose:
                         warnings.warn(_msg)
@@ -567,9 +524,7 @@ class DicomHandler:
             if self.NonConstant_SpacingBetweenSlices > self.params.patience_for_inconsistency:
                 _msg = (
                     "The number of unsuitable spacing between slices are"
-                    + " exceeding patience_for_inconsistency({}).".format(
-                        self.params.patience_for_inconsistency
-                    )
+                    + " exceeding patience_for_inconsistency({}).".format(self.params.patience_for_inconsistency)
                     + " The order of slices maybe damaged."
                 )
                 if self.force < 4:
@@ -681,9 +636,7 @@ class DicomLoader(DicomHandler):
             uncompress, order_by_instance_number, use_multiprocessing
         )
         if check_consistency:
-            self.dicom_slices, self.dicom_paths = self._check_consistency(
-                replace_slice_thickness, verbose
-            )
+            self.dicom_slices, self.dicom_paths = self._check_consistency(replace_slice_thickness, verbose)
 
         return self.dicom_slices, self.dicom_paths
 
