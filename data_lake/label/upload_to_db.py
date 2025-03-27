@@ -44,12 +44,12 @@ def add_meta_data(df):
         transform = metadata['transform']
         
         df.loc[idx, 'nodule_block_image_shape'] = str(image_shape)
-        df.loc[idx, 'x_origin'] = origin[0]
+        df.loc[idx, 'x_origin'] = origin[2]
         df.loc[idx, 'y_origin'] = origin[1]
-        df.loc[idx, 'z_origin'] = origin[2]
-        df.loc[idx, 'x_spacing'] = spacing[0]
+        df.loc[idx, 'z_origin'] = origin[0]
+        df.loc[idx, 'x_spacing'] = spacing[2]
         df.loc[idx, 'y_spacing'] = spacing[1]
-        df.loc[idx, 'z_spacing'] = spacing[2]
+        df.loc[idx, 'z_spacing'] = spacing[0]
         df.loc[idx, 'x_transform'] = str(transform[0])
         df.loc[idx, 'y_transform'] = str(transform[1])
         df.loc[idx, 'z_transform'] = str(transform[2])
