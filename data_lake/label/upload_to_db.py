@@ -79,7 +79,7 @@ def split_fold(meta_df):
         
     fold_df = meta_df.copy()
     for fold_num, _idx in enumerate(random_fold.values()):
-        fold_df.loc[meta_df.PatientID.isin(_idx), "fold"] = str(fold_num)
+        fold_df.loc[meta_df.PatientID.isin(_idx), "fold"] = int(fold_num)
         
     return fold_df
 
