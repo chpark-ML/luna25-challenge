@@ -50,9 +50,9 @@ def add_meta_data(df):
         df.loc[idx, 'x_spacing'] = spacing[2]
         df.loc[idx, 'y_spacing'] = spacing[1]
         df.loc[idx, 'z_spacing'] = spacing[0]
-        df.loc[idx, 'x_transform'] = str(transform[0])
+        df.loc[idx, 'x_transform'] = str(transform[2])
         df.loc[idx, 'y_transform'] = str(transform[1])
-        df.loc[idx, 'z_transform'] = str(transform[2])
+        df.loc[idx, 'z_transform'] = str(transform[0])
         
     return df
 
@@ -184,11 +184,14 @@ if __name__ == "__main__":
     parser.add_argument("--chunk_size", type=int, default=100, help="Chunk size for parallel processing")
     args = parser.parse_args()
 
+    # read original csv
     df = pd.read_csv(args.original_csv_path)
     print(len(df))
     
+    # add meta data
     metda_df = add_meta_data(df)
     
+    # split fold
     fold_df = split_fold(metda_df)
 
     if args.clean_documents:
