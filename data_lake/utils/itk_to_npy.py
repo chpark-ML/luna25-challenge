@@ -1,6 +1,8 @@
 import numpy as np
 import SimpleITK as sitk
 
+from data_lake.constants import MetaDataKey
+
 
 def _transform(input_image, point):
     """
@@ -32,12 +34,12 @@ def itk_image_to_numpy_image(input_path, mode=None):
 
     """
 
-    if mode.lower() == 'dicom':
+    if mode.lower() == "":
         reader = sitk.ImageSeriesReader()
         dicom_names = reader.GetGDCMSeriesFileNames(input_path)
         reader.SetFileNames(dicom_names)
         image = reader.Execute()
-    elif mode.lower() == 'mha':
+    elif mode.lower() == ".mha":
         image = sitk.ReadImage(input_path)
     else:
         raise ValueError("Unsupported mode. Use 'mha' or 'dicom'.")
@@ -45,16 +47,12 @@ def itk_image_to_numpy_image(input_path, mode=None):
     numpy_image = sitk.GetArrayFromImage(image)  # shape: (slices, height, width)
 
     # Extract metadata
-    origin = np.array(list(reversed(image.GetOrigin())))          # z, y, x
-    spacing = np.array(list(reversed(image.GetSpacing())))        # z, y, x
-    direction = np.array(image.GetDirection()).reshape(3, 3)      # 3x3 matrix
-    transform_matrix = direction.dot(np.diag(spacing))            # voxel-to-world
+    origin = np.array(list(reversed(image.GetOrigin())))  # z, y, x
+    spacing = np.array(list(reversed(image.GetSpacing())))  # z, y, x
+    direction = np.array(image.GetDirection()).reshape(3, 3)  # 3x3 matrix
+    transform_matrix = direction.dot(np.diag(spacing))  # voxel-to-world
 
     # Compose metadata header
-    header = {
-        "origin": origin,
-        "spacing": spacing,
-        "transform": transform_matrix
-    }
+    header = {MetaDataKey.origin: origin, MetaDataKey.spacing: spacing, MetaDataKey.transform: transform_matrix}
 
     return numpy_image, header
