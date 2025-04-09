@@ -9,12 +9,16 @@ from joblib import Parallel, delayed
 from sklearn.model_selection import StratifiedKFold
 from tqdm import tqdm
 
-from data_lake.constants import DEFAULT_RESAMPLED_SPACING, H5DataKey, LUNA25Dir
+from data_lake.constants import (
+    DB_ADDRESS,
+    DEFAULT_RESAMPLED_SPACING,
+    TARGET_COLLECTION,
+    TARGET_DB,
+    DBKey,
+    H5DataKey,
+    LUNA25Dir,
+)
 from data_lake.utils.resample_image import map_coord_to_resampled, world_to_voxel
-
-VUNO_LUNG_DB = "mongodb://172.31.10.111:27017"
-TARGET_DB = "lct"
-TARGET_COLLECTION = "LUNA25-Malignancy"
 
 
 @dataclass(frozen=True)
@@ -100,7 +104,7 @@ def split_fold(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def insert_to_db(df: pd.DataFrame):
-    client = pymongo.MongoClient(VUNO_LUNG_DB)
+    client = pymongo.MongoClient(DB_ADDRESS)
     collection = client[TARGET_DB][TARGET_COLLECTION]
 
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Inserting to DB"):
@@ -118,22 +122,22 @@ def insert_to_db(df: pd.DataFrame):
             )
 
             document = {
-                "patient_id": row[ColumnKey.PatientID],
-                "series_instance_uid": row[ColumnKey.SeriesInstanceUID],
-                "annotation_id": row[ColumnKey.AnnotationID],
-                "studydate": row[ColumnKey.StudyDate],
-                "h5_path": h5_path,
-                "fold": row[ColumnKeyAppend.Fold],
-                "label": row[ColumnKey.Label],
-                "age_at_study": row[ColumnKey.AgeAtStudy],
-                "gender": row[ColumnKey.Gender],
-                "origin": origin.tolist(),
-                "transform": transform.tolist(),
-                "spacing": spacing.tolist(),
-                "resampled_spacing": DEFAULT_RESAMPLED_SPACING,
-                "w_coord_zyx": w_coord,
-                "d_coord_zyx": d_coord,
-                "r_coord_zyx": r_coord,
+                DBKey.PATIENT_ID: row[ColumnKey.PatientID],
+                DBKey.SERIES_INSTANCE_UID: row[ColumnKey.SeriesInstanceUID],
+                DBKey.ANNOTATION_ID: row[ColumnKey.AnnotationID],
+                DBKey.STUDY_DATE: row[ColumnKey.StudyDate],
+                DBKey.H5_PATH: h5_path,
+                DBKey.FOLD: row[ColumnKeyAppend.Fold],
+                DBKey.LABEL: row[ColumnKey.Label],
+                DBKey.AGE_AT_STUDY: row[ColumnKey.AgeAtStudy],
+                DBKey.GENDER: row[ColumnKey.Gender],
+                DBKey.ORIGIN: origin.tolist(),
+                DBKey.TRANSFORM: transform.tolist(),
+                DBKey.SPACING: spacing.tolist(),
+                DBKey.RESAMPLED_SPACING: DEFAULT_RESAMPLED_SPACING,
+                DBKey.W_COORD_ZYX: w_coord,
+                DBKey.D_COORD_ZYX: d_coord,
+                DBKey.R_COORD_ZYX: r_coord,
             }
 
             query = {
@@ -182,7 +186,7 @@ def main():
 
     # 3. insert to DB
     if args.clean_documents:
-        client = pymongo.MongoClient(VUNO_LUNG_DB)
+        client = pymongo.MongoClient(DB_ADDRESS)
         client[TARGET_DB][TARGET_COLLECTION].delete_many({})
         print("Deleted existing documents.")
     insert_to_db_parallel(df, num_jobs=args.chunk_size)
