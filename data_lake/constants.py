@@ -1,7 +1,55 @@
 DB_ADDRESS = "mongodb://172.31.10.111:27017"
 TARGET_DB = "lct"
 
+DEFAULT_RESAMPLED_SPACING = (1.0, 0.67, 0.67)
+
+
+class DatasetKey:
+    luna25 = "LUNA25"
+    lidc = "LIDC"
+
 
 class DataLakeKey:
     COLLECTION = "collection"
     DOC_ID = "_id"
+
+
+class LUNA25Dir:
+    meta_dir = "/team/team_blu3/lung/data/2_public/LUNA25_Original/LUNA25_Public_Training_Development_Data.csv"
+    image_dir = "/team/team_blu3/lung/data/2_public/LUNA25_Original/luna25_images"
+    output_dir = "/team/team_blu3/lung/data/2_public/LUNA25_resampled"
+
+
+class MetaDataKey:
+    origin = "origin"
+    spacing = "spacing"
+    transform = "transform"
+
+
+class H5DataKey:
+    image = "image"
+    origin = "origin"
+    spacing = "spacing"
+    transform = "transform"
+    resampled_image = "resampled_image"
+    resampled_spacing = "resampled_spacing"
+
+
+class DBKey:
+    PATIENT_ID = "patient_id"
+    SERIES_INSTANCE_UID = "series_instance_uid"
+    ANNOTATION_ID = "annotation_id"
+    STUDY_DATE = "studydate"
+    H5_PATH = "h5_path"
+    FOLD = "fold"
+    LABEL = "label"
+    AGE_AT_STUDY = "age_at_study"
+    GENDER = "gender"
+    ORIGIN = "origin"
+    TRANSFORM = "transform"
+    D_COORD_ZYX = "d_coord_zyx"
+    RESAMPLED_DICOM_SHAPE = "resampled_dicom_shape"
+    ORIGINAL_SPACING = "original_spacing"
+    RESAMPLED_SPACING = "resampled_spacing"
+    W_COORD_ZYX = "w_coord_zyx"
+    R_COORD_ZYX = "r_coord_zyx"

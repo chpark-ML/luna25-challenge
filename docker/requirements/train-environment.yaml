@@ -33,6 +33,7 @@ dependencies: # Use conda packages if possible.
   - rich
   - scikit-image
   - scikit-learn
+  - SimpleITK
   - seaborn
   - sympy # A PyTorch dependency.
   - torchaudio
