@@ -1,8 +1,6 @@
 import argparse
 import os
 from dataclasses import dataclass, fields
-from enum import Enum
-from typing import Any, Dict, List
 
 import h5py
 import pandas as pd
