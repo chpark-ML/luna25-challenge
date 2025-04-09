@@ -1,5 +1,6 @@
 DB_ADDRESS = "mongodb://172.31.10.111:27017"
 TARGET_DB = "lct"
+TARGET_COLLECTION = "LUNA25-Malignancy"
 
 DEFAULT_RESAMPLED_SPACING = (1.0, 0.67, 0.67)
 
@@ -47,9 +48,8 @@ class DBKey:
     GENDER = "gender"
     ORIGIN = "origin"
     TRANSFORM = "transform"
-    D_COORD_ZYX = "d_coord_zyx"
-    RESAMPLED_DICOM_SHAPE = "resampled_dicom_shape"
-    ORIGINAL_SPACING = "original_spacing"
+    SPACING = "spacing"
     RESAMPLED_SPACING = "resampled_spacing"
+    D_COORD_ZYX = "d_coord_zyx"
     W_COORD_ZYX = "w_coord_zyx"
     R_COORD_ZYX = "r_coord_zyx"
