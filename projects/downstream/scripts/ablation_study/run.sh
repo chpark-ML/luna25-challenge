@@ -4,11 +4,11 @@ cd /opt/challenge/projects/downstream/scripts/ablation_study || exit 1
 
 # tmux_window gpu_num param
 paired_values=(
-  "1 1 0.001"
+  "1 1 0.0"
   "2 2 0.01"
-  "3 3 0.1"
-  "4 4 0.2"
-  "5 5 0.5"
+  "3 3 0.03"
+  "4 4 0.07"
+  "5 5 0.1"
 )
 
 my_session=2

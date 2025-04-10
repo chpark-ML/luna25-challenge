@@ -2,16 +2,17 @@
 
 # args
 gpu_num=${1:-0}
-param=${2:-0}
 
-run_name=baseline_focal_smoothing_${param}
+model_name=resnest_bifpn
+mode_model=3D
+
+run_name=baseline_${model_name}
 
 cd /opt/challenge/projects/downstream
 HYDRA_FULL_ERROR=1 python3 main.py \
   experiment_tool.experiment_name=lct-malignancy \
   experiment_tool.run_group=baseline \
   experiment_tool.run_name=${run_name} \
-  criterion.cls_criterion.smoothing=${param} \
-  trainer.gpus=${gpu_num} \
-  +debug=False
-
+  model=${model_name} \
+  inputs.dataset.mode_model=${mode_model} \
+  trainer.gpus=${gpu_num}

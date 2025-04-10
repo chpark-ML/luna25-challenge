@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from trainer.common.constants import GATE_KEY, GATED_LOGIT_KEY, LOGIT_KEY, MULTI_SCALE_LOGIT_KEY
-from trainer.common.models.modules.gate import GateBlock
+from projects.common.constants import GATE_KEY, GATED_LOGIT_KEY, LOGIT_KEY, MULTI_SCALE_LOGIT_KEY
+from projects.common.models.modules.gate import GateBlock
 
 
 class Classifier(nn.Module):

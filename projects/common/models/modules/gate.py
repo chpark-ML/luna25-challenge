@@ -1,7 +1,7 @@
 import torch.nn as nn
-from trainer.common.models.modules.bifpn.activated_batch_norm import ABN
-from trainer.common.models.modules.bifpn.bifpn_3d import BiFPN
-from trainer.common.models.modules.coord_conv import CoordConv3d
+from projects.common.models.modules.bifpn.activated_batch_norm import ABN
+from projects.common.models.modules.bifpn.bifpn_3d import BiFPN
+from projects.common.models.modules.coord_conv import CoordConv3d
 
 
 class GateBlock(nn.Module):

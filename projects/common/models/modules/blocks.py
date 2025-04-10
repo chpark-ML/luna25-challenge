@@ -1,5 +1,6 @@
 import torch.nn as nn
-from projects.common.models.modules.bifpn.activated_batch_norm import ABN
+
+from projects.common.models.modules.activated_batch_norm import ABN
 
 
 def conv3x3x3(in_planes, out_planes, stride=1, groups=1, dilation=1, bias=False):
@@ -55,7 +56,9 @@ class DepthwiseSeparableConv(nn.Sequential):
         use_norm=True,
     ):
         modules = [
-            conv3x3x3(in_channels, in_channels, stride=stride, groups=in_channels, dilation=dilation),
+            conv3x3x3(
+                in_channels, in_channels, stride=stride, groups=in_channels, dilation=dilation
+            ),
             # Do we need normalization here? If yes why? If no why?
             # bias is needed for EffDet because in head conv is separated from normalization
             conv1x1x1(in_channels, out_channels, bias=not use_norm),
