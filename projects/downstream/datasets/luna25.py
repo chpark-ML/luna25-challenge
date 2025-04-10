@@ -385,7 +385,7 @@ class CTCaseDataset(data.Dataset):
         d_coord_zyx = np.array(elem[DBKey.D_COORD_ZYX])
 
         # fetch large patch
-        h5_path = elem[DBKey.H5_PATH]
+        h5_path = elem[DBKey.H5_PATH_LOCAL]
         img = _extract_patch(
             h5_path,
             d_coord_zyx,

@@ -26,7 +26,8 @@ RUN pip3 install --no-cache-dir --no-deps -r /requirements_research.txt
 
 # Enable mouse scrolling for tmux by uncommenting.
 # iTerm2 users should change settings to use scrolling properly.
-RUN echo "set -g mouse on" >> ${HOME}/.tmux.conf && \
+RUN touch ${HOME}/.tmux.conf && \
+    echo "set -g mouse on" >> ${HOME}/.tmux.conf && \
     chown ${UID}:${GID} ${HOME}/.tmux.conf && \
     chmod u+rw ${HOME}/.tmux.conf
 

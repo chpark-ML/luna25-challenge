@@ -44,22 +44,25 @@ class ColumnKeyAppend:
     Spacing: str = "spacing"
     Transform: str = "transform"
     ImageShape: str = "image_shape"
-    H5Path: str = "h5_path"
+    H5PathNFS: str = "h5_path_nfs"
+    H5PathLocal: str = "h5_path"
 
 
 def append_image_metadata(df: pd.DataFrame) -> pd.DataFrame:
     grouped = df.groupby(ColumnKey.SeriesInstanceUID)
 
     for series_uid, group in tqdm(grouped):
-        h5_filepath = os.path.join(LUNA25Dir.output_dir, f"{series_uid}.h5")
-        with h5py.File(h5_filepath, "r") as hf:
+        h5_filepath_nfs = os.path.join(LUNA25Dir.output_nfs_dir, f"{series_uid}.h5")
+        h5_filepath_local = os.path.join(LUNA25Dir.output_local_dir, f"{series_uid}.h5")
+        with h5py.File(h5_filepath_nfs, "r") as hf:
             image_shape = hf[H5DataKey.image].shape
             origin = hf.attrs[H5DataKey.origin]
             spacing = hf.attrs[H5DataKey.spacing]
             transform = hf.attrs[H5DataKey.transform]
 
         for idx in group.index:
-            df.at[idx, ColumnKeyAppend.H5Path] = h5_filepath
+            df.at[idx, ColumnKeyAppend.H5PathNFS] = h5_filepath_nfs
+            df.at[idx, ColumnKeyAppend.H5PathLocal] = h5_filepath_local
             df.at[idx, ColumnKeyAppend.ImageShape] = image_shape
             df.at[idx, ColumnKeyAppend.Origin] = origin
             df.at[idx, ColumnKeyAppend.Spacing] = spacing
@@ -83,23 +86,30 @@ def split_fold(df: pd.DataFrame) -> pd.DataFrame:
         .reset_index()
     )
 
-    def age_bin(age):
-        return "60_over" if age >= 60 else "60_under"
+    def age_bin(age, threshold=60):
+        return f"{threshold}_over" if age >= threshold else f"{threshold}_under"
 
-    def spacing_bin(spacing):
-        return "2.3_over" if spacing >= 2.3 else "2.3_under"
+    def spacing_bin(spacing, threshold=2.3):
+        return f"{threshold}_over" if spacing >= threshold else f"{threshold}_under"
 
     patient_df["strat"] = (
         patient_df["malignancy"].astype(str)
         + "_"
         + patient_df["benign"].astype(str)
         + "_"
-        + patient_df["Age_at_StudyDate"].apply(age_bin)
+        + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=50))
+        + "_"
+        + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=60))
+        + "_"
+        + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=70))
+        + "_"
+        + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=80))
         + "_"
         + patient_df["Gender"].astype(str)
         + "_"
         + patient_df["z_spacing_max"].apply(spacing_bin)
     )
+
 
     skf = StratifiedKFold(n_splits=7, shuffle=True, random_state=42)
     for fold, (_, val_idx) in enumerate(skf.split(patient_df, patient_df["strat"])):
@@ -120,7 +130,8 @@ def insert_to_db(df: pd.DataFrame):
             spacing = row[ColumnKeyAppend.Spacing]
             transform = row[ColumnKeyAppend.Transform]
             image_shape = row[ColumnKeyAppend.ImageShape]
-            h5_path = row[ColumnKeyAppend.H5Path]
+            h5_path_nfs = row[ColumnKeyAppend.H5PathNFS]
+            h5_path_local = row[ColumnKeyAppend.H5PathLocal]
 
             d_coord = world_to_voxel(w_coord, origin, spacing)
             r_coord = map_coord_to_resampled(
@@ -132,7 +143,8 @@ def insert_to_db(df: pd.DataFrame):
                 DBKey.SERIES_INSTANCE_UID: row[ColumnKey.SeriesInstanceUID],
                 DBKey.ANNOTATION_ID: row[ColumnKey.AnnotationID],
                 DBKey.STUDY_DATE: row[ColumnKey.StudyDate],
-                DBKey.H5_PATH: h5_path,
+                DBKey.H5_PATH_NFS: h5_path_nfs,
+                DBKey.H5_PATH_LOCAL: h5_path_local,
                 DBKey.FOLD: row[ColumnKeyAppend.Fold],
                 DBKey.LABEL: row[ColumnKey.Label],
                 DBKey.AGE_AT_STUDY: row[ColumnKey.AgeAtStudy],

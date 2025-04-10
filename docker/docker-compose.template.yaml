@@ -48,6 +48,8 @@ services:
     hostname: ${SERVICE_NAME_RESEARCH}-research
     image: ${IMAGE_NAME_RESEARCH}
     container_name: ${CONTAINER_NAME_RESEARCH}
+    extra_hosts:
+      - ${SERVICE_NAME_RESEARCH}-research:127.0.1.1
     network_mode: host # Use the same network as the host, may cause security issues.
     # `ipc: host` removes the shared memory cap but is a known security vulnerability.
     ipc: host # Equivalent to `--ipc=host` in `docker run`. **Disable this on WSL.**

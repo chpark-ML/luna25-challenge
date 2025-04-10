@@ -71,7 +71,7 @@ def main():
 
     if args.dataset == DatasetKey.luna25:
         image_dir = Path(LUNA25Dir.image_dir)
-        output_dir = Path(LUNA25Dir.output_dir)
+        output_dir = Path(LUNA25Dir.output_nfs_dir)
         input_path_list = glob(str(image_dir / "*.mha"))
 
         assert len(input_path_list) == 4069

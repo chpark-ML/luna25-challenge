@@ -18,7 +18,8 @@ class DataLakeKey:
 class LUNA25Dir:
     meta_dir = "/team/team_blu3/lung/data/2_public/LUNA25_Original/LUNA25_Public_Training_Development_Data.csv"
     image_dir = "/team/team_blu3/lung/data/2_public/LUNA25_Original/luna25_images"
-    output_dir = "/team/team_blu3/lung/data/2_public/LUNA25_h5"
+    output_nfs_dir = "/team/team_blu3/lung/data/2_public/LUNA25_h5"
+    output_local_dir = "/nvme1/1_dataset/LUNA25_h5"
 
 
 class MetaDataKey:
@@ -41,7 +42,8 @@ class DBKey:
     SERIES_INSTANCE_UID = "series_instance_uid"
     ANNOTATION_ID = "annotation_id"
     STUDY_DATE = "studydate"
-    H5_PATH = "h5_path"
+    H5_PATH_LOCAL = "h5_path"
+    H5_PATH_NFS = "h5_path_nfs"
     FOLD = "fold"
     LABEL = "label"
     AGE_AT_STUDY = "age_at_study"
