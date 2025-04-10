@@ -3,7 +3,7 @@ _target_: torch.utils.data.DataLoader
 dataset:
   _target_: projects.downstream.datasets.luna25.CTCaseDataset
   mode: train
-  mode_model: 2D
+  mode_model: 3D
   patch_size: [64, 128, 128]
   translations: True
   rotations: ((-20, 20), (-20, 20), (-20, 20))
