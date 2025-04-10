@@ -30,23 +30,33 @@ _OUTPUT_DIR = f"./fig_volume"
 
 
 def fn_save_fig(df_chunk):
+    use_r_coord = True
     # loop for computing individual nodule, which is corresponding to the row.
     for index, row in tqdm(df_chunk.iterrows(), total=len(df_chunk)):
         series_instance_uid = row.at[DBKey.SERIES_INSTANCE_UID]
         label = row.at[DBKey.LABEL]
-        r_coord = (
-            row[DBKey.R_COORD_ZYX]
-            if isinstance(row[DBKey.R_COORD_ZYX], list)
-            else ast.literal_eval(row[DBKey.R_COORD_ZYX])
-        )
-        r_coord = [round(coord) for coord in r_coord]
+        if use_r_coord:
+            coord = (
+                row[DBKey.R_COORD_ZYX]
+                if isinstance(row[DBKey.R_COORD_ZYX], list)
+                else ast.literal_eval(row[DBKey.R_COORD_ZYX])
+            )
+            coord = [round(_coord) for _coord in coord]
+        else:
+            coord = (
+                row[DBKey.D_COORD_ZYX]
+                if isinstance(row[DBKey.D_COORD_ZYX], list)
+                else ast.literal_eval(row[DBKey.D_COORD_ZYX])
+            )
+            coord = [round(_coord) for _coord in coord]
+
         file_path = row.at[DBKey.H5_PATH]
 
         # make directory to save visualization results
         save_dir = Path(
             os.path.join(
                 _OUTPUT_DIR,
-                f"{label}/{series_instance_uid}_{r_coord[0]}_{r_coord[1]}_{r_coord[2]}.png",
+                f"{label}/{series_instance_uid}_{coord[0]}_{coord[1]}_{coord[2]}.png",
             )
         )
         os.makedirs(save_dir.parents[0], exist_ok=True)
@@ -55,8 +65,8 @@ def fn_save_fig(df_chunk):
         with File(file_path, mode="r") as hf:
             # load input
             img = patch_extract(
-                hf[H5DataKey.resampled_image], center_coord=r_coord, voxel_width=_PATCH_SIZE, pad_value=0
-            )
+                hf[H5DataKey.resampled_image] if use_r_coord else hf[H5DataKey.image], center_coord=coord,
+                voxel_width=_PATCH_SIZE, pad_value=0)
 
             # save visualization result
             figure_title = ""
@@ -76,7 +86,7 @@ def fn_save_fig(df_chunk):
 
 def parallel_process(df, num_jobs=1):
     chunk_size = len(df) // num_jobs
-    chunks = [df.iloc[i : i + chunk_size] for i in range(0, len(df), chunk_size)]
+    chunks = [df.iloc[i: i + chunk_size] for i in range(0, len(df), chunk_size)]
 
     Parallel(n_jobs=num_jobs)(delayed(fn_save_fig)(chunk) for chunk in chunks)
 

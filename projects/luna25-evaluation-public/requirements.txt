@@ -1,5 +1,0 @@
-SimpleITK
-numpy
-psutil
-pandas
-scikit-learn

@@ -83,16 +83,22 @@ def split_fold(df: pd.DataFrame) -> pd.DataFrame:
         .reset_index()
     )
 
+    def age_bin(age):
+        return "60_over" if age >= 60 else "60_under"
+
+    def spacing_bin(spacing):
+        return "2.3_over" if spacing >= 2.3 else "2.3_under"
+
     patient_df["strat"] = (
         patient_df["malignancy"].astype(str)
         + "_"
         + patient_df["benign"].astype(str)
         + "_"
-        + patient_df["Age_at_StudyDate"].astype(str)
+        + patient_df["Age_at_StudyDate"].apply(age_bin)
         + "_"
         + patient_df["Gender"].astype(str)
         + "_"
-        + patient_df["z_spacing_max"].astype(str)
+        + patient_df["z_spacing_max"].apply(spacing_bin)
     )
 
     skf = StratifiedKFold(n_splits=7, shuffle=True, random_state=42)

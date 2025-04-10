@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from projects.common.models.modules.modules import DoubleConv, create_decoders, create_encoders
+from projects.common.models.modules.unet_modules import DoubleConv, create_decoders, create_encoders
 
 
 class UNet3D(nn.Module):

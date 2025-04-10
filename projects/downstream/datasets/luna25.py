@@ -15,6 +15,7 @@ from h5py import File
 from omegaconf import OmegaConf
 
 from data_lake.dataset_handler import DatasetHandler
+from data_lake.constants import DBKey, H5DataKey
 from projects.common.constant import DB_ADDRESS
 from shared_lib.enums import RunMode
 
@@ -53,7 +54,7 @@ def _get_3d_patch(image_shape=None, center=None, patchsize=None):
 
 def _extract_patch(
         h5_path,
-        r_coord,
+        coord,
         xy_size: int = 72,
         z_size: int = 72,
         center_shift_zyx: list = [0, 0, 0],
@@ -62,13 +63,13 @@ def _extract_patch(
     # Load cached data
     hf_file = File(h5_path, "r")
     patchsize = (z_size, xy_size, xy_size)
-    repr_center = [x + y for x, y in zip(r_coord, center_shift_zyx)]
+    repr_center = [x + y for x, y in zip(coord, center_shift_zyx)]
 
-    file_shape = hf_file["volume_image"].shape
+    file_shape = hf_file[H5DataKey.image].shape
     rlower, rupper, dlower, dupper = _get_3d_patch(file_shape, repr_center, patchsize=patchsize)
 
     # Load ROI only
-    file = hf_file["volume_image"][rlower[0]: rupper[0], rlower[1]: rupper[1], rlower[2]: rupper[2]]
+    file = hf_file[H5DataKey.image][rlower[0]: rupper[0], rlower[1]: rupper[1], rlower[2]: rupper[2]]
 
     if file.shape != patchsize:
         pad_width = [pair for pair in zip(dlower, dupper)]
@@ -376,14 +377,15 @@ class CTCaseDataset(data.Dataset):
 
     def __getitem__(self, idx):  # caseid, z, y, x, label, radius
         elem = self.dataset.iloc[idx]
-        label = elem["label"]
-        annotation_id = elem["annotation_id"]
-        origin = elem["origin"]
-        spacing = np.array(elem["original_spacing"])
-        transform = [ast.literal_eval(s.replace(' ', ',')) for s in elem["transform"]]
-        d_coord_zyx = elem["d_coord_zyx"]
+        label = elem[DBKey.LABEL]
+        annotation_id = elem[DBKey.ANNOTATION_ID]
+        origin = np.array(elem[DBKey.ORIGIN])
+        spacing = np.array(elem[DBKey.SPACING])
+        transform = np.array(elem[DBKey.TRANSFORM])
+        d_coord_zyx = np.array(elem[DBKey.D_COORD_ZYX])
 
-        h5_path = elem.h5_path
+        # fetch large patch
+        h5_path = elem[DBKey.H5_PATH]
         img = _extract_patch(
             h5_path,
             d_coord_zyx,
