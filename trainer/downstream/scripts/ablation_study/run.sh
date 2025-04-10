@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /opt/challenge/projects/downstream/scripts/ablation_study || exit 1
+cd /opt/challenge/trainer/downstream/scripts/ablation_study || exit 1
 
 # tmux_window gpu_num param
 paired_values=(
@@ -11,7 +11,7 @@ paired_values=(
   "5 5 0.1"
 )
 
-my_session=2
+my_session=1
 tmux new-session -d -s ${my_session}  # 새로운 tmux 세션 생성
 
 for pair in "${paired_values[@]}"

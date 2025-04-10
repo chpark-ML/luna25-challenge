@@ -8,7 +8,7 @@ mode_model=2D
 
 run_name=baseline_${model_name}
 
-cd /opt/challenge/projects/downstream
+cd /opt/challenge/trainer/downstream
 HYDRA_FULL_ERROR=1 python3 main.py \
   experiment_tool.experiment_name=lct-malignancy \
   experiment_tool.run_group=baseline \

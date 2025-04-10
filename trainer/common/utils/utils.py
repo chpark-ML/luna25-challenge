@@ -27,7 +27,7 @@ def find_project_root(marker: str = "docker") -> Path:
 
 # Define project root and config file path
 PROJECT_ROOT = find_project_root()
-_DEFAULT_CONFIG_FILE = PROJECT_ROOT / "projects" / "common" / "configs" / "config.yaml"
+_DEFAULT_CONFIG_FILE = PROJECT_ROOT / "trainer" / "common" / "configs" / "config.yaml"
 
 logger = logging.getLogger(__name__)
 

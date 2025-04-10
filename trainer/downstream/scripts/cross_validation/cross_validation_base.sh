@@ -4,7 +4,7 @@
 gpu_num=$1
 val_fold=$2
 
-cd /opt/challenge/projects/downstream
+cd /opt/challenge/trainer/downstream
 
 run_name=cv_val_fold${val_fold}
 

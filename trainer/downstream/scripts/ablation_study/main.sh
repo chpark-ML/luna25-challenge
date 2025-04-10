@@ -6,7 +6,7 @@ param=${2:-0}
 
 run_name=baseline_focal_smoothing_${param}
 
-cd /opt/challenge/projects/downstream
+cd /opt/challenge/trainer/downstream
 HYDRA_FULL_ERROR=1 python3 main.py \
   experiment_tool.experiment_name=lct-malignancy \
   experiment_tool.run_group=baseline \

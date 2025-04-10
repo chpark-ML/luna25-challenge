@@ -10,7 +10,7 @@ benchmark=True
 deterministic=False
 use_amp=True
 
-cd /opt/challenge/projects/downstream
+cd /opt/challenge/trainer/downstream
 HYDRA_FULL_ERROR=1 python3 main.py \
   experiment_tool.experiment_name=lct-malignancy \
   experiment_tool.run_group=baseline \
