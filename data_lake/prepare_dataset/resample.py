@@ -5,25 +5,39 @@ from glob import glob
 from pathlib import Path
 
 import h5py
+import numpy as np
 from tqdm import tqdm
 
 from data_lake.constants import DEFAULT_RESAMPLED_SPACING, DatasetKey, H5DataKey, LUNA25Dir, MetaDataKey
 from data_lake.utils.itk_to_npy import itk_image_to_numpy_image
 from data_lake.utils.resample_image import resample_image
 
+_DO_RESAMPLE = False
+
 
 def export_to_h5(output_path, volume, origin, spacing, transform, resampled, resampled_spacing):
     with h5py.File(output_path, "w") as h5f:
-        h5f.create_dataset(H5DataKey.image, data=volume)
+        h5f.create_dataset(name=H5DataKey.image,
+                           data=volume,
+                           dtype=np.int16,
+                           shuffle=True,
+                           compression="gzip",
+                           compression_opts=1)
         h5f.attrs[H5DataKey.origin] = origin
         h5f.attrs[H5DataKey.spacing] = spacing
         h5f.attrs[H5DataKey.transform] = transform
 
-        h5f.create_dataset(H5DataKey.resampled_image, data=resampled)
-        h5f.attrs[H5DataKey.resampled_spacing] = resampled_spacing
+        if _DO_RESAMPLE:
+            h5f.create_dataset(name=H5DataKey.resampled_image,
+                               data=resampled,
+                               dtype=np.float16,
+                               shuffle=True,
+                               compression="gzip",
+                               compression_opts=1)
+            h5f.attrs[H5DataKey.resampled_spacing] = resampled_spacing
 
 
-def process_single_file(args):
+def process_single_file(args, is_sanity=False):
     input_path_str, output_dir_str = args
     input_path = Path(input_path_str)
     output_dir = Path(output_dir_str)
@@ -34,10 +48,14 @@ def process_single_file(args):
         spacing = header[MetaDataKey.spacing]
         transform = header[MetaDataKey.transform]
 
-        resampled = resample_image(numpy_image, spacing, DEFAULT_RESAMPLED_SPACING)
+        resampled = None
+        if _DO_RESAMPLE:
+            resampled = resample_image(numpy_image, spacing, DEFAULT_RESAMPLED_SPACING)
 
         output_path = output_dir / (input_path.stem + ".h5")
-        export_to_h5(output_path, numpy_image, origin, spacing, transform, resampled, DEFAULT_RESAMPLED_SPACING)
+
+        if not is_sanity:
+            export_to_h5(output_path, numpy_image, origin, spacing, transform, resampled, DEFAULT_RESAMPLED_SPACING)
 
         return f"Saved: {output_path}"
     except Exception as e:
@@ -48,6 +66,7 @@ def main():
     parser = argparse.ArgumentParser(description="Prepare dataset by exporting images to h5 files.")
     parser.add_argument("--dataset", default=DatasetKey.luna25, type=str, choices=[DatasetKey.luna25])
     parser.add_argument("--num_shards", type=int, default=16, help="Number of parallel workers.")
+    parser.add_argument("--sanity_check", action="store_true", help="do sanity check before processing.")
     args = parser.parse_args()
 
     if args.dataset == DatasetKey.luna25:
@@ -65,10 +84,13 @@ def main():
         raise NotImplementedError
 
     os.makedirs(output_dir, exist_ok=True)
-    num_shards = args.num_shards if args.num_shards else os.cpu_count()
     task_args = [(path, str(output_dir)) for path in input_path_list]
-    print(f"Processing {len(input_path_list)} files with {args.num_shards} shards...")
+    if args.sanity_check:
+        print(f"starts sanity check")
+        process_single_file(task_args[0], is_sanity=True)
 
+    num_shards = args.num_shards if args.num_shards else os.cpu_count()
+    print(f"Processing {len(input_path_list)} files with {args.num_shards} shards...")
     with mp.Pool(num_shards) as pool:
         for result in tqdm(pool.imap_unordered(process_single_file, task_args), total=len(task_args)):
             print(result)

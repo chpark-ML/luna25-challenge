@@ -18,7 +18,7 @@ class DataLakeKey:
 class LUNA25Dir:
     meta_dir = "/team/team_blu3/lung/data/2_public/LUNA25_Original/LUNA25_Public_Training_Development_Data.csv"
     image_dir = "/team/team_blu3/lung/data/2_public/LUNA25_Original/luna25_images"
-    output_dir = "/team/team_blu3/lung/data/2_public/LUNA25_resampled"
+    output_dir = "/team/team_blu3/lung/data/2_public/LUNA25_h5"
 
 
 class MetaDataKey:
