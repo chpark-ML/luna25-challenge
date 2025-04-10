@@ -198,9 +198,6 @@ class DatasetHandler:
                 id_match_filter = {doc_id_key: ObjectId(doc_id)}
                 update = {"$set": doc}  # follows MongoDB format
 
-                # POSSIBLY ADDED LATER: delete fields with matching substring.
-                # https://github.com/vuno/lct/pull/410#discussion_r1473815165
-
                 # Update fields to database.
                 collection = row[collection_key]
                 update_result = client[db][collection].update_one(id_match_filter, update)

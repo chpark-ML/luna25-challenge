@@ -25,7 +25,7 @@ dependencies: # Use conda packages if possible.
   - libjpeg-turbo # TorchVision dependency.
   - libpng # TorchVision dependency.
   - matplotlib
-  - numpy==1.26.4 # Intel optimized NumPy is not available on PyPI.
+  - numpy # Intel optimized NumPy is not available on PyPI.
   - omegaconf
   - optuna
   - pandas

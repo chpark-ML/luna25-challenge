@@ -10,12 +10,12 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 
-from data_lake.constants import FOLD_KEY, NUM_FOLD, TARGET_DB, DataLakeKey
+from data_lake.constants import DBKey, TARGET_DB, DataLakeKey
 from data_lake.dataset_handler import DatasetHandler
 from data_lake.lidc.constants import ClusterLevelInfo, CollectionName, HFileKey, ImageLevelInfo, NoduleLevelInfo
 from data_lake.lidc.enums import NoduleAttribute
 from data_lake.lidc.src.utils import fn_save_corr_heatmap, fn_save_histograms, save_hist_for_target_field
-from data_lake.utils import get_client
+from data_lake.utils.client import get_client
 from trainer.common.utils.utils_logger import setup_logger
 
 logger = logging.getLogger(__name__)
@@ -107,7 +107,7 @@ def split_features(
     shuffle: bool = True,
 ) -> Tuple[dict, pd.DataFrame]:
     """Split input df, stratifying `strat_features`"""
-    df[FOLD_KEY] = -1
+    df[DBKey.FOLD] = -1
     df["stratify"] = df.apply(partial(merge_features, strat_features=strat_features), axis=1)
 
     X = df
@@ -118,7 +118,7 @@ def split_features(
     # fold dictionaries containing 7 folds, each element being tuple of (train, test) dataframes
     for fold_num, (train_index, test_index) in enumerate(skf.split(X, y)):
         test_folds[fold_num] = (X.iloc[test_index], y.iloc[test_index])
-        df.loc[test_index, FOLD_KEY] = fold_num  # starts from 1
+        df.loc[test_index, DBKey.FOLD] = fold_num  # starts from 1
 
     return test_folds, df
 
@@ -346,14 +346,14 @@ def main():
     client = get_client()
     for idx, row in fold_df.iterrows():
         PID = row[ImageLevelInfo.PATIENT_ID]
-        fold = row[FOLD_KEY]
+        fold = row[DBKey.FOLD]
         collection = client[TARGET_DB][CollectionName.IMAGE]
         docs = [x for x in collection.find({ImageLevelInfo.PATIENT_ID: PID})]
         for doc in docs:
             _filter = {DataLakeKey.DOC_ID: doc[DataLakeKey.DOC_ID]}
             newvalues = {
                 "$set": {
-                    FOLD_KEY: fold,
+                    DBKey.FOLD: fold,
                 }
             }
             collection.update_one(_filter, newvalues)
@@ -380,7 +380,7 @@ def main():
             _filter = {DataLakeKey.DOC_ID: doc[DataLakeKey.DOC_ID]}
             newvalues = {
                 "$set": {
-                    FOLD_KEY: fold,
+                    DBKey.FOLD: fold,
                     ClusterLevelInfo.R_COORD_ZYX: [round(c * r) for c, r in zip(d_coord, real_resize_factor)],
                 }
             }

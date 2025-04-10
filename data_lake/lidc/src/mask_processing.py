@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 from data_lake.constants import TARGET_DB, DataLakeKey
 from data_lake.lidc.constants import ClusterLevelInfo, CollectionName, HFileKey, ImageLevelInfo
-from data_lake.utils import get_client
+from data_lake.utils.client import get_client
 from trainer.common.utils.utils_logger import setup_logger
 
 logger = logging.getLogger(__name__)

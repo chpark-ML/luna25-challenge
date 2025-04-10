@@ -14,9 +14,9 @@ from tqdm import tqdm
 
 from data_lake.constants import TARGET_DB, DataLakeKey
 from data_lake.lidc.constants import CollectionName, HFileKey, ImageLevelInfo
-from data_lake.utils import get_client
-from shared_lib.constants import RESAMPLED_SPACING_ZYX
-from trainer.common.utils.resampler import resample
+from data_lake.utils.client import get_client
+from data_lake.constants import DEFAULT_RESAMPLED_SPACING
+from data_lake.utils.resample_image import resample_image
 from trainer.common.utils.utils_logger import setup_logger
 
 logger = logging.getLogger(__name__)
@@ -51,8 +51,8 @@ def main():
             mask = hf[HFileKey.HFileAttrName.MASK_ANNOTATION][:]
 
             # resampling
-            dicom_pixels_resampled = resample(dicom_pixels, original_spacing_zyx, RESAMPLED_SPACING_ZYX, mode="cupy")
-            mask_annotation_resampled = resample(mask, original_spacing_zyx, RESAMPLED_SPACING_ZYX, mode="cupy")
+            dicom_pixels_resampled = resample_image(dicom_pixels, original_spacing_zyx, DEFAULT_RESAMPLED_SPACING)
+            mask_annotation_resampled = resample_image(mask, original_spacing_zyx, DEFAULT_RESAMPLED_SPACING)
 
             # save results
             if HFileKey.HFileAttrName.DICOM_PIXELS_RESAMPLED in hf.keys():

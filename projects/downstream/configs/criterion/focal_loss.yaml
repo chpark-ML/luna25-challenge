@@ -1,6 +1,0 @@
-_target_: projects.downstream.criterion.ClsLoss
-cls_criterion:
-  _target_: projects.common.criterions.focal_loss.FocalLoss
-  gamma: 2
-  alpha: 0.25
-  smoothing: 0.0

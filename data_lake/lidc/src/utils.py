@@ -5,7 +5,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-from data_lake.constants import FOLD_KEY
+from data_lake.constants import DBKey
 from data_lake.dataset_handler import DatasetHandler
 
 
@@ -27,7 +27,7 @@ def fn_save_histograms(
         for col_idx, field in enumerate(target_fields):
             column_name = f"{prefix}{field}{suffix}"
             if num_fold is not None:
-                _df = df[df[FOLD_KEY] == row_idx].sort_values(by=column_name)
+                _df = df[df[DBKey.FOLD] == row_idx].sort_values(by=column_name)
             else:
                 _df = df.sort_values(by=column_name)
             ax = get_axes(axes, row_idx, col_idx)  # 0행 1열의 axes를 가져옵니다.

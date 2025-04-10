@@ -1,4 +1,4 @@
-cd /opt/ml/data_lake/lidc/src
+cd /opt/challenge/data_lake/lidc/src
 
 python3 upload_to_db.py         # mongoDB updates, hfile (dicom_pixels)
 python3 mask_processing.py      # hfile (mask annotation)

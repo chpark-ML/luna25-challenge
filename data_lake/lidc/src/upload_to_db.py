@@ -31,8 +31,10 @@ from data_lake.lidc.constants import (
     NoduleLevelInfo,
 )
 from data_lake.lidc.enums import NoduleAttribute
-from data_lake.utils import get_client
-from shared_lib.constants import RESAMPLED_SPACING_ZYX
+from data_lake.utils.client import get_client
+from data_lake.utils.itk_to_npy import itk_image_to_numpy_image
+from data_lake.constants import DEFAULT_RESAMPLED_SPACING
+
 from trainer.common.utils.utils_logger import setup_logger
 
 logger = logging.getLogger(__name__)
@@ -99,7 +101,7 @@ def _process(input_index, inputs, df_meta_data, is_sanity=False, do_save_h5=Fals
             if do_save_h5:
                 # dicom path should be defined in advance on ~/.pylidcrc as followed:
                 # [dicom]
-                # path = /lung/data/2_public/LIDC-IDRI-new/volumes/manifest-1600709154662/LIDC-IDRI
+                # path = /team/team_blu3/lung/data/2_public/LIDC-IDRI-new/volumes/manifest-1600709154662/LIDC-IDRI
                 # warn = True
                 vol = scan.to_volume()  # numpy int16, e.g., (512, 512, 98) let the each axis y, x, z, respectively.
                 vol_zyx = _permute_yxz_to_zyx(vol)  # (98, 512, 512) (z, y, x)
@@ -153,7 +155,7 @@ def _process(input_index, inputs, df_meta_data, is_sanity=False, do_save_h5=Fals
                 # axial의 resampled space에서 diameter / 3D resampled space에서 volume 업데이트
                 # diameter, volume의 단위는 각각 mm, mm^3.
                 _orig_spacing_mm = [1.0, 1.0, 1.0]
-                spacing_ratio = np.divide(_orig_spacing_mm, RESAMPLED_SPACING_ZYX)
+                spacing_ratio = np.divide(_orig_spacing_mm, DEFAULT_RESAMPLED_SPACING)
                 features[NoduleLevelInfo.DIAMETER_RESAMPLED] = features[NoduleLevelInfo.DIAMETER] * np.prod(
                     spacing_ratio[1:3]
                 ) ** (1 / 2)

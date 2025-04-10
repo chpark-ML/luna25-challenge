@@ -4,6 +4,8 @@ TARGET_COLLECTION = "LUNA25-Malignancy"
 
 DEFAULT_RESAMPLED_SPACING = (1.0, 0.67, 0.67)
 
+NUM_FOLD = 7
+
 
 class DatasetKey:
     luna25 = "LUNA25"

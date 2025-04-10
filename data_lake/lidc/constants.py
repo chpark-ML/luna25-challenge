@@ -5,7 +5,7 @@ PREFIX_CONSENSUS = "c_"
 
 
 class LidcKeyDict:
-    LIDC_METADATA_PATH = "/lung/data/2_public/LIDC-IDRI-new/LIDC-IDRI_MetaData.csv"
+    LIDC_METADATA_PATH = "/team/team_blu3/lung/data/2_public/LIDC-IDRI-new/LIDC-IDRI_MetaData.csv"
     SUBJECT_ID = "Subject ID"
     SERIES_ID = "Series ID"
     MANUFACTURER = "Manufacturer"
