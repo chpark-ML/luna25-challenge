@@ -110,7 +110,6 @@ def split_fold(df: pd.DataFrame) -> pd.DataFrame:
         + patient_df["z_spacing_max"].apply(spacing_bin)
     )
 
-
     skf = StratifiedKFold(n_splits=7, shuffle=True, random_state=42)
     for fold, (_, val_idx) in enumerate(skf.split(patient_df, patient_df["strat"])):
         val_patients = patient_df.iloc[val_idx][ColumnKey.PatientID]

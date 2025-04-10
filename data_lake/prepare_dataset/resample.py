@@ -17,23 +17,22 @@ _DO_RESAMPLE = False
 
 def export_to_h5(output_path, volume, origin, spacing, transform, resampled, resampled_spacing):
     with h5py.File(output_path, "w") as h5f:
-        h5f.create_dataset(name=H5DataKey.image,
-                           data=volume,
-                           dtype=np.int16,
-                           shuffle=True,
-                           compression="gzip",
-                           compression_opts=1)
+        h5f.create_dataset(
+            name=H5DataKey.image, data=volume, dtype=np.int16, shuffle=True, compression="gzip", compression_opts=1
+        )
         h5f.attrs[H5DataKey.origin] = origin
         h5f.attrs[H5DataKey.spacing] = spacing
         h5f.attrs[H5DataKey.transform] = transform
 
         if _DO_RESAMPLE:
-            h5f.create_dataset(name=H5DataKey.resampled_image,
-                               data=resampled,
-                               dtype=np.float16,
-                               shuffle=True,
-                               compression="gzip",
-                               compression_opts=1)
+            h5f.create_dataset(
+                name=H5DataKey.resampled_image,
+                data=resampled,
+                dtype=np.float16,
+                shuffle=True,
+                compression="gzip",
+                compression_opts=1,
+            )
             h5f.attrs[H5DataKey.resampled_spacing] = resampled_spacing
 
 

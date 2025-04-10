@@ -65,8 +65,11 @@ def fn_save_fig(df_chunk):
         with File(file_path, mode="r") as hf:
             # load input
             img = patch_extract(
-                hf[H5DataKey.resampled_image] if use_r_coord else hf[H5DataKey.image], center_coord=coord,
-                voxel_width=_PATCH_SIZE, pad_value=0)
+                hf[H5DataKey.resampled_image] if use_r_coord else hf[H5DataKey.image],
+                center_coord=coord,
+                voxel_width=_PATCH_SIZE,
+                pad_value=0,
+            )
 
             # save visualization result
             figure_title = ""
@@ -86,7 +89,7 @@ def fn_save_fig(df_chunk):
 
 def parallel_process(df, num_jobs=1):
     chunk_size = len(df) // num_jobs
-    chunks = [df.iloc[i: i + chunk_size] for i in range(0, len(df), chunk_size)]
+    chunks = [df.iloc[i : i + chunk_size] for i in range(0, len(df), chunk_size)]
 
     Parallel(n_jobs=num_jobs)(delayed(fn_save_fig)(chunk) for chunk in chunks)
 

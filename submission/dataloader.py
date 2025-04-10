@@ -1,90 +1,13 @@
-import ast
-import logging
 from pathlib import Path
-from typing import List, Union
 
-import hydra
 import numpy as np
 import numpy.linalg as npl
 import pandas as pd
-import pymongo
 import scipy.ndimage as ndi
 import torch
 import torch.utils.data as data
-from h5py import File
-from omegaconf import OmegaConf
-
-from data_lake.constants import DBKey, H5DataKey
-from data_lake.dataset_handler import DatasetHandler
-from projects.common.constant import DB_ADDRESS
-from shared_lib.enums import RunMode
-
-logger = logging.getLogger(__name__)
-_VUNO_LUNG_DB = DB_ADDRESS
-
-
-class DataKeys:
-    IMAGE = "image"
-    LABEL = "label"
-    ID = "ID"
-
-
-def _get_3d_patch(image_shape=None, center=None, patchsize=None):
-    if isinstance(patchsize, int):
-        patchsize = (patchsize, patchsize, patchsize)
-
-    center = np.array(center)
-    patchsize = np.array(patchsize)
-
-    half = patchsize // 2
-    lower = np.rint(center - half).astype(int)
-    # lower = (center - half).astype(int)
-    upper = lower + patchsize
-
-    # real
-    rlower = np.maximum(lower, 0).astype(int).tolist()
-    rupper = np.minimum(upper, image_shape).astype(int).tolist()
-
-    # diff
-    dlower = np.maximum(-lower, 0)
-    dupper = np.maximum(upper - image_shape, 0)
-
-    return rlower, rupper, dlower, dupper
-
-
-def _extract_patch(
-    h5_path,
-    coord,
-    xy_size: int = 72,
-    z_size: int = 72,
-    center_shift_zyx: list = [0, 0, 0],
-    fill: float = -3024.0,
-) -> np.ndarray:
-    # Load cached data
-    hf_file = File(h5_path, "r")
-    patchsize = (z_size, xy_size, xy_size)
-    repr_center = [x + y for x, y in zip(coord, center_shift_zyx)]
-
-    file_shape = hf_file[H5DataKey.image].shape
-    rlower, rupper, dlower, dupper = _get_3d_patch(file_shape, repr_center, patchsize=patchsize)
-
-    # Load ROI only
-    file = hf_file[H5DataKey.image][rlower[0] : rupper[0], rlower[1] : rupper[1], rlower[2] : rupper[2]]
-
-    if file.shape != patchsize:
-        pad_width = [pair for pair in zip(dlower, dupper)]
-        file = np.pad(file, pad_width=pad_width, mode="constant", constant_values=fill)
-
-    file = file.astype("float32")
-    hf_file.close()
-
-    assert file.shape == (
-        z_size,
-        xy_size,
-        xy_size,
-    ), f"Sanity check failed: {file.shape} == ({z_size}, {xy_size}, {xy_size})"
-
-    return file
+from experiment_config import config
+from torch.utils.data import DataLoader
 
 
 def _calculateAllPermutations(itemList):
@@ -93,6 +16,15 @@ def _calculateAllPermutations(itemList):
     else:
         sub_permutations = _calculateAllPermutations(itemList[1:])
         return [[i] + p for i in itemList[0] for p in sub_permutations]
+
+
+def worker_init_fn(worker_id):
+    """
+    A worker initialization method for seeding the numpy random
+    state using different random seeds for all epochs and workers
+    """
+    seed = int(torch.utils.data.get_worker_info().seed) % (2**32)
+    np.random.seed(seed=seed)
 
 
 def volumeTransform(
@@ -248,6 +180,111 @@ def rotateMatrixZ(cosAngle, sinAngle):
     return np.asarray([[cosAngle, -sinAngle, 0], [sinAngle, cosAngle, 0], [0, 0, 1]])
 
 
+class CTCaseDataset(data.Dataset):
+    """LUNA25 baseline dataset
+    Args:
+    data_dir (str): path to the nodule_blocks data directory
+    dataset (pd.DataFrame): dataframe with the dataset information
+    translations (bool): whether to apply random translations
+    rotations (tuple): tuple with the rotation ranges
+    size_px (int): size of the patch in pixels
+    size_mm (int): size of the patch in mm
+    mode (str): 2D or 3D
+
+    """
+
+    def __init__(
+        self,
+        data_dir: str,
+        dataset: pd.DataFrame,
+        translations: bool = None,
+        rotations: tuple = None,
+        size_px: int = 64,
+        size_mm: int = 50,
+        mode: str = "2D",
+    ):
+
+        self.data_dir = Path(data_dir)
+        self.dataset = dataset
+        self.patch_size = config.PATCH_SIZE
+        self.rotations = rotations
+        self.translations = translations
+        self.size_px = size_px
+        self.size_mm = size_mm
+        self.mode = mode
+
+    def __getitem__(self, idx):  # caseid, z, y, x, label, radius
+
+        pd = self.dataset.iloc[idx]
+
+        label = pd.label
+
+        annotation_id = pd.AnnotationID
+
+        image_path = self.data_dir / "image" / f"{annotation_id}.npy"
+        metadata_path = self.data_dir / "metadata" / f"{annotation_id}.npy"
+
+        # numpy memory map data/image case file
+        img = np.load(image_path, mmap_mode="r")
+        metadata = np.load(metadata_path, allow_pickle=True).item()
+
+        origin = metadata["origin"]
+        spacing = metadata["spacing"]
+        transform = metadata["transform"]
+
+        translations = None
+        if self.translations == True:
+            radius = 2.5
+            translations = radius if radius > 0 else None
+
+        if self.mode == "2D":
+            output_shape = (1, self.size_px, self.size_px)
+        else:
+            output_shape = (self.size_px, self.size_px, self.size_px)
+
+        patch = extract_patch(
+            CTData=img,
+            coord=tuple(np.array(self.patch_size) // 2),
+            srcVoxelOrigin=origin,
+            srcWorldMatrix=transform,
+            srcVoxelSpacing=spacing,
+            output_shape=output_shape,
+            voxel_spacing=(
+                self.size_mm / self.size_px,
+                self.size_mm / self.size_px,
+                self.size_mm / self.size_px,
+            ),
+            rotations=self.rotations,
+            translations=translations,
+            coord_space_world=False,
+            mode=self.mode,
+        )
+
+        # ensure same datatype...
+        patch = patch.astype(np.float32)
+
+        # clip and scale...
+        patch = clip_and_scale(patch)
+
+        target = torch.ones((1,)) * label
+
+        sample = {
+            "image": torch.from_numpy(patch),
+            "label": target.long(),
+            "ID": annotation_id,
+        }
+
+        return sample
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __repr__(self):
+        fmt_str = "Dataset " + self.__class__.__name__ + "\n"
+        fmt_str += "    Number of datapoints: {}\n".format(self.__len__())
+        return fmt_str
+
+
 def sample_random_coordinate_on_sphere(radius):
     # Generate three random numbers x,y,z using Gaussian distribution
     random_nums = np.random.normal(size=(3,))
@@ -334,126 +371,68 @@ def extract_patch(
     return patch
 
 
-class CTCaseDataset(data.Dataset):
-    def __init__(
-        self,
-        mode: Union[str, RunMode],
-        mode_model: str = "2D",
-        patch_size: list = None,
-        translations: bool = None,
-        rotations: tuple = None,
-        size_xy: int = 128,
-        size_z: int = 64,
-        size_px: int = 64,
-        size_mm: int = 50,
-        dataset_infos=None,
-        target_dataset_train=None,
-        target_dataset_val_test=None,
-        augmentation=None,
-    ):
-        self.mode: RunMode = RunMode(mode) if isinstance(mode, str) else mode
+def get_data_loader(
+    data_dir,
+    dataset,
+    mode="2D",
+    sampler=None,
+    workers=0,
+    batch_size=64,
+    size_px=64,
+    size_mm=70,
+    rotations=None,
+    translations=None,
+):
+    data_set = CTCaseDataset(
+        data_dir=data_dir,
+        translations=translations,
+        dataset=dataset,
+        rotations=rotations,
+        size_mm=size_mm,
+        size_px=size_px,
+        mode=mode,
+    )
 
-        # load dataset
-        if self.mode == RunMode.TRAIN:
-            self.target_dataset = OmegaConf.to_container(target_dataset_train, resolve=True)
-        else:
-            self.target_dataset = OmegaConf.to_container(target_dataset_val_test, resolve=True)
-        self.dataset = self.get_meta_df(dataset_infos=dataset_infos)
+    shuffle = False
+    if sampler == None:
+        shuffle = (True,)
 
-        self.patch_size = patch_size
-        self.rotations = ast.literal_eval(rotations) if isinstance(rotations, str) else rotations
-        self.translations = translations
-        self.size_xy = size_xy
-        self.size_z = size_z
-        self.size_px = size_px
-        self.size_mm = size_mm
-        self.model_mode = mode_model
+    data_loader = DataLoader(
+        data_set,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=workers,
+        pin_memory=True,
+        sampler=sampler,
+        worker_init_fn=worker_init_fn,
+    )
 
-    def get_meta_df(self, dataset_infos: dict):
-        target_dataset_infos = {dataset: dataset_infos[dataset] for dataset in self.target_dataset}
-        df = DatasetHandler().fetch_multiple_datasets(dataset_infos=target_dataset_infos, mode=self.mode)
+    return data_loader
 
-        return df
 
-    def __getitem__(self, idx):  # caseid, z, y, x, label, radius
-        elem = self.dataset.iloc[idx]
-        label = elem[DBKey.LABEL]
-        annotation_id = elem[DBKey.ANNOTATION_ID]
-        origin = np.array(elem[DBKey.ORIGIN])
-        spacing = np.array(elem[DBKey.SPACING])
-        transform = np.array(elem[DBKey.TRANSFORM])
-        d_coord_zyx = np.array(elem[DBKey.D_COORD_ZYX])
+def test():
+    # Test the dataloader
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    from experiment_config import config
 
-        # fetch large patch
-        h5_path = elem[DBKey.H5_PATH_LOCAL]
-        img = _extract_patch(
-            h5_path,
-            d_coord_zyx,
-            xy_size=self.size_xy,
-            z_size=self.size_z,
-            center_shift_zyx=[0, 0, 0],
-            fill=-3024.0,
-        )
+    dataset = pd.read_csv(config.CSV_DIR_VALID)
 
-        translations = None
-        if self.translations == True:
-            radius = 2.5
-            translations = radius if radius > 0 else None
+    train_loader = get_data_loader(
+        data_dir=config.DATADIR,
+        dataset=dataset,
+        mode=config.MODE,
+        workers=8,
+        batch_size=config.BATCH_SIZE,
+        size_px=config.SIZE_PX,
+        size_mm=config.SIZE_MM,
+        rotations=config.ROTATION,
+        translations=config.TRANSLATION,
+    )
 
-        if self.model_mode == "2D":
-            output_shape = (1, self.size_px, self.size_px)
-        else:
-            output_shape = (self.size_px, self.size_px, self.size_px)
-
-        patch = extract_patch(
-            CTData=img,
-            coord=tuple(np.array(self.patch_size) // 2),
-            srcVoxelOrigin=origin,
-            srcWorldMatrix=transform,
-            srcVoxelSpacing=spacing,
-            output_shape=output_shape,
-            voxel_spacing=(
-                self.size_mm / self.size_px,
-                self.size_mm / self.size_px,
-                self.size_mm / self.size_px,
-            ),
-            rotations=self.rotations,
-            translations=translations,
-            coord_space_world=False,
-            mode=self.model_mode,
-        )
-
-        # ensure same datatype...
-        patch = patch.astype(np.float32)
-
-        # clip and scale...
-        patch = clip_and_scale(patch)
-
-        target = torch.ones((1,)) * label
-
-        sample = {
-            DataKeys.IMAGE: torch.from_numpy(patch),
-            DataKeys.LABEL: target.long(),
-            DataKeys.ID: annotation_id,
-        }
-
-        return sample
-
-    def __len__(self):
-        return len(self.dataset)
-
-    def __repr__(self):
-        fmt_str = "Dataset " + self.__class__.__name__ + "\n"
-        fmt_str += "    Number of datapoints: {}\n".format(self.__len__())
-        return fmt_str
+    for i, data in enumerate(train_loader):
+        print(i, data["image"].shape, data["label"].shape)
 
 
 if __name__ == "__main__":
-    with hydra.initialize_config_module(config_module="projects.downstream.configs", version_base=None):
-        config = hydra.compose(config_name="config")
-
-    run_modes = [RunMode(m) for m in config.run_modes] if "run_modes" in config else [x for x in RunMode]
-    loaders = {
-        mode: hydra.utils.instantiate(config.inputs, dataset={"mode": mode}, drop_last=False, shuffle=False)
-        for mode in run_modes
-    }
+    test()

@@ -13,8 +13,8 @@ from sklearn import metrics
 
 import projects.common.train as comm_train
 from projects.common.enums import ModelName, ThresholdMode
-from shared_lib.enums import RunMode
 from projects.downstream.datasets.luna25 import DataKeys
+from shared_lib.enums import RunMode
 
 logger = logging.getLogger(__name__)
 
