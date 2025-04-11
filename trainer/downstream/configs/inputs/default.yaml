@@ -4,6 +4,9 @@ dataset:
   _target_: trainer.downstream.datasets.luna25.CTCaseDataset
   mode: train
   mode_model: 3D
+  data_dir: /team/team_blu3/lung/data/2_public/LUNA25_Original/luna25_nodule_blocks
+  fetch_from_patch: True
+  dicom_window: [ "BASE" ]
   patch_size: [64, 128, 128]
   translations: True
   rotations: ((-20, 20), (-20, 20), (-20, 20))
@@ -26,15 +29,12 @@ dataset:
       aug_prob: 0.5
     flip_3d:
       aug_prob: 0.5
-    random_crop_3d:
-      aug_prob: 1.0
-    random_rotate_3d:
-      aug_prob: 0.5
     coarse_dropout_3d:
       aug_prob: 0.5
       max_holes: 24
     rescale_image_3d:
       aug_prob: 0.5
+      is_same_across_axes: True
       scale_factor:
         min: 0.5
         max: 2.0

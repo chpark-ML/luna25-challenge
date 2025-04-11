@@ -1,7 +1,7 @@
 _target_: trainer.downstream.train.Trainer
 
 # hyper params
-max_epoch: 200
+max_epoch: 100
 early_stop_patience: null
 
 grad_clip_max_norm: 1.0
@@ -19,6 +19,17 @@ benchmark: False
 deterministic: True
 fast_dev_run: False
 use_amp: False
+
+# the total attributes interested
+target_attr: [ 'c_subtlety_logistic', 'c_sphericity_logistic', 'c_lobulation_logistic', 'c_spiculation_logistic',
+               'c_margin_logistic', 'c_texture_logistic',
+               'c_calcification_logistic', 'c_internalStructure_logistic', 'c_malignancy_logistic' ]
+
+# attributes to train
+target_attr_to_train: [ 'c_malignancy_logistic' ]
+
+# indication of downstream task
+target_attr_downstream: 'c_malignancy_logistic'
 
 # pretrained model
 fine_tune_info:

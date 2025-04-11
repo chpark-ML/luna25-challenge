@@ -16,14 +16,20 @@ from omegaconf import OmegaConf
 
 from data_lake.constants import DBKey, H5DataKey
 from data_lake.dataset_handler import DatasetHandler
-from trainer.common.constant import DB_ADDRESS
+from trainer.common.constants import DB_ADDRESS
 from shared_lib.enums import RunMode
+from trainer.common.augmentation.hu_value import DicomWindowing, RandomDicomWindowing
+from trainer.common.augmentation.compose import ComposeAugmentation
+from trainer.common.augmentation.flip_rotate import FlipXY, Flip3D
+from trainer.common.augmentation.coarse_drop import CoarseDropout3D
+from trainer.common.augmentation.rescale import RescaleImage
+from trainer.common.constants import HU_WINDOW
 
 logger = logging.getLogger(__name__)
 _VUNO_LUNG_DB = DB_ADDRESS
 
 
-class DataKeys:
+class DataLoaderKeys:
     IMAGE = "image"
     LABEL = "label"
     ID = "ID"
@@ -53,12 +59,12 @@ def _get_3d_patch(image_shape=None, center=None, patchsize=None):
 
 
 def _extract_patch(
-    h5_path,
-    coord,
-    xy_size: int = 72,
-    z_size: int = 72,
-    center_shift_zyx: list = [0, 0, 0],
-    fill: float = -3024.0,
+        h5_path,
+        coord,
+        xy_size: int = 72,
+        z_size: int = 72,
+        center_shift_zyx: list = [0, 0, 0],
+        fill: float = -3024.0,
 ) -> np.ndarray:
     # Load cached data
     hf_file = File(h5_path, "r")
@@ -69,7 +75,7 @@ def _extract_patch(
     rlower, rupper, dlower, dupper = _get_3d_patch(file_shape, repr_center, patchsize=patchsize)
 
     # Load ROI only
-    file = hf_file[H5DataKey.image][rlower[0] : rupper[0], rlower[1] : rupper[1], rlower[2] : rupper[2]]
+    file = hf_file[H5DataKey.image][rlower[0]: rupper[0], rlower[1]: rupper[1], rlower[2]: rupper[2]]
 
     if file.shape != patchsize:
         pad_width = [pair for pair in zip(dlower, dupper)]
@@ -96,13 +102,13 @@ def _calculateAllPermutations(itemList):
 
 
 def volumeTransform(
-    image,
-    voxel_spacing,
-    transform_matrix,
-    center=None,
-    output_shape=None,
-    output_voxel_spacing=None,
-    **argv,
+        image,
+        voxel_spacing,
+        transform_matrix,
+        center=None,
+        output_shape=None,
+        output_voxel_spacing=None,
+        **argv,
 ):
     """
     Parameters
@@ -229,13 +235,6 @@ def volumeTransform(
     )
 
 
-def clip_and_scale(npzarray, maxHU=400.0, minHU=-1000.0):
-    npzarray = (npzarray - minHU) / (maxHU - minHU)
-    npzarray[npzarray > 1] = 1.0
-    npzarray[npzarray < 0] = 0.0
-    return npzarray
-
-
 def rotateMatrixX(cosAngle, sinAngle):
     return np.asarray([[1, 0, 0], [0, cosAngle, -sinAngle], [0, sinAngle, cosAngle]])
 
@@ -260,18 +259,40 @@ def sample_random_coordinate_on_sphere(radius):
     return random_nums / np.sqrt(np.sum(random_nums * random_nums)) * radius
 
 
+def _get_normalized_tensor(
+        mode: RunMode,
+        hu_range,
+        min_width_scale,
+        max_width_scale,
+        min_level_shift,
+        max_level_shift,
+        p,
+):
+    if mode == RunMode.TRAIN:
+        return RandomDicomWindowing(
+            hu_range=hu_range,
+            min_width_scale=min_width_scale,
+            max_width_scale=max_width_scale,
+            min_level_shift=min_level_shift,
+            max_level_shift=max_level_shift,
+            p=p,
+        )
+    else:
+        return DicomWindowing(hu_range=hu_range)
+
+
 def extract_patch(
-    CTData,
-    coord,
-    srcVoxelOrigin,
-    srcWorldMatrix,
-    srcVoxelSpacing,
-    output_shape=(64, 64, 64),
-    voxel_spacing=(50.0 / 64, 50.0 / 64, 50.0 / 64),
-    rotations=None,
-    translations=None,
-    coord_space_world=False,
-    mode="2D",
+        CTData,
+        coord,
+        srcVoxelOrigin,
+        srcWorldMatrix,
+        srcVoxelSpacing,
+        output_shape=(64, 64, 64),
+        voxel_spacing=(50.0 / 64, 50.0 / 64, 50.0 / 64),
+        rotations=None,
+        translations=None,
+        coord_space_world=False,
+        mode="2D",
 ):
     transform_matrix = np.eye(3)
 
@@ -336,22 +357,26 @@ def extract_patch(
 
 class CTCaseDataset(data.Dataset):
     def __init__(
-        self,
-        mode: Union[str, RunMode],
-        mode_model: str = "2D",
-        patch_size: list = None,
-        translations: bool = None,
-        rotations: tuple = None,
-        size_xy: int = 128,
-        size_z: int = 64,
-        size_px: int = 64,
-        size_mm: int = 50,
-        dataset_infos=None,
-        target_dataset_train=None,
-        target_dataset_val_test=None,
-        augmentation=None,
+            self,
+            mode: Union[str, RunMode],
+            mode_model: str = "2D",
+            data_dir: str = None,
+            fetch_from_patch: bool = True,
+            dicom_window: list = None,
+            patch_size: list = None,
+            translations: bool = None,
+            rotations: tuple = None,
+            size_xy: int = 128,
+            size_z: int = 64,
+            size_px: int = 64,
+            size_mm: int = 50,
+            dataset_infos=None,
+            target_dataset_train=None,
+            target_dataset_val_test=None,
+            augmentation=None,
     ):
         self.mode: RunMode = RunMode(mode) if isinstance(mode, str) else mode
+        self.mode_model = mode_model
 
         # load dataset
         if self.mode == RunMode.TRAIN:
@@ -360,6 +385,10 @@ class CTCaseDataset(data.Dataset):
             self.target_dataset = OmegaConf.to_container(target_dataset_val_test, resolve=True)
         self.dataset = self.get_meta_df(dataset_infos=dataset_infos)
 
+        self.data_dir = Path(data_dir) if data_dir else None
+        self.fetch_from_patch = fetch_from_patch
+
+        self.dicom_window = dicom_window
         self.patch_size = patch_size
         self.rotations = ast.literal_eval(rotations) if isinstance(rotations, str) else rotations
         self.translations = translations
@@ -367,7 +396,47 @@ class CTCaseDataset(data.Dataset):
         self.size_z = size_z
         self.size_px = size_px
         self.size_mm = size_mm
-        self.model_mode = mode_model
+
+        # data augmentation
+        if self.mode == RunMode.TRAIN:
+            self.transform = ComposeAugmentation(
+                transform=[
+                    FlipXY(p=augmentation["flip_xy"]["aug_prob"]),
+                    Flip3D(p=augmentation["flip_3d"]["aug_prob"]),
+                    CoarseDropout3D(
+                        p=augmentation["coarse_dropout_3d"]["aug_prob"],
+                        max_holes=augmentation["coarse_dropout_3d"]["max_holes"],
+                        size_limit=(0.08, 0.16),
+                        patch_size=(self.size_px, self.size_px, self.size_px),
+                    ),
+                    RescaleImage(
+                        p=augmentation["rescale_image_3d"]["aug_prob"],
+                        is_same_across_axes=augmentation["rescale_image_3d"]["is_same_across_axes"],
+                        min_scale_factor=augmentation["rescale_image_3d"]["scale_factor"]["min"],
+                        max_scale_factor=augmentation["rescale_image_3d"]["scale_factor"]["max"],
+                    ),
+                ]
+            )
+
+        selected_hu_range = [
+            (
+                HU_WINDOW[i_window][0] - HU_WINDOW[i_window][1] // 2,
+                HU_WINDOW[i_window][0] + HU_WINDOW[i_window][1] // 2,
+            )
+            for i_window in self.dicom_window
+        ]
+        self.dicom_windowing = [
+            _get_normalized_tensor(
+                self.mode,
+                hu_range,
+                p=augmentation["dicom_windowing"]["aug_prob"],
+                min_width_scale=augmentation["dicom_windowing"]["width_scale"]["min"],
+                max_width_scale=augmentation["dicom_windowing"]["width_scale"]["max"],
+                min_level_shift=augmentation["dicom_windowing"]["level_shift"]["min"],
+                max_level_shift=augmentation["dicom_windowing"]["level_shift"]["max"],
+            )
+            for hu_range in selected_hu_range
+        ]
 
     def get_meta_df(self, dataset_infos: dict):
         target_dataset_infos = {dataset: dataset_infos[dataset] for dataset in self.target_dataset}
@@ -385,22 +454,26 @@ class CTCaseDataset(data.Dataset):
         d_coord_zyx = np.array(elem[DBKey.D_COORD_ZYX])
 
         # fetch large patch
-        h5_path = elem[DBKey.H5_PATH_LOCAL]
-        img = _extract_patch(
-            h5_path,
-            d_coord_zyx,
-            xy_size=self.size_xy,
-            z_size=self.size_z,
-            center_shift_zyx=[0, 0, 0],
-            fill=-3024.0,
-        )
+        if self.fetch_from_patch:
+            image_path = self.data_dir / "image" / f"{annotation_id}.npy"
+            img = np.load(image_path, mmap_mode="r")
+        else:
+            h5_path = elem[DBKey.H5_PATH_LOCAL]
+            img = _extract_patch(
+                h5_path,
+                d_coord_zyx,
+                xy_size=self.size_xy,
+                z_size=self.size_z,
+                center_shift_zyx=[0, 0, 0],
+                fill=-3024.0,
+            )
 
         translations = None
         if self.translations == True:
             radius = 2.5
             translations = radius if radius > 0 else None
 
-        if self.model_mode == "2D":
+        if self.mode_model == "2D":
             output_shape = (1, self.size_px, self.size_px)
         else:
             output_shape = (self.size_px, self.size_px, self.size_px)
@@ -420,21 +493,29 @@ class CTCaseDataset(data.Dataset):
             rotations=self.rotations,
             translations=translations,
             coord_space_world=False,
-            mode=self.model_mode,
+            mode=self.mode_model,
         )
 
         # ensure same datatype...
         patch = patch.astype(np.float32)
 
-        # clip and scale...
-        patch = clip_and_scale(patch)
+        # Data augmentation
+        if self.mode == RunMode.TRAIN:
+            if self.mode_model == "3D":
+                patch = np.squeeze(patch, axis=0)
+                patch = self.transform(patch)
+                patch = np.expand_dims(patch, axis=0)
+
+        # Data preprocessing
+        patch = [fn(patch) for fn in self.dicom_windowing]
+        patch = np.concatenate(patch, axis=0)
 
         target = torch.ones((1,)) * label
 
         sample = {
-            DataKeys.IMAGE: torch.from_numpy(patch),
-            DataKeys.LABEL: target.long(),
-            DataKeys.ID: annotation_id,
+            DataLoaderKeys.IMAGE: torch.from_numpy(patch),
+            DataLoaderKeys.LABEL: target.long(),
+            DataLoaderKeys.ID: annotation_id,
         }
 
         return sample

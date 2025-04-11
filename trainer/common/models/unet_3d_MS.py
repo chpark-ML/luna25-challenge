@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 
 from trainer.common.models.modules.unet_modules import DoubleConv, create_encoders
@@ -16,6 +15,7 @@ class Model(nn.Module):
         conv_kernel_size=3,
         pool_kernel_size=2,
         conv_padding=1,
+        classifier=None,
     ):
         super(Model, self).__init__()
 
@@ -36,10 +36,7 @@ class Model(nn.Module):
             num_groups,
             pool_kernel_size,
         )
-        self.classifier = nn.Sequential(
-            nn.Dropout(p=0.01),
-            nn.Linear(f_maps[-1], 1, bias=True),
-        )
+        self.classifier = classifier
 
     def forward(self, x):
         # encoder part
@@ -50,9 +47,6 @@ class Model(nn.Module):
             # Feature map size : (B, 24, 48, 72, 72), (B, 48, 24, 36, 36), (B, 96, 12, 18, 18), (B, 192, 6, 9, 9)
             # RF and padding : (14, 2), (32, 4), (68, 8)
 
-        x = encoders_features[-1]
-        x = nn.AvgPool3d(x.size()[-3:])(x)
-        x = torch.flatten(x, start_dim=1)
-        logits = self.classifier(x)
+        result = self.classifier(encoders_features)
 
-        return logits
+        return result

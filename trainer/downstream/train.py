@@ -13,7 +13,7 @@ from sklearn import metrics
 
 import trainer.common.train as comm_train
 from trainer.common.enums import ModelName, ThresholdMode
-from trainer.downstream.datasets.luna25 import DataKeys
+from trainer.downstream.datasets.luna25 import DataLoaderKeys
 from shared_lib.enums import RunMode
 
 logger = logging.getLogger(__name__)
@@ -54,6 +54,9 @@ class Trainer(comm_train.Trainer):
         thresholding_mode_representative,
         thresholding_mode,
         grad_clip_max_norm,
+        target_attr,
+        target_attr_to_train,
+        target_attr_downstream,
         **kwargs,
     ) -> None:
         self.repr_model_name = ModelName.CLASSIFIER
@@ -61,6 +64,10 @@ class Trainer(comm_train.Trainer):
         self.thresholding_mode_representative = ThresholdMode.get_mode(thresholding_mode_representative)
         self.thresholding_mode = ThresholdMode.get_mode(thresholding_mode)
         self.grad_clip_max_norm = grad_clip_max_norm
+
+        self.target_attr = target_attr
+        self.target_attr_to_train = target_attr_to_train
+        self.target_attr_downstream = target_attr_downstream
 
     @classmethod
     def instantiate_trainer(
@@ -135,9 +142,9 @@ class Trainer(comm_train.Trainer):
         for i, data in enumerate(loader):
             global_step = epoch * len(loader) + i + 1
             self.optimizer[ModelName.CLASSIFIER].zero_grad()
-            patch_image = data[DataKeys.IMAGE].to(self.device)
+            patch_image = data[DataLoaderKeys.IMAGE].to(self.device)
             _check_any_nan(patch_image)
-            annot = data[DataKeys.LABEL].to(self.device).float()
+            annot = data[DataLoaderKeys.LABEL].to(self.device).float()
 
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
@@ -295,11 +302,11 @@ class Trainer(comm_train.Trainer):
 
         for data in tqdm.tqdm(loader):
             # prediction
-            patch_image = data[DataKeys.IMAGE].to(self.device)
+            patch_image = data[DataLoaderKeys.IMAGE].to(self.device)
             _check_any_nan(patch_image)
 
             # annotation
-            annot = data[DataKeys.LABEL].to(self.device).float()
+            annot = data[DataLoaderKeys.LABEL].to(self.device).float()
 
             # inference
             logits = self.model[ModelName.CLASSIFIER](patch_image)

@@ -1,7 +1,5 @@
 import torch.nn as nn
 
-from trainer.common.models.modules.blocks import PointWiseConvBlock, conv1x1x1
-
 
 class Head(nn.Module):
     def __init__(self, in_planes_head, drop_out_prob=0.05):

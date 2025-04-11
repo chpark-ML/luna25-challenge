@@ -6,6 +6,7 @@ class DicomMode(Enum):
     LUNG = 2
     MEDIASTINAL = 3
     PROPOSED = 4
+    BASE = 5
 
 
 class ThresholdMode(Enum):
@@ -23,3 +24,8 @@ class ThresholdMode(Enum):
 
 class ModelName(Enum):
     CLASSIFIER = "C"
+
+
+class BitDepth(Enum):
+    BIT_DEPTH_8 = "uint8"
+    BIT_DEPTH_16 = "uint16"

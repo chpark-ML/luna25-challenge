@@ -4,7 +4,7 @@ defaults:
   - trainer: default
   - inputs: default.yaml
   - criterion: focal_loss
-  - model: resnest_bifpn
+  - model: model_3d
   - optim: adamw
   - scheduler: one_cycle_lr
   - experiment_tool: mlflow
