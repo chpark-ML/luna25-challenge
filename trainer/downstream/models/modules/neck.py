@@ -3,8 +3,8 @@ from typing import List
 import torch
 import torch.nn as nn
 
-from trainer.common.models.modules.activated_batch_norm import ABN
 from trainer.common.models.bifpn.bifpn_3d import BiFPN
+from trainer.common.models.modules.activated_batch_norm import ABN
 
 
 class Neck(nn.Module):

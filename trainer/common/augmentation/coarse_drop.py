@@ -5,12 +5,12 @@ import numpy as np
 
 class CoarseDropout3D:
     def __init__(
-            self,
-            p=0.5,
-            patch_size=(72, 72, 72),
-            max_holes=12,
-            size_limit=(0.05, 0.1),
-            overlap_thr=0.25,
+        self,
+        p=0.5,
+        patch_size=(72, 72, 72),
+        max_holes=12,
+        size_limit=(0.05, 0.1),
+        overlap_thr=0.25,
     ):
         assert 0.0 <= p <= 1.0
         self.p = p
@@ -36,23 +36,23 @@ class CoarseDropout3D:
 
                     inter = np.sum(
                         mask[
-                        topleft[0]: bottomright[0],
-                        topleft[1]: bottomright[1],
-                        topleft[2]: bottomright[2],
+                            topleft[0] : bottomright[0],
+                            topleft[1] : bottomright[1],
+                            topleft[2] : bottomright[2],
                         ]
                     )
-                    if inter / box_size ** 3 > self.overlap_thr:  # drop threshold at once
+                    if inter / box_size**3 > self.overlap_thr:  # drop threshold at once
                         continue
                     else:
                         img[
-                        topleft[0]: bottomright[0],
-                        topleft[1]: bottomright[1],
-                        topleft[2]: bottomright[2],
+                            topleft[0] : bottomright[0],
+                            topleft[1] : bottomright[1],
+                            topleft[2] : bottomright[2],
                         ] = 0.0
                         mask[
-                        topleft[0]: bottomright[0],
-                        topleft[1]: bottomright[1],
-                        topleft[2]: bottomright[2],
+                            topleft[0] : bottomright[0],
+                            topleft[1] : bottomright[1],
+                            topleft[2] : bottomright[2],
                         ] = 0.0
             else:
                 img = np.array(img, copy=True)
@@ -61,9 +61,9 @@ class CoarseDropout3D:
                     topleft = np.array([np.random.randint(0, self.patch_size[j] - box_size) for j in range(3)])
                     bottomright = (topleft + box_size).astype(int)
                     img[
-                    topleft[0]: bottomright[0],
-                    topleft[1]: bottomright[1],
-                    topleft[2]: bottomright[2],
+                        topleft[0] : bottomright[0],
+                        topleft[1] : bottomright[1],
+                        topleft[2] : bottomright[2],
                     ] = 0.0
         if mask is not None:
             return img, mask

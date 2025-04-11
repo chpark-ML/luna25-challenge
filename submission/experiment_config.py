@@ -7,12 +7,10 @@ class Configuration(object):
         self.WORKDIR = Path("C:/temp/luna25-baseline")
         self.RESOURCES = self.WORKDIR / "resources"
         # Starting weights for the I3D model
-        self.MODEL_RGB_I3D = (
-                self.RESOURCES / "model_rgb.pth"
-        )
+        self.MODEL_RGB_I3D = self.RESOURCES / "model_rgb.pth"
 
         # Data parameters
-        # Path to the nodule blocks folder provided for the LUNA25 training data. 
+        # Path to the nodule blocks folder provided for the LUNA25 training data.
         self.DATADIR = Path("V:/projects/luna25/NLST/nodule_blocks")
         # Path to the folder containing the CSVs for training and validation.
         self.CSV_DIR = Path("V:/projects/luna25/dataset_csv")

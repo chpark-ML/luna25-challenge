@@ -7,6 +7,7 @@ https://github.com/bonlime/pytorch-tools/blob/master/pytorch_tools/modules/bifpn
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from trainer.common.models.modules.bifpn.activated_batch_norm import ABN
 from trainer.common.models.modules.bifpn.activations import activation_from_name
 from trainer.common.models.modules.bifpn.blocks import DepthwiseSeparableConv, conv1x1x1

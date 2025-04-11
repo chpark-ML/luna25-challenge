@@ -9,6 +9,7 @@ Paper: `ResNeSt: Split-Attention Networks` - /https://arxiv.org/abs/2004.08955
 Adapted from original PyTorch impl at https://github.com/zhanghang1989/ResNeSt
 Modified for torchscript compat, performance, and consistency with timm by Ross Wightman
 """
+
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -67,9 +68,7 @@ class SplitAttn(nn.Module):
         self.radix = radix
         mid_chs = out_channels * radix
         if rd_channels is None:
-            attn_chs = make_divisible(
-                in_channels * radix * rd_ratio, min_value=32, divisor=rd_divisor
-            )
+            attn_chs = make_divisible(in_channels * radix * rd_ratio, min_value=32, divisor=rd_divisor)
         else:
             attn_chs = rd_channels * radix
 
@@ -192,9 +191,7 @@ class ResNestBasicBlock(nn.Module):
         self.conv1 = nn.Conv3d(inplanes, group_width, kernel_size=1, bias=False)
         self.bn1 = norm_layer(group_width)
         self.act1 = act_layer(inplace=True)
-        self.avd_first = (
-            nn.AvgPool3d(3, avd_stride, padding=1) if avd_stride > 0 and avd_first else None
-        )
+        self.avd_first = nn.AvgPool3d(3, avd_stride, padding=1) if avd_stride > 0 and avd_first else None
 
         if self.radix >= 1:
             self.conv2 = SplitAttn(
@@ -225,9 +222,7 @@ class ResNestBasicBlock(nn.Module):
             self.bn2 = norm_layer(group_width)
             self.drop_block = drop_block() if drop_block is not None else nn.Identity()
 
-        self.avd_last = (
-            nn.AvgPool3d(3, avd_stride, padding=1) if avd_stride > 0 and not avd_first else None
-        )
+        self.avd_last = nn.AvgPool3d(3, avd_stride, padding=1) if avd_stride > 0 and not avd_first else None
         self.act2 = act_layer(inplace=True)
         self.downsample = downsample
 
@@ -302,9 +297,7 @@ class ResNestBottleneck(nn.Module):
         self.conv1 = nn.Conv3d(inplanes, group_width, kernel_size=1, bias=False)
         self.bn1 = norm_layer(group_width)
         self.act1 = act_layer(inplace=True)
-        self.avd_first = (
-            nn.AvgPool3d(3, avd_stride, padding=1) if avd_stride > 0 and avd_first else None
-        )
+        self.avd_first = nn.AvgPool3d(3, avd_stride, padding=1) if avd_stride > 0 and avd_first else None
 
         if self.radix >= 1:
             self.conv2 = SplitAttn(
@@ -336,9 +329,7 @@ class ResNestBottleneck(nn.Module):
             self.bn2 = norm_layer(group_width)
             self.drop_block = drop_block() if drop_block is not None else nn.Identity()
             self.act2 = act_layer(inplace=True)
-        self.avd_last = (
-            nn.AvgPool3d(3, avd_stride, padding=1) if avd_stride > 0 and not avd_first else None
-        )
+        self.avd_last = nn.AvgPool3d(3, avd_stride, padding=1) if avd_stride > 0 and not avd_first else None
 
         self.conv3 = nn.Conv3d(group_width, planes * self.expansion, kernel_size=1, bias=False)
         self.bn3 = norm_layer(planes * self.expansion)
@@ -421,9 +412,7 @@ class ResNest(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.AvgPool3d(kernel_size=3, stride=2, padding=1)
 
-        self.layer1 = self._make_layer(
-            block, block_inplanes[0], layers[0], shortcut_type, block_cfg=block_cfg
-        )
+        self.layer1 = self._make_layer(block, block_inplanes[0], layers[0], shortcut_type, block_cfg=block_cfg)
         self.layer2 = self._make_layer(
             block, block_inplanes[1], layers[1], shortcut_type, stride=2, block_cfg=block_cfg
         )

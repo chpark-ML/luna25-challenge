@@ -16,14 +16,13 @@ from omegaconf import OmegaConf
 
 from data_lake.constants import DBKey, H5DataKey
 from data_lake.dataset_handler import DatasetHandler
-from trainer.common.constants import DB_ADDRESS
 from shared_lib.enums import RunMode
-from trainer.common.augmentation.hu_value import DicomWindowing, RandomDicomWindowing
-from trainer.common.augmentation.compose import ComposeAugmentation
-from trainer.common.augmentation.flip_rotate import FlipXY, Flip3D
 from trainer.common.augmentation.coarse_drop import CoarseDropout3D
+from trainer.common.augmentation.compose import ComposeAugmentation
+from trainer.common.augmentation.flip_rotate import Flip3D, FlipXY
+from trainer.common.augmentation.hu_value import DicomWindowing, RandomDicomWindowing
 from trainer.common.augmentation.rescale import RescaleImage
-from trainer.common.constants import HU_WINDOW
+from trainer.common.constants import DB_ADDRESS, HU_WINDOW
 
 logger = logging.getLogger(__name__)
 _VUNO_LUNG_DB = DB_ADDRESS
@@ -59,12 +58,12 @@ def _get_3d_patch(image_shape=None, center=None, patchsize=None):
 
 
 def _extract_patch(
-        h5_path,
-        coord,
-        xy_size: int = 72,
-        z_size: int = 72,
-        center_shift_zyx: list = [0, 0, 0],
-        fill: float = -3024.0,
+    h5_path,
+    coord,
+    xy_size: int = 72,
+    z_size: int = 72,
+    center_shift_zyx: list = [0, 0, 0],
+    fill: float = -3024.0,
 ) -> np.ndarray:
     # Load cached data
     hf_file = File(h5_path, "r")
@@ -75,7 +74,7 @@ def _extract_patch(
     rlower, rupper, dlower, dupper = _get_3d_patch(file_shape, repr_center, patchsize=patchsize)
 
     # Load ROI only
-    file = hf_file[H5DataKey.image][rlower[0]: rupper[0], rlower[1]: rupper[1], rlower[2]: rupper[2]]
+    file = hf_file[H5DataKey.image][rlower[0] : rupper[0], rlower[1] : rupper[1], rlower[2] : rupper[2]]
 
     if file.shape != patchsize:
         pad_width = [pair for pair in zip(dlower, dupper)]
@@ -102,13 +101,13 @@ def _calculateAllPermutations(itemList):
 
 
 def volumeTransform(
-        image,
-        voxel_spacing,
-        transform_matrix,
-        center=None,
-        output_shape=None,
-        output_voxel_spacing=None,
-        **argv,
+    image,
+    voxel_spacing,
+    transform_matrix,
+    center=None,
+    output_shape=None,
+    output_voxel_spacing=None,
+    **argv,
 ):
     """
     Parameters
@@ -260,13 +259,13 @@ def sample_random_coordinate_on_sphere(radius):
 
 
 def _get_normalized_tensor(
-        mode: RunMode,
-        hu_range,
-        min_width_scale,
-        max_width_scale,
-        min_level_shift,
-        max_level_shift,
-        p,
+    mode: RunMode,
+    hu_range,
+    min_width_scale,
+    max_width_scale,
+    min_level_shift,
+    max_level_shift,
+    p,
 ):
     if mode == RunMode.TRAIN:
         return RandomDicomWindowing(
@@ -282,17 +281,17 @@ def _get_normalized_tensor(
 
 
 def extract_patch(
-        CTData,
-        coord,
-        srcVoxelOrigin,
-        srcWorldMatrix,
-        srcVoxelSpacing,
-        output_shape=(64, 64, 64),
-        voxel_spacing=(50.0 / 64, 50.0 / 64, 50.0 / 64),
-        rotations=None,
-        translations=None,
-        coord_space_world=False,
-        mode="2D",
+    CTData,
+    coord,
+    srcVoxelOrigin,
+    srcWorldMatrix,
+    srcVoxelSpacing,
+    output_shape=(64, 64, 64),
+    voxel_spacing=(50.0 / 64, 50.0 / 64, 50.0 / 64),
+    rotations=None,
+    translations=None,
+    coord_space_world=False,
+    mode="2D",
 ):
     transform_matrix = np.eye(3)
 
@@ -357,23 +356,23 @@ def extract_patch(
 
 class CTCaseDataset(data.Dataset):
     def __init__(
-            self,
-            mode: Union[str, RunMode],
-            mode_model: str = "2D",
-            data_dir: str = None,
-            fetch_from_patch: bool = True,
-            dicom_window: list = None,
-            patch_size: list = None,
-            translations: bool = None,
-            rotations: tuple = None,
-            size_xy: int = 128,
-            size_z: int = 64,
-            size_px: int = 64,
-            size_mm: int = 50,
-            dataset_infos=None,
-            target_dataset_train=None,
-            target_dataset_val_test=None,
-            augmentation=None,
+        self,
+        mode: Union[str, RunMode],
+        mode_model: str = "2D",
+        data_dir: str = None,
+        fetch_from_patch: bool = True,
+        dicom_window: list = None,
+        patch_size: list = None,
+        translations: bool = None,
+        rotations: tuple = None,
+        size_xy: int = 128,
+        size_z: int = 64,
+        size_px: int = 64,
+        size_mm: int = 50,
+        dataset_infos=None,
+        target_dataset_train=None,
+        target_dataset_val_test=None,
+        augmentation=None,
     ):
         self.mode: RunMode = RunMode(mode) if isinstance(mode, str) else mode
         self.mode_model = mode_model

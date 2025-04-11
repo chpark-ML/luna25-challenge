@@ -67,9 +67,7 @@ class BiFPNLayer(nn.Module):
 
         # There is no activation in SeparableConvs, instead activation is in fusion layer
         # fusions for p6, p5, p4, p3. (no fusion for first feature map)
-        self.fuse_up = nn.ModuleList(
-            [Fusion(in_nodes=2, activation=norm_act) for _ in range(num_features - 1)]
-        )
+        self.fuse_up = nn.ModuleList([Fusion(in_nodes=2, activation=norm_act) for _ in range(num_features - 1)])
 
         # fusions for p4, p5, p6, p7. last is different because there is no bottop up tensor for it
         self.fuse_out = nn.ModuleList(
@@ -107,12 +105,8 @@ class BiFPNLayer(nn.Module):
         p_out = [p_up[-1]]  # p3 is final and ready to be returned. from p3 to p7
         for idx in range(1, self.num_features - 1):
             p_out.append(
-                self.p_out_convs[
-                    idx - 1
-                ](  # fuse: input, output from top-bottom path and downscaled high res
-                    self.fuse_out[idx - 1](
-                        features[-(idx + 1)], p_up[-(idx + 1)], self.down(p_out[-1])
-                    )
+                self.p_out_convs[idx - 1](  # fuse: input, output from top-bottom path and downscaled high res
+                    self.fuse_out[idx - 1](features[-(idx + 1)], p_up[-(idx + 1)], self.down(p_out[-1]))
                 )
             )
         # fuse for p7: input, downscaled high res
@@ -193,18 +187,12 @@ class FirstBiFPNLayer(BiFPNLayer):
         p_out = [p_up[-1]]  # p3 is final and ready to be returned. from p3 to p7
         for idx in range(1, self.num_features - 1):
             p_out.append(
-                self.p_out_convs[
-                    idx - 1
-                ](  # fuse: input, output from top-bottom path and downscaled high res
-                    self.fuse_out[idx - 1](
-                        features_in_2[-(idx + 1)], p_up[-(idx + 1)], self.down(p_out[-1])
-                    )
+                self.p_out_convs[idx - 1](  # fuse: input, output from top-bottom path and downscaled high res
+                    self.fuse_out[idx - 1](features_in_2[-(idx + 1)], p_up[-(idx + 1)], self.down(p_out[-1]))
                 )
             )
         # fuse for p7: input, downscaled high res
-        p_out.append(
-            self.p_out_convs[-1](self.fuse_out[-1](features_in_2[0], self.down(p_out[-1])))
-        )
+        p_out.append(self.p_out_convs[-1](self.fuse_out[-1](features_in_2[0], self.down(p_out[-1]))))
 
         return p_out[::-1]  # want to return in the same order as input
 

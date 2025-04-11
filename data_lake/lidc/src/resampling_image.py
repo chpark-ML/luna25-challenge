@@ -12,10 +12,9 @@ import h5py
 import numpy as np
 from tqdm import tqdm
 
-from data_lake.constants import TARGET_DB, DataLakeKey
+from data_lake.constants import DEFAULT_RESAMPLED_SPACING, TARGET_DB, DataLakeKey
 from data_lake.lidc.constants import CollectionName, HFileKey, ImageLevelInfo
 from data_lake.utils.client import get_client
-from data_lake.constants import DEFAULT_RESAMPLED_SPACING
 from data_lake.utils.resample_image import resample_image
 from trainer.common.utils.utils_logger import setup_logger
 

@@ -32,13 +32,13 @@ class DicomWindowing:
 
 class RandomDicomWindowing:
     def __init__(
-            self,
-            hu_range: tuple,
-            min_width_scale: float = 0.9,
-            max_width_scale: float = 1.1,
-            min_level_shift: int = -100,
-            max_level_shift: int = 100,
-            p=0.5,
+        self,
+        hu_range: tuple,
+        min_width_scale: float = 0.9,
+        max_width_scale: float = 1.1,
+        min_level_shift: int = -100,
+        max_level_shift: int = 100,
+        p=0.5,
     ):
         assert len(hu_range) == 2
         assert 0.0 <= p <= 1.0

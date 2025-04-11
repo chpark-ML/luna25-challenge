@@ -15,11 +15,11 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.cuda.amp as amp
 
+from shared_lib.enums import RunMode
 from trainer.common.experiment_tool import load_logging_tool
 from trainer.common.sampler import make_weights_for_balanced_classes
 from trainer.common.scheduler_tool import SchedulerTool
 from trainer.common.utils import utils
-from shared_lib.enums import RunMode
 
 logger = logging.getLogger(__name__)
 

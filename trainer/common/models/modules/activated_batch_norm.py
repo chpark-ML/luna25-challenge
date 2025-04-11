@@ -84,12 +84,8 @@ class ABN(nn.Module):
             with torch.no_grad():  # not sure if needed but just in case
                 # PyTorch BN uses biased var by default
                 var, mean = torch.var_mean(x, dim=(0, 2, 3), unbiased=False)
-                self.running_mean = self.running_mean.mul(1 - self.momentum).add(
-                    mean, alpha=self.momentum
-                )
-                self.running_var = self.running_var.mul(1 - self.momentum).add(
-                    var, alpha=self.momentum
-                )
+                self.running_mean = self.running_mean.mul(1 - self.momentum).add(mean, alpha=self.momentum)
+                self.running_var = self.running_var.mul(1 - self.momentum).add(var, alpha=self.momentum)
         func = ACT_FUNC_DICT[self.activation]
         if self.activation == ACT.LEAKY_RELU:
             return func(x, inplace=True, negative_slope=self.activation_param)

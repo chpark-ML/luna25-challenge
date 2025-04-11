@@ -21,7 +21,7 @@ import pylidc as pl
 from pylidc.utils import consensus
 from tqdm import tqdm
 
-from data_lake.constants import TARGET_DB, DataLakeKey
+from data_lake.constants import DEFAULT_RESAMPLED_SPACING, TARGET_DB, DataLakeKey
 from data_lake.lidc.constants import (
     ClusterLevelInfo,
     CollectionName,
@@ -33,8 +33,6 @@ from data_lake.lidc.constants import (
 from data_lake.lidc.enums import NoduleAttribute
 from data_lake.utils.client import get_client
 from data_lake.utils.itk_to_npy import itk_image_to_numpy_image
-from data_lake.constants import DEFAULT_RESAMPLED_SPACING
-
 from trainer.common.utils.utils_logger import setup_logger
 
 logger = logging.getLogger(__name__)

@@ -12,9 +12,9 @@ import tqdm
 from sklearn import metrics
 
 import trainer.common.train as comm_train
+from shared_lib.enums import RunMode
 from trainer.common.enums import ModelName, ThresholdMode
 from trainer.downstream.datasets.luna25 import DataLoaderKeys
-from shared_lib.enums import RunMode
 
 logger = logging.getLogger(__name__)
 
