@@ -6,14 +6,14 @@ import logging
 import os
 from abc import abstractmethod
 from pathlib import Path
-from typing import Optional, Sequence, Union
+from typing import Union
 
 import hydra
 import mlflow
 import omegaconf
 import pandas as pd
 
-from trainer.common.utils import utils
+from shared_lib.utils.utils import get_host_ip_address
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +131,7 @@ class MlflowLogger(BaseExperimentToolLogger):
         mlflow.set_tracking_uri(exp_config.server_uri)
         mlflow.set_experiment(exp_config.experiment_name)
         mlflow.start_run(run_name=exp_config.get("run_name", None))
-        mlflow.set_tag("host_ip", utils.get_host_ip_address())
+        mlflow.set_tag("host_ip", get_host_ip_address())
 
     def log_model(self, pytorch_model, artifact_path: str):
         try:

@@ -11,8 +11,8 @@ from joblib import Parallel, delayed
 from tqdm import tqdm
 
 from data_lake.constants import DB_ADDRESS, TARGET_COLLECTION, TARGET_DB, DBKey, H5DataKey
-from tools.preprocess import patch_extract
-from tools.visualizer import save_plot
+from shared_lib.tools.preprocess import patch_extract
+from shared_lib.utils.utils_vis import save_plot
 
 logger = logging.getLogger(__name__)
 

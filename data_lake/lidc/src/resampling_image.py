@@ -16,7 +16,7 @@ from data_lake.constants import DEFAULT_RESAMPLED_SPACING, TARGET_DB, DataLakeKe
 from data_lake.lidc.constants import CollectionName, HFileKey, ImageLevelInfo
 from data_lake.utils.client import get_client
 from data_lake.utils.resample_image import resample_image
-from trainer.common.utils.utils_logger import setup_logger
+from shared_lib.utils.utils_logger import setup_logger
 
 logger = logging.getLogger(__name__)
 

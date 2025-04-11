@@ -18,7 +18,7 @@ from data_lake.lidc.constants import (
 from data_lake.lidc.enums import NoduleAttribute
 from data_lake.lidc.src.utils import save_hist_for_target_field
 from data_lake.utils.client import get_client
-from trainer.common.utils.utils_logger import setup_logger
+from shared_lib.utils.utils_logger import setup_logger
 
 logger = logging.getLogger(__name__)
 

@@ -11,8 +11,8 @@ from joblib import Parallel, delayed
 from data_lake.constants import DB_ADDRESS, TARGET_DB
 from data_lake.lidc.constants import ClusterLevelInfo, CollectionName, HFileKey, ImageLevelInfo
 from data_lake.lidc.enums import NoduleAttribute
-from trainer.common.utils.utils_logger import setup_logger
-from trainer.common.utils.utils_vis import save_plot
+from shared_lib.utils.utils_logger import setup_logger
+from shared_lib.utils.utils_vis import save_plot
 
 logger = logging.getLogger(__name__)
 

@@ -16,10 +16,10 @@ import torch.backends.cudnn as cudnn
 import torch.cuda.amp as amp
 
 from shared_lib.enums import RunMode
+from shared_lib.utils.utils import get_torch_device_string, print_config, set_config
 from trainer.common.experiment_tool import load_logging_tool
 from trainer.common.sampler import make_weights_for_balanced_classes
 from trainer.common.scheduler_tool import SchedulerTool
-from trainer.common.utils import utils
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +136,7 @@ class Trainer(ABC):
         self.early_stop_patience = early_stop_patience if early_stop_patience else max_epoch
         self.optuna_trial = optuna_trial
 
-        torch_device = utils.get_torch_device_string(gpus)
+        torch_device = get_torch_device_string(gpus)
         if torch_device.startswith("cuda"):
             cudnn.benchmark = benchmark
             cudnn.deterministic = deterministic
@@ -456,11 +456,11 @@ def train(config: omegaconf.DictConfig, optuna_trial=None) -> object:
         Metric object defined in the deriving trainer module.
     """
     # combine to default configuration
-    config: omegaconf.DictConfig = utils.set_config(config)
+    config: omegaconf.DictConfig = set_config(config)
 
     # Pretty print config using Rich library
     if config.get("print_config"):
-        utils.print_config(config, resolve=True)
+        print_config(config, resolve=True)
 
     # Set seed for random number generators in pytorch, numpy and python.random
     if "seed" in config:

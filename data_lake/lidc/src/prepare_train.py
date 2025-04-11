@@ -16,7 +16,7 @@ from data_lake.lidc.constants import ClusterLevelInfo, CollectionName, HFileKey,
 from data_lake.lidc.enums import NoduleAttribute
 from data_lake.lidc.src.utils import fn_save_corr_heatmap, fn_save_histograms, save_hist_for_target_field
 from data_lake.utils.client import get_client
-from trainer.common.utils.utils_logger import setup_logger
+from shared_lib.utils.utils_logger import setup_logger
 
 logger = logging.getLogger(__name__)
 
