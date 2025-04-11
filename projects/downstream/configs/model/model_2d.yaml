@@ -1,3 +1,0 @@
-model_C:
-  _target_: projects.common.models.model_2d.ResNet18
-  num_classes: 1

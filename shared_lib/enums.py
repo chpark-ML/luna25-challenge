@@ -1,9 +1,3 @@
-"""
-This module contains all the common enums and constants used in
-VUNO projects. If certain values need to be used and
-shared we will collect them in this module.
-"""
-
 from enum import Enum, IntEnum
 
 

@@ -25,7 +25,7 @@ services:
         CUDA_VERSION: ${CUDA_VERSION:-11.8.0}
         CUDNN_VERSION: ${CUDNN_VERSION:-cudnn}
         IMAGE_FLAVOR: ${IMAGE_FLAVOR:-devel}
-        PYTHON_VERSION: 3.10
+        PYTHON_VERSION: 3.9
         PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.4.1}
         TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.19.1}
         # Variables for downloading PyTorch instead of building.
@@ -48,6 +48,8 @@ services:
     hostname: ${SERVICE_NAME_RESEARCH}-research
     image: ${IMAGE_NAME_RESEARCH}
     container_name: ${CONTAINER_NAME_RESEARCH}
+    extra_hosts:
+      - ${SERVICE_NAME_RESEARCH}-research:127.0.1.1
     network_mode: host # Use the same network as the host, may cause security issues.
     # `ipc: host` removes the shared memory cap but is a known security vulnerability.
     ipc: host # Equivalent to `--ipc=host` in `docker run`. **Disable this on WSL.**
@@ -66,7 +68,7 @@ services:
       target: ${TARGET_STAGE:-train}
       args:
         BASE_IMAGE: ${IMAGE_NAME_BASE}
-        WORKDIR_PATH: ${WORKDIR_PATH:-/opt/ml}
+        WORKDIR_PATH: ${WORKDIR_PATH:-/opt/challenge}
         GRP: ${GRP:-noname}
         USR: ${USR:-noname}
         GID: ${GID:-noname}

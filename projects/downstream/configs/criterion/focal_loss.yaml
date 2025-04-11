@@ -1,5 +1,0 @@
-_target_: projects.downstream.criterion.ClsLoss
-criterion:
-  _target_: projects.common.criterions.focal_loss.FocalLoss
-  gamma: 1
-  alpha: null

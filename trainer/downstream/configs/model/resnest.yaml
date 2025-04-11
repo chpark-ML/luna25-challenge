@@ -1,0 +1,10 @@
+model_C:
+  _target_: trainer.downstream.models.resnest.ResNest
+  model_depth: 34
+  in_planes: [48, 64, 96]
+  widen_factor: 1.0
+  block_cfg:
+    cardinality: 1
+    avd: True
+    avd_first: False
+    radix: 2
