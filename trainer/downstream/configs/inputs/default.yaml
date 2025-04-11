@@ -52,9 +52,9 @@ dataset:
       collection_name: LUNA25-Malignancy
       query:
 
-batch_size: 32
+batch_size: 64
 num_workers: 4
 pin_memory: True
-prefetch_factor: 2
+prefetch_factor: 4
 drop_last: False
 
