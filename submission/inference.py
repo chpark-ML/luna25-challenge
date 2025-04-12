@@ -1,13 +1,11 @@
 import json
 from glob import glob
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict
 
-import joblib
 import numpy as np
 import SimpleITK
 from processor import MalignancyProcessor
-from scipy.special import logit
 
 INPUT_PATH = Path("/input")
 OUTPUT_PATH = Path("/output")
@@ -69,7 +67,7 @@ def itk_image_to_numpy_image(input_image):
 
 class NoduleProcessor:
     def __init__(
-        self, ct_image_file, nodule_locations, clinical_information, mode="2D", model_name="LUNA25-baseline-2D"
+        self, ct_image_file, nodule_locations, clinical_information, mode="3D", model_name="LUNA25-baseline-3D"
     ):
         """
         Parameters
@@ -154,7 +152,7 @@ class NoduleProcessor:
         return results
 
 
-def run(mode="2D", model_name="LUNA25-baseline-2D"):
+def run(mode="3D", model_name="LUNA25-baseline-3D"):
     # Read the inputs
     input_nodule_locations = load_json_file(
         location=INPUT_PATH / "nodule-locations.json",
@@ -230,6 +228,12 @@ def _show_torch_cuda_info():
 
 
 if __name__ == "__main__":
-    mode = "2D"
-    model_name = "LUNA25-baseline-2D-20250225"
-    raise SystemExit(run(mode=mode, model_name=model_name))
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", type=str, default="3D", help="Model mode: 2D or 3D")
+    parser.add_argument("--model_name", type=str, default="cv_val_fold4", help="Model name to use")
+
+    args = parser.parse_args()
+
+    raise SystemExit(run(mode=args.mode, model_name=args.model_name))

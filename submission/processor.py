@@ -3,16 +3,12 @@ Inference script for predicting malignancy of lung nodules
 """
 
 import logging
-import math
 import os
 
 import dataloader
 import numpy as np
 import torch
-import torch.nn as nn
-from models.model_2d import ResNet18
 from models.model_3d import I3D
-from torchvision import models
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -39,9 +35,7 @@ class MalignancyProcessor:
         if not self.suppress_logs:
             logging.info("Initializing the deep learning system")
 
-        if self.mode == "2D":
-            self.model_2d = ResNet18(weights=None).cuda()
-        elif self.mode == "3D":
+        if self.mode == "3D":
             self.model_3d = I3D(num_classes=1, pre_trained=False, input_channels=3).cuda()
 
         self.model_root = "/opt/app/resources/"
@@ -81,31 +75,21 @@ class MalignancyProcessor:
         if not self.suppress_logs:
             logging.info("Processing in " + mode)
 
-        if mode == "2D":
-            output_shape = [1, self.size_px, self.size_px]
-            model = self.model_2d
-        else:
+        if mode == "3D":
             output_shape = [self.size_px, self.size_px, self.size_px]
             model = self.model_3d
 
         nodules = []
 
         for _coord in self.coords:
-
             patch = self.extract_patch(_coord, output_shape, mode=mode)
             nodules.append(patch)
 
         nodules = np.array(nodules)
         nodules = torch.from_numpy(nodules).cuda()
 
-        ckpt = torch.load(
-            os.path.join(
-                self.model_root,
-                self.model_name,
-                "best_metric_model.pth",
-            )
-        )
-        model.load_state_dict(ckpt)
+        ckpt = torch.load(os.path.join(self.model_root, self.model_name, "model.pth"))
+        model.load_state_dict(ckpt["model"])
         model.eval()
         logits = model(nodules)
         logits = logits.data.cpu().numpy()
