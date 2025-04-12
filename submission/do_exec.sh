@@ -1,6 +1,6 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-DOCKER_IMAGE_TAG="luna25-baseline-open-development-phase"
+DOCKER_IMAGE_TAG="nodulex"
 INPUT_DIR="${SCRIPT_DIR}/test/input"
 OUTPUT_DIR="${SCRIPT_DIR}/test/output"
 DOCKER_NOOP_VOLUME="${DOCKER_IMAGE_TAG}-volume"

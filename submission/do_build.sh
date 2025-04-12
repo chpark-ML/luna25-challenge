@@ -4,16 +4,12 @@
 set -e
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-DOCKER_IMAGE_TAG="luna25-baseline-open-development-phase"
+DOCKER_IMAGE_TAG="nodulex"
 MODEL_NAME=cv_val_fold4
 
 # Check if an argument is provided
 if [ "$#" -eq 1 ]; then
     DOCKER_IMAGE_TAG="$1"
-fi
-
-if [ "$#" -ge 2 ]; then
-    MODEL_NAME="$2"
 fi
 
 # copy model code

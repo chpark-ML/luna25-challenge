@@ -228,12 +228,4 @@ def _show_torch_cuda_info():
 
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", type=str, default="3D", help="Model mode: 2D or 3D")
-    parser.add_argument("--model_name", type=str, default="cv_val_fold4", help="Model name to use")
-
-    args = parser.parse_args()
-
-    raise SystemExit(run(mode=args.mode, model_name=args.model_name))
+    raise SystemExit(run(mode="3D", model_name="cv_val_fold4"))
