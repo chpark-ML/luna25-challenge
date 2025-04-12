@@ -7,14 +7,19 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # Set default container name
 DOCKER_IMAGE_TAG="luna25-baseline-3d-algorithm-open-development-phase"
+MODEL_NAME=cv_val_fold4
 
 # Check if an argument is provided
 if [ "$#" -eq 1 ]; then
     DOCKER_IMAGE_TAG="$1"
 fi
 
-echo "=+= (Re)build the container"
-source "${SCRIPT_DIR}/do_build.sh" "$DOCKER_IMAGE_TAG"
+if ! docker image inspect "$DOCKER_IMAGE_TAG" > /dev/null 2>&1; then
+    echo "=+= Docker image [$DOCKER_IMAGE_TAG] not found. Building..."
+    source "${SCRIPT_DIR}/do_build.sh" "$DOCKER_IMAGE_TAG" "$MODEL_NAME"
+else
+    echo "=+= Docker image [$DOCKER_IMAGE_TAG] exists. Skip build."
+fi
 
 # Get the build information from the Docker image tag
 build_timestamp=$( docker inspect --format='{{ .Created }}' "$DOCKER_IMAGE_TAG")

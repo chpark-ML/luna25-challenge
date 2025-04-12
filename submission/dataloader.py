@@ -1,13 +1,6 @@
-from pathlib import Path
-
 import numpy as np
 import numpy.linalg as npl
-import pandas as pd
 import scipy.ndimage as ndi
-import torch
-import torch.utils.data as data
-from experiment_config import config
-from torch.utils.data import DataLoader
 
 
 def _calculateAllPermutations(itemList):
@@ -18,23 +11,14 @@ def _calculateAllPermutations(itemList):
         return [[i] + p for i in itemList[0] for p in sub_permutations]
 
 
-def worker_init_fn(worker_id):
-    """
-    A worker initialization method for seeding the numpy random
-    state using different random seeds for all epochs and workers
-    """
-    seed = int(torch.utils.data.get_worker_info().seed) % (2**32)
-    np.random.seed(seed=seed)
-
-
 def volumeTransform(
-    image,
-    voxel_spacing,
-    transform_matrix,
-    center=None,
-    output_shape=None,
-    output_voxel_spacing=None,
-    **argv,
+        image,
+        voxel_spacing,
+        transform_matrix,
+        center=None,
+        output_shape=None,
+        output_voxel_spacing=None,
+        **argv,
 ):
     """
     Parameters
@@ -180,111 +164,6 @@ def rotateMatrixZ(cosAngle, sinAngle):
     return np.asarray([[cosAngle, -sinAngle, 0], [sinAngle, cosAngle, 0], [0, 0, 1]])
 
 
-class CTCaseDataset(data.Dataset):
-    """LUNA25 baseline dataset
-    Args:
-    data_dir (str): path to the nodule_blocks data directory
-    dataset (pd.DataFrame): dataframe with the dataset information
-    translations (bool): whether to apply random translations
-    rotations (tuple): tuple with the rotation ranges
-    size_px (int): size of the patch in pixels
-    size_mm (int): size of the patch in mm
-    mode (str): 2D or 3D
-
-    """
-
-    def __init__(
-        self,
-        data_dir: str,
-        dataset: pd.DataFrame,
-        translations: bool = None,
-        rotations: tuple = None,
-        size_px: int = 64,
-        size_mm: int = 50,
-        mode: str = "2D",
-    ):
-
-        self.data_dir = Path(data_dir)
-        self.dataset = dataset
-        self.patch_size = config.PATCH_SIZE
-        self.rotations = rotations
-        self.translations = translations
-        self.size_px = size_px
-        self.size_mm = size_mm
-        self.mode = mode
-
-    def __getitem__(self, idx):  # caseid, z, y, x, label, radius
-
-        pd = self.dataset.iloc[idx]
-
-        label = pd.label
-
-        annotation_id = pd.AnnotationID
-
-        image_path = self.data_dir / "image" / f"{annotation_id}.npy"
-        metadata_path = self.data_dir / "metadata" / f"{annotation_id}.npy"
-
-        # numpy memory map data/image case file
-        img = np.load(image_path, mmap_mode="r")
-        metadata = np.load(metadata_path, allow_pickle=True).item()
-
-        origin = metadata["origin"]
-        spacing = metadata["spacing"]
-        transform = metadata["transform"]
-
-        translations = None
-        if self.translations == True:
-            radius = 2.5
-            translations = radius if radius > 0 else None
-
-        if self.mode == "2D":
-            output_shape = (1, self.size_px, self.size_px)
-        else:
-            output_shape = (self.size_px, self.size_px, self.size_px)
-
-        patch = extract_patch(
-            CTData=img,
-            coord=tuple(np.array(self.patch_size) // 2),
-            srcVoxelOrigin=origin,
-            srcWorldMatrix=transform,
-            srcVoxelSpacing=spacing,
-            output_shape=output_shape,
-            voxel_spacing=(
-                self.size_mm / self.size_px,
-                self.size_mm / self.size_px,
-                self.size_mm / self.size_px,
-            ),
-            rotations=self.rotations,
-            translations=translations,
-            coord_space_world=False,
-            mode=self.mode,
-        )
-
-        # ensure same datatype...
-        patch = patch.astype(np.float32)
-
-        # clip and scale...
-        patch = clip_and_scale(patch)
-
-        target = torch.ones((1,)) * label
-
-        sample = {
-            "image": torch.from_numpy(patch),
-            "label": target.long(),
-            "ID": annotation_id,
-        }
-
-        return sample
-
-    def __len__(self):
-        return len(self.dataset)
-
-    def __repr__(self):
-        fmt_str = "Dataset " + self.__class__.__name__ + "\n"
-        fmt_str += "    Number of datapoints: {}\n".format(self.__len__())
-        return fmt_str
-
-
 def sample_random_coordinate_on_sphere(radius):
     # Generate three random numbers x,y,z using Gaussian distribution
     random_nums = np.random.normal(size=(3,))
@@ -298,17 +177,17 @@ def sample_random_coordinate_on_sphere(radius):
 
 
 def extract_patch(
-    CTData,
-    coord,
-    srcVoxelOrigin,
-    srcWorldMatrix,
-    srcVoxelSpacing,
-    output_shape=(64, 64, 64),
-    voxel_spacing=(50.0 / 64, 50.0 / 64, 50.0 / 64),
-    rotations=None,
-    translations=None,
-    coord_space_world=False,
-    mode="2D",
+        CTData,
+        coord,
+        srcVoxelOrigin,
+        srcWorldMatrix,
+        srcVoxelSpacing,
+        output_shape=(64, 64, 64),
+        voxel_spacing=(50.0 / 64, 50.0 / 64, 50.0 / 64),
+        rotations=None,
+        translations=None,
+        coord_space_world=False,
+        mode="2D",
 ):
     transform_matrix = np.eye(3)
 
@@ -369,70 +248,3 @@ def extract_patch(
         patch = np.expand_dims(patch, axis=0)
 
     return patch
-
-
-def get_data_loader(
-    data_dir,
-    dataset,
-    mode="2D",
-    sampler=None,
-    workers=0,
-    batch_size=64,
-    size_px=64,
-    size_mm=70,
-    rotations=None,
-    translations=None,
-):
-    data_set = CTCaseDataset(
-        data_dir=data_dir,
-        translations=translations,
-        dataset=dataset,
-        rotations=rotations,
-        size_mm=size_mm,
-        size_px=size_px,
-        mode=mode,
-    )
-
-    shuffle = False
-    if sampler == None:
-        shuffle = (True,)
-
-    data_loader = DataLoader(
-        data_set,
-        batch_size=batch_size,
-        shuffle=shuffle,
-        num_workers=workers,
-        pin_memory=True,
-        sampler=sampler,
-        worker_init_fn=worker_init_fn,
-    )
-
-    return data_loader
-
-
-def test():
-    # Test the dataloader
-    import matplotlib.pyplot as plt
-    import pandas as pd
-    from experiment_config import config
-
-    dataset = pd.read_csv(config.CSV_DIR_VALID)
-
-    train_loader = get_data_loader(
-        data_dir=config.DATADIR,
-        dataset=dataset,
-        mode=config.MODE,
-        workers=8,
-        batch_size=config.BATCH_SIZE,
-        size_px=config.SIZE_PX,
-        size_mm=config.SIZE_MM,
-        rotations=config.ROTATION,
-        translations=config.TRANSLATION,
-    )
-
-    for i, data in enumerate(train_loader):
-        print(i, data["image"].shape, data["label"].shape)
-
-
-if __name__ == "__main__":
-    test()

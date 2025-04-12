@@ -5,18 +5,23 @@ set -e
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 DOCKER_IMAGE_TAG="luna25-baseline-3d-algorithm-open-development-phase"
+MODEL_NAME=cv_val_fold4
+INPUT_DIR="${SCRIPT_DIR}/test/input"
+OUTPUT_DIR="${SCRIPT_DIR}/test/output"
+DOCKER_NOOP_VOLUME="${DOCKER_IMAGE_TAG}-volume"
 
 # Check if an argument is provided
 if [ "$#" -eq 1 ]; then
     DOCKER_IMAGE_TAG="$1"
 fi
 
-DOCKER_NOOP_VOLUME="${DOCKER_IMAGE_TAG}-volume"
-
-INPUT_DIR="${SCRIPT_DIR}/test/input"
-OUTPUT_DIR="${SCRIPT_DIR}/test/output"
-echo "=+= (Re)build the container"
-source "${SCRIPT_DIR}/do_build.sh" "$DOCKER_IMAGE_TAG"
+# 이미지 존재 여부 확인
+if ! docker image inspect "$DOCKER_IMAGE_TAG" > /dev/null 2>&1; then
+    echo "=+= Docker image [$DOCKER_IMAGE_TAG] not found. Building..."
+    source "${SCRIPT_DIR}/do_build.sh" "$DOCKER_IMAGE_TAG" "$MODEL_NAME"
+else
+    echo "=+= Docker image [$DOCKER_IMAGE_TAG] exists. Skip build."
+fi
 
 cleanup() {
     echo "=+= Cleaning permissions ..."
@@ -59,7 +64,7 @@ docker run --rm \
     --volume "$INPUT_DIR":/input:ro \
     --volume "$OUTPUT_DIR":/output \
     --volume "$DOCKER_NOOP_VOLUME":/tmp \
-    $DOCKER_IMAGE_TAG
+    "$DOCKER_IMAGE_TAG"
 docker volume rm "$DOCKER_NOOP_VOLUME" > /dev/null
 
 # Ensure permissions are set correctly on the output

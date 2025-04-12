@@ -10,8 +10,6 @@ ARG GRP
 ARG PASSWD=hello
 ARG WORKDIR_PATH
 ARG HOME=/home/${USR}
-ENV PYTHONPATH=${WORKDIR_PATH}
-ENV PATH=${WORKDIR_PATH}:/opt/conda/bin:$PATH
 
 # user
 RUN groupadd -f -g ${GID} ${GRP} && \
@@ -20,17 +18,66 @@ RUN groupadd -f -g ${GID} ${GRP} && \
     echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 RUN chown ${UID}:${GID} /opt/conda
 
-# Install requirements
-COPY ./requirements/requirements_research.txt /requirements_research.txt
-RUN pip3 install --no-cache-dir --no-deps -r /requirements_research.txt
 
-# Enable mouse scrolling for tmux by uncommenting.
-# iTerm2 users should change settings to use scrolling properly.
-RUN touch ${HOME}/.tmux.conf && \
-    echo "set -g mouse on" >> ${HOME}/.tmux.conf && \
-    chown ${UID}:${GID} ${HOME}/.tmux.conf && \
-    chmod u+rw ${HOME}/.tmux.conf
+# Use Intel OpenMP with optimizations. See the documentation for details.
+# https://intel.github.io/intel-extension-for-pytorch/cpu/latest/tutorials/performance_tuning/tuning_guide.html
+# Intel OpenMP thread blocking time in ms.
+ENV KMP_BLOCKTIME=0
+# Configure CPU thread affinity.
+# ENV KMP_AFFINITY="granularity=fine,compact,1,0"
+ENV LD_PRELOAD=/opt/conda/lib/libiomp5.so${LD_PRELOAD:+:${LD_PRELOAD}}
+
+# Enable Intel MKL optimizations on AMD CPUs. https://danieldk.eu/Posts/2020-08-31-MKL-Zen.html
+ENV MKL_DEBUG_CPU_TYPE=5
+ENV LD_PRELOAD=/opt/conda/libfakeintel.so${LD_PRELOAD:+:${LD_PRELOAD}}
+
+# Use Jemalloc for efficient memory management.
+ENV LD_PRELOAD=/opt/conda/lib/libjemalloc.so${LD_PRELOAD:+:${LD_PRELOAD}}
+ENV MALLOC_CONF="background_thread:true,metadata_thp:auto,dirty_decay_ms:30000,muzzy_decay_ms:30000"
+
+# The `ZDOTDIR` variable specifies where to look for `zsh` configuration files.
+# See the `zsh` manual for details. https://zsh-manual.netlify.app/files
+ENV ZDOTDIR=/root
+ARG ZSHS_PATH=${ZDOTDIR}/.zsh/zsh-syntax-highlighting
+
+ARG PURE_PATH=${ZDOTDIR}/.zsh/pure
+ARG TMUX_HIST_LIMIT=50000
+RUN {   echo "fpath+=${PURE_PATH}"; \
+        echo "autoload -Uz promptinit; promptinit"; \
+        # Change the `tmux` path color to cyan since
+        # the default blue is unreadable on a dark terminal.
+        echo "zmodload zsh/nearcolor"; \
+        echo "zstyle :prompt:pure:path color cyan"; \
+        echo "prompt pure"; \
+    } >> ${ZDOTDIR}/.zshrc && \
+    # Add autosuggestions from terminal history. May be somewhat distracting.
+    # echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Add custom `zsh` aliases and settings.
+    {   echo "alias ll='ls -lh'"; \
+        echo "alias wns='watch nvidia-smi'"; \
+        echo "alias hist='history 1'"; \
+    } >> ${ZDOTDIR}/.zshrc && \
+    # Syntax highlighting must be activated at the end of the `.zshrc` file.
+    echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
+    # Configure `tmux` to use `zsh` as a non-login shell on startup.
+    {   echo "set -g default-command $(which zsh)"; \
+        echo "set -g history-limit ${TMUX_HIST_LIMIT}"; \
+        echo "set -g mouse on"; \
+    } >> /etc/tmux.conf && \
+    # For some reason, `tmux` does not read `/etc/tmux.conf`.
+    echo 'cp /etc/tmux.conf ${HOME}/.tmux.conf' >> ${ZDOTDIR}/.zprofile && \
+    # Change `ZDOTDIR` directory permissions to allow configuration sharing.
+    chmod 755 ${ZDOTDIR} && \
+    # Clear out `/tmp` and restore its default permissions.
+    rm -rf /tmp && mkdir /tmp && chmod 1777 /tmp && \
+    ldconfig  # Update dynamic link cache.
+
+RUN cp /etc/tmux.conf ${HOME}/.tmux.conf && \
+    chown ${UID}:${GID} ${HOME}/.tmux.conf
+
+ENV PYTHONPATH=${WORKDIR_PATH}
+ENV PATH=${WORKDIR_PATH}:/opt/conda/bin:$PATH
 
 WORKDIR ${WORKDIR_PATH}
 
-CMD ["/bin/zsh"]
+CMD ["/usr/bin/zsh"]

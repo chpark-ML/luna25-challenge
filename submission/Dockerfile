@@ -10,7 +10,7 @@ USER user
 WORKDIR /opt/app
 
 # Copy files to the container
-COPY --chown=user:user requirements.txt processor.py dataloader.py experiment_config.py /opt/app/
+COPY --chown=user:user requirements.txt processor.py dataloader.py /opt/app/
 COPY --chown=user:user models /opt/app/models
 COPY --chown=user:user results /opt/app/resources
 # COPY --chown=user:user test /opt/app/test

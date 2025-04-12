@@ -76,5 +76,7 @@ dependencies: # Use conda packages if possible.
   - pip
   - pip:
       - mlflow
+      - pydicom
+      - pylidc
       - pyre-check
       - redis
