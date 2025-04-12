@@ -27,6 +27,8 @@ mkdir -p "${SCRIPT_DIR}/results/${MODEL_NAME}"
 cp -r "$(realpath ${SCRIPT_DIR}/../trainer/downstream/outputs/cls/default/${MODEL_NAME}/model.pth)" "${SCRIPT_DIR}/results/${MODEL_NAME}/model.pth"
 
 # Note: the build-arg is JUST for the workshop
-docker build "$SCRIPT_DIR" \
+docker build --no-cache \
   --platform=linux/amd64 \
-  --tag "$DOCKER_IMAGE_TAG" 2>&1
+  --tag "${DOCKER_IMAGE_TAG}" \
+  -f "${SCRIPT_DIR}/Dockerfile" \
+  "${SCRIPT_DIR}" 2>&1
