@@ -14,12 +14,8 @@ if [ "$#" -eq 1 ]; then
     DOCKER_IMAGE_TAG="$1"
 fi
 
-if ! docker image inspect "$DOCKER_IMAGE_TAG" > /dev/null 2>&1; then
-    echo "=+= Docker image [$DOCKER_IMAGE_TAG] not found. Building..."
-    source "${SCRIPT_DIR}/do_build.sh" "$DOCKER_IMAGE_TAG" "$MODEL_NAME"
-else
-    echo "=+= Docker image [$DOCKER_IMAGE_TAG] exists. Skip build."
-fi
+echo "=+= (Re)build the container"
+source "${SCRIPT_DIR}/do_build.sh" "$DOCKER_IMAGE_TAG"
 
 # Get the build information from the Docker image tag
 build_timestamp=$( docker inspect --format='{{ .Created }}' "$DOCKER_IMAGE_TAG")
