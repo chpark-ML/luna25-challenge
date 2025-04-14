@@ -30,13 +30,14 @@ class MalignancyProcessor:
 
         self.model_name = model_name
         self.mode = mode
+        self.device = torch.device("cuda:0")
         self.suppress_logs = suppress_logs
 
         if not self.suppress_logs:
             logging.info("Initializing the deep learning system")
 
         if self.mode == "3D":
-            self.model_3d = I3D(num_classes=1, pre_trained=False, input_channels=3).cuda()
+            self.model_3d = I3D(num_classes=1, pre_trained=False, input_channels=3).to(self.device)
 
         self.model_root = "/opt/app/resources/"
 
@@ -86,9 +87,9 @@ class MalignancyProcessor:
             nodules.append(patch)
 
         nodules = np.array(nodules)
-        nodules = torch.from_numpy(nodules).cuda()
+        nodules = torch.from_numpy(nodules).to(self.device)
 
-        ckpt = torch.load(os.path.join(self.model_root, self.model_name, "model.pth"))
+        ckpt = torch.load(os.path.join(self.model_root, self.model_name, "model.pth"), map_location=self.device)
         model.load_state_dict(ckpt["model"])
         model.eval()
         logits = model(nodules)
