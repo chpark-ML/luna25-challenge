@@ -3,8 +3,6 @@ pylidc에서 제공하는 consensus bbox 및 mask를 database에 격납합니다
 
 1. database: lct / collection: pylidc-image / pylidc-nodule / pylidc-nodule-cluster
 2. whole CT image는 nvme1에 저장 / array는 list로 저장 / slice object는 dictionary로 저장
-
-# pylidc의 numpy issue 해결: pip install numpy==1.23.0
 """
 
 import argparse
@@ -18,6 +16,7 @@ import h5py
 import numpy as np
 import pandas as pd
 import pylidc as pl
+from pylidc import utils as plut
 from tqdm import tqdm
 
 from data_lake.constants import DEFAULT_RESAMPLED_SPACING, TARGET_DB, DataLakeKey
@@ -201,7 +200,7 @@ def _process(input_index, inputs, df_meta_data, is_sanity=False, do_save_h5=Fals
                 # cmask : (34, 30, 15)
                 # cbbox : (slice(253, 287, None), slice(387, 417, None), slice(55, 70, None))
                 # masks : list of (34, 30, 15)
-                cmask, cbbox, masks = pl.utils.consensus(c_ann, clevel=0.5, pad=[(2, 2), (2, 2), (2, 2)])
+                cmask, cbbox, masks = plut.consensus(c_ann, clevel=0.5, pad=[(2, 2), (2, 2), (2, 2)])
                 cmask_zyx = np.array(_permute_yxz_to_zyx(cmask), dtype=np.int16)
                 cbbox_zyx = (cbbox[2], cbbox[0], cbbox[1])
                 cmask_idx_zyx = np.where(cmask_zyx == 1)

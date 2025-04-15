@@ -127,7 +127,7 @@ def main():
         suffix=LOGISTIC_TASK_POSTFIX,
         fig_size=(50, 40),
         num_fold=NUM_FOLD,
-        save_dir="./outputs/hist_consensus_logistic.jpg",
+        save_dir=Path("./outputs/hist_consensus_logistic.jpg"),
     )
 
     # class
@@ -135,10 +135,10 @@ def main():
         CollectionName.CLUSTER,
         _TARGET_FIELD_MULTI_CLASS,
         prefix=PREFIX_CONSENSUS,
-        suffix=CLASSIFICATION_TASK_POSTFIX,
+        suffix=LOGISTIC_TASK_POSTFIX,
         fig_size=(50, 20),
         num_fold=NUM_FOLD,
-        save_dir="./outputs/hist_consensus_class.jpg",
+        save_dir=Path("./outputs/hist_consensus_class.jpg"),
     )
 
 

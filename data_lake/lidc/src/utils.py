@@ -68,8 +68,7 @@ def save_hist_for_target_field(
     collection, target_fields: list, prefix="", suffix="", fig_size: tuple = (), num_fold=None, save_dir=None
 ):
     dataset_handler = DatasetHandler()
-    projection = {t: 1 for t in target_fields}
-    image_infos = dataset_handler.fetch_documents(collection=collection, query={}, projection=projection)
+    image_infos = dataset_handler.fetch_documents(collection=collection, query={}, projection={})
     df = pd.DataFrame(image_infos)
 
     # visualization of histogram for image-level infos.
