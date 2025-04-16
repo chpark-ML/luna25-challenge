@@ -261,22 +261,70 @@ class Trainer(comm_train.Trainer):
 
     @staticmethod
     def get_binary_classification_metrics(
-        prob: torch.Tensor,
-        annot: torch.Tensor,
-        threshold: dict,
-        threshold_mode: ThresholdMode = ThresholdMode.YOUDEN,
+            prob: torch.Tensor,
+            annot: torch.Tensor,
+            threshold: dict,
+            threshold_mode: ThresholdMode = ThresholdMode.YOUDEN,
     ):
         assert type(prob) == type(annot)
         result_dict = dict()
+
         _annot = (annot.squeeze().cpu().numpy() > 0.5) * 1.0
-        _pred = prob.squeeze().cpu().numpy() > threshold[f"threshold_{threshold_mode.value}"]
         _prob = prob.squeeze().cpu().numpy()
-        result_dict[f"acc"] = metrics.accuracy_score(_annot, _pred)
+        _pred = _prob > threshold[f"threshold_{threshold_mode.value}"]
+
+        result_dict["acc"] = metrics.accuracy_score(_annot, _pred)
         try:
-            result_dict[f"auroc"] = metrics.roc_auc_score(_annot, _prob)
-        except ValueError:  # in the case when only one class exists, AUROC can not be calculated. (in fast_dev_run)
+            result_dict["auroc"] = metrics.roc_auc_score(_annot, _prob)
+        except ValueError:
             pass
-        result_dict[f"f1"] = metrics.f1_score(_annot, _pred)
+        result_dict["f1"] = metrics.f1_score(_annot, _pred)
+
+        cm = metrics.confusion_matrix(_annot, _pred)
+        if cm.shape == (2, 2):
+            tn, fp, fn, tp = cm.ravel()
+        elif cm.shape == (1, 1):  # Only one class present, can't compute TN/FP/FN/TP
+            tn = fp = fn = tp = 0
+            if _annot[0] == 1:
+                tp = cm[0, 0]
+            else:
+                tn = cm[0, 0]
+        elif cm.shape == (1, 2):  # Only positive class in ground truth
+            tn = fp = 0
+            fn, tp = cm[0]
+        elif cm.shape == (2, 1):  # Only negative class in ground truth
+            fn = tp = 0
+            tn, fp = cm[:, 0]
+        else:
+            raise ValueError(f"Unexpected confusion matrix shape: {cm.shape}")
+
+        # Sensitivity (Recall)
+        result_dict["sen"] = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+
+        # Specificity
+        result_dict["spe"] = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+
+        # Precision
+        result_dict["precision"] = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+
+        # Kappa
+        result_dict["kappa"] = metrics.cohen_kappa_score(_annot, _pred)
+
+        # Sensitivity at Specificity = 95%
+        fpr, tpr, thresholds = metrics.roc_curve(_annot, _prob)
+        specificity = 1 - fpr
+        try:
+            sen_at_spe_95 = max(tpr[specificity >= 0.95]) if any(specificity >= 0.95) else 0.0
+        except:
+            sen_at_spe_95 = 0.0
+        result_dict["sen_at_spe95"] = sen_at_spe_95
+
+        # Specificity at Sensitivity = 95%
+        try:
+            spe_at_sen_95 = max(specificity[tpr >= 0.95]) if any(tpr >= 0.95) else 0.0
+        except:
+            spe_at_sen_95 = 0.0
+        result_dict["spe_at_sen95"] = spe_at_sen_95
 
         return result_dict
 
