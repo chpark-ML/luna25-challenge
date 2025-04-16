@@ -13,7 +13,7 @@ model_C:
     drop_prob: 0.05
     pyramid_channels: 128
     num_fpn_layers: 2
-    target_attr: ${trainer.target_attr}
+    target_attr_total: ${trainer.target_attr_total}
     target_attr_to_train: ${trainer.target_attr_to_train}
     use_gate: True
     use_coord: True

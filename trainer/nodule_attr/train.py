@@ -14,9 +14,10 @@ from sklearn import metrics
 
 import trainer.common.train as comm_train
 from data_lake.lidc.constants import LOGISTIC_TASK_POSTFIX, RESAMPLED_FEATURE_POSTFIX
+from shared_lib.enums import RunMode
 from trainer.common.constants import ANNOTATION_KEY, INPUT_PATCH_KEY, LOGIT_KEY, LossKey
-from trainer.common.enums import ConditionMode, ModelName, RunMode, ThresholdMode
-from trainer.common.utils.utils import freeze_layers, get_binary_classification_metrics, get_subgroup_analysis_result
+from trainer.common.enums import ModelName, ThresholdMode
+from trainer.common.utils import freeze_layers
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,31 @@ def _check_any_nan(arr):
         pdb.set_trace()
 
 
+def get_binary_classification_metrics(
+    logit: dict, prob: dict, annot: dict, threshold: dict, threshold_mode: ThresholdMode = ThresholdMode.YOUDEN
+):
+    assert type(prob) == type(annot)
+    result_dict = dict()
+    target_attr_total = list(prob.keys())
+    for i_attr in target_attr_total:
+        if LOGISTIC_TASK_POSTFIX in i_attr:
+            _annot = (annot[i_attr].squeeze().cpu().numpy() > 0.5) * 1.0
+            _pred = prob[i_attr].squeeze().cpu().numpy() > threshold[f"threshold_{threshold_mode.value}_{i_attr}"]
+            _prob = prob[i_attr].squeeze().cpu().numpy()
+            result_dict[f"acc_{i_attr}"] = metrics.accuracy_score(_annot, _pred)
+            try:
+                result_dict[f"auroc_{i_attr}"] = metrics.roc_auc_score(_annot, _prob)
+            except ValueError:  # in the case when only one class exists, AUROC can not be calculated. (in fast_dev_run)
+                pass
+            result_dict[f"f1_{i_attr}"] = metrics.f1_score(_annot, _pred)
+        elif RESAMPLED_FEATURE_POSTFIX in i_attr:
+            result_dict[f"MAE_{i_attr}"] = np.mean(
+                np.abs(logit[i_attr].squeeze().cpu().numpy() - annot[i_attr].squeeze().cpu().numpy())
+            )
+
+    return result_dict
+
+
 class Trainer(comm_train.Trainer):
     """Trainer to train model"""
 
@@ -60,11 +86,8 @@ class Trainer(comm_train.Trainer):
         thresholding_mode_representative,
         thresholding_mode,
         target_attr_total,
-        target_attr,
+        target_attr_to_train,
         target_attr_downstream,
-        subgroup_analyzer,
-        prob_use_fake_image,
-        nodule_gan_model_path,
         grad_clip_max_norm,
         **kwargs,
     ) -> None:
@@ -77,16 +100,9 @@ class Trainer(comm_train.Trainer):
         self.thresholding_mode = ThresholdMode.get_mode(thresholding_mode)
 
         self.target_attr_total = target_attr_total
-        self.target_attr = target_attr
+        self.target_attr_to_train = target_attr_to_train
         self.target_attr_downstream = target_attr_downstream
-        self.subgroup_analyzer = subgroup_analyzer
-        self.prob_use_fake_image = prob_use_fake_image
-        self.nodule_gan_model_path = nodule_gan_model_path
-        if self.nodule_gan_model_path:
-            self.load_pretrained_weight(self.nodule_gan_model_path, model_name=ModelName.GENERATOR)
-            self.model[ModelName.GENERATOR].eval()
 
-        self.target_attr_to_train = self.fine_tune_info["target_attr_to_train"]
         self.grad_clip_max_norm = grad_clip_max_norm
 
         if self.fine_tune_info["enable"]:
@@ -150,9 +166,6 @@ class Trainer(comm_train.Trainer):
             for crit in [criterion.cls_criterion, criterion.aux_criterion]:
                 crit.set_criterion_alpha(train_df=loaders[RunMode.TRAIN].dataset.meta_df)
 
-        # subgroup analyzer
-        subgroup_analyzer = hydra.utils.instantiate(config.trainer.subgroup_analyzer)
-
         # Init trainer
         logger.info(f"Instantiating trainer <{config.trainer._target_}>")
         return hydra.utils.instantiate(
@@ -163,11 +176,8 @@ class Trainer(comm_train.Trainer):
             criterion=criterion,
             logging_tool=logging_tool,
             target_attr_total=config.trainer.target_attr_total,
-            target_attr=config.trainer.target_attr,
+            target_attr_to_train=config.trainer.target_attr_to_train,
             target_attr_downstream=config.trainer.target_attr_downstream,
-            subgroup_analyzer=subgroup_analyzer,
-            prob_use_fake_image=config.trainer.prob_use_fake_image,
-            nodule_gan_model_path=config.trainer.nodule_gan_model_path,
             grad_clip_max_norm=config.trainer.grad_clip_max_norm,
             fine_tune_info=config.trainer.fine_tune_info,
             thresholding_mode=config.trainer.thresholding_mode,
@@ -177,9 +187,6 @@ class Trainer(comm_train.Trainer):
 
     def train_epoch(self, epoch, loader) -> Metrics:
         super().train_epoch(epoch, loader)
-        if ModelName.GENERATOR in self.model:
-            self.model[ModelName.GENERATOR].eval()
-
         train_losses = []
         start = time.time()
 
@@ -196,38 +203,6 @@ class Trainer(comm_train.Trainer):
                 _annot = value.to(self.device).float()
                 _check_any_nan(_annot)
                 annots[key] = torch.unsqueeze(_annot, dim=1)
-
-            if ModelName.GENERATOR in self.model and self.subgroup_analyzer.baseline_performance is not None:
-                if random.random() <= self.prob_use_fake_image:
-                    real_datas = dicom
-                    p_attr_down = annots[self.target_attr_downstream]  # (B, 1)
-                    if isinstance(p_attr_down, torch.Tensor):
-                        p_attr_down = p_attr_down.squeeze(1).tolist()  # (B,)
-
-                    attr_list = []
-                    for i_batch in range(real_datas.shape[0]):
-                        smoothing = 0.1
-                        subgroup_label, label_score = self.subgroup_analyzer.sampling()
-                        attr_list.append(
-                            {
-                                subgroup_label: label_score * (1 - 2 * smoothing) + smoothing,
-                                self.target_attr_downstream: p_attr_down[i_batch],
-                            }
-                        )
-                    code_vec_real = self.model[ModelName.GENERATOR].code_vec_handler.get_code_vector(
-                        real_datas,
-                        self.model,
-                        device=self.device,
-                        attr=attr_list,
-                        mode="eval",
-                    )
-                    cond_code_input = self.model[ModelName.GENERATOR].code_vec_handler.get_condition_input(
-                        code_vec_real
-                    )
-
-                    # generator
-                    pred_effect_map = self.model[ModelName.GENERATOR](real_datas, cond_code_input)
-                    dicom = torch.clamp(pred_effect_map + real_datas.detach(), min=0.0, max=1.0)
 
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
@@ -310,20 +285,20 @@ class Trainer(comm_train.Trainer):
         return Metrics()
 
     def get_samples_to_validate(self, dict_logits, dict_probs, dict_annots):
-        target_attr = self.target_attr_downstream
-        if not isinstance(target_attr, str):
+        target_attr_downstream = self.target_attr_downstream
+        if not isinstance(target_attr_downstream, str):
             raise NotImplementedError
 
-        if LOGISTIC_TASK_POSTFIX in target_attr:
+        if LOGISTIC_TASK_POSTFIX in target_attr_downstream:
             # samples where annotation label is not ambiguous, 0.5.
-            index_to_be_validated = (dict_annots[target_attr][:, 0] < self.lower_bound_ambiguous_label) | (
-                dict_annots[target_attr][:, 0] > self.upper_bound_ambiguous_label
+            index_to_be_validated = (dict_annots[target_attr_downstream][:, 0] < self.lower_bound_ambiguous_label) | (
+                dict_annots[target_attr_downstream][:, 0] > self.upper_bound_ambiguous_label
             )
-            assert index_to_be_validated.sum() != 0, f"{target_attr} has no sample for validation"
-            dict_logits[target_attr] = dict_logits[target_attr][index_to_be_validated]
-            dict_probs[target_attr] = dict_probs[target_attr][index_to_be_validated]
-            dict_annots[target_attr] = dict_annots[target_attr][index_to_be_validated]
-        elif RESAMPLED_FEATURE_POSTFIX in target_attr:
+            assert index_to_be_validated.sum() != 0, f"{target_attr_downstream} has no sample for validation"
+            dict_logits[target_attr_downstream] = dict_logits[target_attr_downstream][index_to_be_validated]
+            dict_probs[target_attr_downstream] = dict_probs[target_attr_downstream][index_to_be_validated]
+            dict_annots[target_attr_downstream] = dict_annots[target_attr_downstream][index_to_be_validated]
+        elif RESAMPLED_FEATURE_POSTFIX in target_attr_downstream:
             pass
         return dict_logits, dict_probs, dict_annots
 
@@ -372,16 +347,6 @@ class Trainer(comm_train.Trainer):
             self.dict_threshold,
             threshold_mode=self.thresholding_mode_representative,
         )
-        # result_dict_subgroup = get_subgroup_analysis_result(
-        #     dict_logits,
-        #     dict_probs,
-        #     dict_annots,
-        #     self.target_attr_downstream,
-        #     self.dict_threshold,
-        #     threshold_mode=self.thresholding_mode_representative,
-        # )
-        # result_dict.update(result_dict_subgroup)  # 새로운 값이 중복 되는 경우, result_dict_subgroup 활용
-
         return losses.detach(), dict_losses, result_dict
 
     def save_best_metrics(self, val_metrics: Metrics, best_metrics: Metrics, epoch) -> (object, bool):
@@ -448,17 +413,6 @@ class Trainer(comm_train.Trainer):
         loss, dict_loss, dict_metrics = self.get_metrics(dict_logits, dict_probs, dict_annots)
         self.scheduler[ModelName.CLASSIFIER].step("epoch_val", loss)
 
-        if ModelName.GENERATOR in self.model and self.subgroup_analyzer.baseline_performance is not None:
-            self.subgroup_analyzer.update_priority(dict_logits, dict_probs, dict_annots, self.dict_threshold)
-
-        priority = self.subgroup_analyzer.priority
-        flat_dict = {
-            f"priority_{category_name}_{label_score}": value
-            for category_name, inner_dict in priority.items()
-            for label_score, value in inner_dict.items()
-        }
-        dict_metrics.update(flat_dict)
-
         return Metrics(loss, dict_loss, dict_metrics, self.dict_threshold)
 
     @torch.no_grad()
@@ -480,25 +434,5 @@ class Trainer(comm_train.Trainer):
             json_filename = f"results_{loader.dataset.mode.value}.json"
             with open(json_filename, "w") as f:
                 json.dump(results, f, indent=4)
-
-            # check if same
-            check_if_same = False
-            if check_if_same:
-                # load json
-                with open(json_filename, "r") as f:
-                    data = json.load(f)
-                dict_logits_loaded = {k: torch.tensor(v) for k, v in data["logits"].items()}
-                dict_probs_loaded = {k: torch.tensor(v) for k, v in data["probs"].items()}
-                dict_annots_loaded = {k: torch.tensor(v) for k, v in data["annotations"].items()}
-
-                # Check if the loaded data matches the original data
-                for key in dict_logits:
-                    assert torch.equal(dict_logits[key].cpu(), dict_logits_loaded[key]), f"Mismatch in logits[{key}]"
-
-                for key in dict_probs:
-                    assert torch.equal(dict_probs[key].cpu(), dict_probs_loaded[key]), f"Mismatch in probs[{key}]"
-
-                for key in dict_annots:
-                    assert torch.equal(dict_annots[key].cpu(), dict_annots_loaded[key]), f"Mismatch in annots[{key}]"
 
         return Metrics(loss, dict_loss, dict_metrics, self.dict_threshold)

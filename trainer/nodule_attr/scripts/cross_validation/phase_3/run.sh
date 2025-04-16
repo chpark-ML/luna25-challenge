@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 이동할 디렉토리
-cd /opt/ml/trainer/nodule_attr/scripts || exit 1
+cd /opt/challenge/trainer/nodule_attr/scripts || exit 1
 
 # model_num을 0부터 5까지 순차적으로 실행
 # ex) 0, 5에 대해서만 실행:

@@ -10,6 +10,7 @@ from torch.utils.data import Dataset
 
 from data_lake.constants import DB_ADDRESS
 from data_lake.dataset_handler import DatasetHandler
+from shared_lib.enums import RunMode
 from trainer.common.augmentation.coarse_drop import CoarseDropout3D
 from trainer.common.augmentation.compose import ComposeAugmentation
 from trainer.common.augmentation.crop import RandomCrop3DDeprecated
@@ -17,7 +18,6 @@ from trainer.common.augmentation.flip_rotate import Flip3D, FlipXY, RandomRotate
 from trainer.common.augmentation.hu_value import DicomWindowing, RandomDicomWindowing
 from trainer.common.augmentation.rescale import RescaleImage
 from trainer.common.constants import HU_WINDOW
-from trainer.common.enums import RunMode
 
 _LUNG_DB = DB_ADDRESS
 
@@ -29,7 +29,6 @@ def _get_normalized_tensor(
     max_width_scale,
     min_level_shift,
     max_level_shift,
-    fixed,
     p,
 ):
     if mode == RunMode.TRAIN:
@@ -39,11 +38,10 @@ def _get_normalized_tensor(
             max_width_scale=max_width_scale,
             min_level_shift=min_level_shift,
             max_level_shift=max_level_shift,
-            fixed=fixed,
             p=p,
         )
     else:
-        return DicomWindowing(hu_range=hu_range, fixed=fixed)
+        return DicomWindowing(hu_range=hu_range)
 
 
 def patch_extract_3d_pylidc(
@@ -148,14 +146,15 @@ class LctDataset(Dataset):
         dicom_window,
         buffer,
         augmentation,
-        mask_threshold=0.5,
         dataset_size_scale_factor=None,
         do_random_balanced_sampling=None,
         target_dataset=None,
         dataset_info=None,
+        use_weighted_sampler=None,
     ):
         self.mode: RunMode = RunMode(mode) if isinstance(mode, str) else mode
         assert len(patch_size) == 3 and patch_size[1] == patch_size[2], f"patch_size is {patch_size}."
+        self.use_weighted_sampler = use_weighted_sampler
 
         # set configuration
         self.xy_size = patch_size[1]
@@ -163,7 +162,6 @@ class LctDataset(Dataset):
         self.patch_size = OmegaConf.to_container(patch_size, resolve=True)
         self.dicom_window = OmegaConf.to_container(dicom_window, resolve=True)
         self.buffer = buffer
-        self.mask_threshold = mask_threshold
         self.dataset_size_scale_factor = dataset_size_scale_factor
         self.do_random_balanced_sampling = do_random_balanced_sampling
 
@@ -216,7 +214,6 @@ class LctDataset(Dataset):
             _get_normalized_tensor(
                 self.mode,
                 hu_range,
-                fixed=True,
                 p=augmentation["dicom_windowing"]["aug_prob"],
                 min_width_scale=augmentation["dicom_windowing"]["width_scale"]["min"],
                 max_width_scale=augmentation["dicom_windowing"]["width_scale"]["max"],

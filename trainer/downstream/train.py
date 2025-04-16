@@ -54,7 +54,7 @@ class Trainer(comm_train.Trainer):
         thresholding_mode_representative,
         thresholding_mode,
         grad_clip_max_norm,
-        target_attr,
+        target_attr_total,
         target_attr_to_train,
         target_attr_downstream,
         **kwargs,
@@ -65,7 +65,7 @@ class Trainer(comm_train.Trainer):
         self.thresholding_mode = ThresholdMode.get_mode(thresholding_mode)
         self.grad_clip_max_norm = grad_clip_max_norm
 
-        self.target_attr = target_attr
+        self.target_attr_total = target_attr_total
         self.target_attr_to_train = target_attr_to_train
         self.target_attr_downstream = target_attr_downstream
 

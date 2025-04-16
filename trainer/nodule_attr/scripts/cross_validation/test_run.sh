@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /opt/ml/trainer/nodule_attr/scripts/cross_validation || exit 1
+cd /opt/challenge/trainer/nodule_attr/scripts/cross_validation || exit 1
 
 # tmux_window gpu_num val_fold
 paired_values=(

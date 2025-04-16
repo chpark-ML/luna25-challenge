@@ -28,20 +28,22 @@ T = TypeVar("T", bound="Trainer")
 
 def get_loaders(config):
     # Data Loaders
-    logger.info(f"Instantiating dataloader <{config.inputs._target_}>")
+    logger.info(f"Instantiating dataloader <{config.loader._target_}>")
     run_modes = [RunMode(m) for m in config.run_modes] if "run_modes" in config else [x for x in RunMode]
 
     loaders = dict()
     for mode in run_modes:
         if mode == RunMode.TRAIN:
-            dataset = hydra.utils.instantiate(config.inputs.dataset, mode=mode)
-            train_df = dataset.dataset
-            weights = make_weights_for_balanced_classes(train_df.label.values)
-            weights = torch.DoubleTensor(weights)
-            _sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(train_df))
+            dataset = hydra.utils.instantiate(config.loader.dataset, mode=mode)
+            _sampler = None
+            if dataset.use_weighted_sampler:
+                train_df = dataset.dataset
+                weights = make_weights_for_balanced_classes(train_df.label.values)
+                weights = torch.DoubleTensor(weights)
+                _sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(train_df))
 
             loaders[mode] = hydra.utils.instantiate(
-                config.inputs,
+                config.loader,
                 dataset={"mode": mode},
                 sampler=_sampler,
                 drop_last=True,
@@ -50,7 +52,7 @@ def get_loaders(config):
 
         else:
             loaders[mode] = hydra.utils.instantiate(
-                config.inputs,
+                config.loader,
                 dataset={"mode": mode},
                 drop_last=False,
                 shuffle=False,

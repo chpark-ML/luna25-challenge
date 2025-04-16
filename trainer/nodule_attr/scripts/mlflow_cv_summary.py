@@ -14,7 +14,7 @@ if __name__ == "__main__":
     set_mlflow_tracking_uri(mlflow_url)
 
     # List of run names (latest versions will be selected if duplicates exist)
-    experiment_name = "lct-nodule-gen"
+    experiment_name = "lct-malignancy-attr"
     num_fold = 6
     run_names = [f"cls_fine_model_0_val_fold{idx}_c_malignancy_logistic" for idx in range(num_fold)]
 

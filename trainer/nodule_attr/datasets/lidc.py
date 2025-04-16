@@ -2,17 +2,17 @@ from typing import Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
+from h5py import File
 from sklearn.utils import resample
 
 from data_lake.constants import DB_ADDRESS
 from data_lake.lidc.constants import LOGISTIC_TASK_POSTFIX, RESAMPLED_FEATURE_POSTFIX, ClusterLevelInfo
 from shared_lib.constants import DataLakeKeyDict
 from shared_lib.enums import RunMode
+from trainer.common.constants import ANNOTATION_KEY, INPUT_PATCH_KEY
 from trainer.common.datasets.lidc import LctDataset
 
 _LUNG_DB = DB_ADDRESS
-_INPUT_PATCH_KEY = "dicom"
-_ANNOTATION_KEY = "annot"
 
 
 def _get_balanced_df(df, target_attr_to_train: list):
@@ -132,11 +132,11 @@ class Dataset(LctDataset):
         dicom_window,
         buffer,
         augmentation,
-        mask_threshold=0.5,
         dataset_size_scale_factor=None,
         do_random_balanced_sampling=None,
         target_dataset=None,
         dataset_info=None,
+        use_weighted_sampler=None,
     ):
         super().__init__(
             mode,
@@ -144,11 +144,11 @@ class Dataset(LctDataset):
             dicom_window,
             buffer,
             augmentation,
-            mask_threshold,
             dataset_size_scale_factor,
             do_random_balanced_sampling,
             target_dataset,
             dataset_info,
+            use_weighted_sampler,
         )
         self.target_attr_total = dataset_info["pylidc"]["target_attr_total"]
         self.target_attr_to_train = dataset_info["pylidc"]["target_attr_to_train"]
@@ -192,8 +192,8 @@ class Dataset(LctDataset):
         img = np.concatenate(img, axis=0)  # (n, 48, 72, 72)
 
         return {
-            _INPUT_PATCH_KEY: img,
-            _ANNOTATION_KEY: attributes,
+            INPUT_PATCH_KEY: img,
+            ANNOTATION_KEY: attributes,
             "file_path": img_path,
             "mask_path": mask_path,
             "index": index,

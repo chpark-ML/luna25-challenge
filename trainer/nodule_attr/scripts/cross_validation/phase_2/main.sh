@@ -11,10 +11,10 @@ use_alpha=True
 
 # load model configs
 model_num=5
-source /opt/ml/trainer/common/model_config.sh ${model_num} ${val_fold}
+source /opt/challenge/trainer/common/model_config.sh ${model_num} ${val_fold}
 
 model_name_all=cls_all_model_${model_num}_val_fold${val_fold}
-model_path_all=/opt/ml/trainer/nodule_attr/outputs/cls/baseline/${model_name_all}/model.pth
+model_path_all=/opt/challenge/trainer/nodule_attr/outputs/cls/baseline/${model_name_all}/model.pth
 
 TARGET_ATTRS=(
     'c_malignancy_logistic'
@@ -28,7 +28,7 @@ TARGET_ATTRS=(
     'c_internalStructure_logistic'
 )
 
-cd /opt/ml/trainer/nodule_attr
+cd /opt/challenge/trainer/nodule_attr
 
 for TARGET_ATTR in "${TARGET_ATTRS[@]}"
 do
@@ -37,7 +37,7 @@ do
 
   HYDRA_FULL_ERROR=1 python3 main.py \
     experiment_tool.run_group=fine_tune \
-    experiment_tool.experiment_name=lct-nodule-gen \
+    experiment_tool.experiment_name=lct-malignancy-attr \
     experiment_tool.run_name=${model_name} \
     model.model_C.classifier.num_features=${num_features} \
     model.model_C.classifier.use_gate=${use_gate} \
@@ -54,7 +54,7 @@ do
     trainer.fine_tune_info.enable=True \
     trainer.fine_tune_info.pretrained_encoder=${model_path_all} \
     trainer.fine_tune_info.freeze_encoder=True \
-    "trainer.fine_tune_info.target_attr_to_train=[${TARGET_ATTR}]" \
+    "trainer.target_attr_to_train=[${TARGET_ATTR}]" \
     trainer.gpus=${gpu_num} \
     +debug=False
 done

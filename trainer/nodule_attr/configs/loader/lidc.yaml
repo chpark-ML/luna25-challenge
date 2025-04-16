@@ -3,6 +3,7 @@ _target_: torch.utils.data.DataLoader
 dataset:
   _target_: trainer.nodule_attr.datasets.lidc.Dataset
   mode: train
+  use_weighted_sampler: false
 
   # optimal size for unet_3d was 72 x 72 x 72
   # swin-t needs the size to be a multiple of 32
@@ -52,9 +53,15 @@ dataset:
       val_fold: [ 5 ]
       test_fold: [ 6 ]
       collection_name: pylidc-nodule-cluster
-      h5_file_path:
-        source: dicom_series_info
-        field: h5_file_path
+      constant_mapper:
+        hfile_image_key: dicom_pixels_resampled
+      field_name_mapper:
+        h5_path:
+          source: dicom_series_info
+          field: h5_file_path
+        series_instance_uid_label:
+          source: dicom_series_info
+          field: series_instance_uid
       target_attr_total: ${trainer.target_attr_total}
       target_attr_to_train: ${trainer.target_attr_to_train}
       query:

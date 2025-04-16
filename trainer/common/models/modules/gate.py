@@ -14,13 +14,13 @@ class GateBlock(nn.Module):
         drop_prob: float,
         use_coord: bool,
         use_fusion: bool,
-        target_attr: list,
+        target_attr_total: list,
     ):
         super(GateBlock, self).__init__()
         self.num_features = len(in_planes)
         self.use_coord = use_coord
         self.use_fusion = use_fusion
-        self.target_attr = target_attr
+        self.target_attr_total = target_attr_total
         self.pyramid_channels = pyramid_channels
         self.num_fpn_layers = num_fpn_layers
         self.embedding_blocks = nn.ModuleList(

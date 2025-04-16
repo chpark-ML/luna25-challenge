@@ -106,26 +106,6 @@ class DatasetHandler:
             if DatasetInfoKey.COLLECTION_NAME in dataset_info.keys():
                 df[DataLakeKey.COLLECTION] = dataset_info[DatasetInfoKey.COLLECTION_NAME]
 
-            # TODO: will be deprecated, should assign to "field_name_mapper"
-            # if h5_path is set to dict type instead of str type,
-            # e.g., h5_path:
-            #         source: dicom_series_info
-            #         field: h5_path
-            if self.h5_path_key in dataset_info.keys():
-                value = dataset_info[self.h5_path_key]
-                if isinstance(value, omegaconf.dictconfig.DictConfig):
-                    source = value.source
-                    field = value.field
-                    df[self.h5_path_key] = df[source].apply(lambda x: x[field])
-
-            # TODO: will be deprecated, should assign to "constant_mapper"
-            # hf["dicom_pixels"], hf["data"], etc.
-            if self.hfile_image_key in dataset_info.keys():
-                if self.hfile_image_key in df:
-                    raise ValueError(f"The new feature name '{self.hfile_image_key}' has already been given.")
-                value = dataset_info[self.hfile_image_key]
-                df[self.hfile_image_key] = value if value else None
-
             # constant_mapper
             if self.constant_mapper in dataset_info.keys():
                 for key, value in dataset_info[self.constant_mapper].items():

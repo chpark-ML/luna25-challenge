@@ -36,9 +36,9 @@ def main() -> None:
     for fold_idx in range(NUM_FOLD - 1):
         model_name_phase_1 = f"cls_all_model_{model_num}_val_fold{fold_idx}"
         model_name_phase_2 = f"cls_fine_model_{model_num}_val_fold{fold_idx}_*"
-        base_model_path = f"/opt/ml/trainer/nodule_attr/outputs/cls/baseline/{model_name_phase_1}/model.pth"
-        fine_model_path = f"/opt/ml/trainer/nodule_attr/outputs/cls/fine_tune/{model_name_phase_2}"
-        save_model_path = f"/opt/ml/trainer/nodule_attr/outputs/cls/baseline/{model_name_phase_1}/model_fine.pth"
+        base_model_path = f"/opt/challenge/trainer/nodule_attr/outputs/cls/baseline/{model_name_phase_1}/model.pth"
+        fine_model_path = f"/opt/challenge/trainer/nodule_attr/outputs/cls/fine_tune/{model_name_phase_2}"
+        save_model_path = f"/opt/challenge/trainer/nodule_attr/outputs/cls/baseline/{model_name_phase_1}/model_fine.pth"
 
         # check the number of models for fine
         search_path = Path(fine_model_path) / Path("model.pth")

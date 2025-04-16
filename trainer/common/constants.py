@@ -2,11 +2,21 @@ from trainer.common.enums import DicomMode
 
 DB_ADDRESS = "mongodb://172.31.10.111:27017"
 TARGET_DB = "lct"
-
+INPUT_PATCH_KEY = "dicom"
+ANNOTATION_KEY = "annot"
 LOGIT_KEY = "logit"
 MULTI_SCALE_LOGIT_KEY = "logits_multi_scale"
 GATE_KEY = "gate_results"
 GATED_LOGIT_KEY = "gated_ce_dict"
+
+
+class LossKey:
+    total = "total"
+    cls = "cls"
+    cls_dict = "cls_dict"
+    entropy = "entropy"
+    aux = "aux"
+
 
 # HU window (window level, window width)
 DICOM_VALUE_RANGES = {

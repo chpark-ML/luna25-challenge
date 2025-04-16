@@ -14,6 +14,7 @@ dataset:
   size_z: 64
   size_mm: 50
   size_px: 64
+  use_weighted_sampler: true
 
   # augmentation
   augmentation:

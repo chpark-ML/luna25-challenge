@@ -6,12 +6,12 @@ val_fold=${2:-0}
 
 # load model configs
 model_num=5
-source /opt/ml/trainer/common/model_config.sh ${model_num} ${val_fold}
+source /opt/challenge/trainer/common/model_config.sh ${model_num} ${val_fold}
 model_name=cls_all_model_${model_num}_val_fold${val_fold}
 
-cd /opt/ml/trainer/nodule_attr
+cd /opt/challenge/trainer/nodule_attr
 HYDRA_FULL_ERROR=1 python3 main.py \
-  experiment_tool.experiment_name=lct-nodule-gen \
+  experiment_tool.experiment_name=lct-malignancy-attr \
   experiment_tool.run_group=baseline \
   experiment_tool.run_name=${model_name} \
   model.model_C.classifier.num_features=${num_features} \

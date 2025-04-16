@@ -11,11 +11,11 @@ class Classifier(nn.Module):
         in_planes,
         out_planes,
         drop_prob,
-        target_attr,
+        target_attr_total,
         target_attr_to_train,
     ):
         super(Classifier, self).__init__()
-        self.target_attr = target_attr
+        self.target_attr_total = target_attr_total
         self.target_attr_to_train = target_attr_to_train
 
         self.classifiers = nn.ModuleDict(
@@ -24,7 +24,7 @@ class Classifier(nn.Module):
                     nn.Dropout(p=drop_prob),
                     nn.Linear(in_planes, out_planes, bias=True),
                 )
-                for i_attr in target_attr
+                for i_attr in target_attr_total
             }
         )
 
@@ -50,7 +50,7 @@ class MultiScaleAttnClassifier(nn.Module):
         drop_prob,
         pyramid_channels,
         num_fpn_layers,
-        target_attr,
+        target_attr_total,
         target_attr_to_train,
         use_gate,
         use_coord,
@@ -62,7 +62,7 @@ class MultiScaleAttnClassifier(nn.Module):
             f_maps = [f_maps * 2**k for k in range(num_levels)]  # e.g., [24, 48, 96, 192]
         self.num_features = num_features
 
-        self.target_attr = target_attr
+        self.target_attr_total = target_attr_total
         self.target_attr_to_train = target_attr_to_train
         self.use_gate = use_gate
         self.use_coord = use_coord
@@ -77,7 +77,7 @@ class MultiScaleAttnClassifier(nn.Module):
                 drop_prob=drop_prob,
                 use_coord=use_coord,
                 use_fusion=use_fusion,
-                target_attr=target_attr,
+                target_attr_total=target_attr_total,
             )
             if self.use_gate
             else None
@@ -92,7 +92,7 @@ class MultiScaleAttnClassifier(nn.Module):
                             nn.Dropout3d(p=drop_prob),
                             nn.Conv3d(f_map, 1, kernel_size=1, bias=True),
                         )
-                        for i_attr in target_attr
+                        for i_attr in target_attr_total
                     }
                 )
                 for f_map in f_maps[-self.num_features :]
