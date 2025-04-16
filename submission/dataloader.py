@@ -182,12 +182,13 @@ def extract_patch(
     srcVoxelOrigin,
     srcWorldMatrix,
     srcVoxelSpacing,
-    output_shape=(64, 64, 64),
-    voxel_spacing=(50.0 / 64, 50.0 / 64, 50.0 / 64),
+    output_shape=(48, 72, 72),
+    voxel_spacing=(50.0 / 48, 50.0 / 72, 50.0 / 72),
     rotations=None,
     translations=None,
     coord_space_world=False,
     mode="2D",
+    order=1,
 ):
     transform_matrix = np.eye(3)
 
@@ -236,7 +237,7 @@ def extract_patch(
         center=overrideCoord,
         output_shape=np.array(output_shape),
         output_voxel_spacing=np.array(voxel_spacing),
-        order=1,
+        order=order,
         prefilter=False,
     )
 

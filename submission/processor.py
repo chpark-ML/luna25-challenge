@@ -25,8 +25,10 @@ class MalignancyProcessor:
 
     def __init__(self, mode="2D", suppress_logs=False, model_name="LUNA25-baseline-2D"):
 
-        self.size_px = 64
+        self.size_px_xy = 72
+        self.size_px_z = 48
         self.size_mm = 50
+        self.order = 1
 
         self.model_name = model_name
         self.mode = mode
@@ -56,12 +58,13 @@ class MalignancyProcessor:
             srcVoxelSpacing=self.header["spacing"],
             output_shape=output_shape,
             voxel_spacing=(
-                self.size_mm / self.size_px,
-                self.size_mm / self.size_px,
-                self.size_mm / self.size_px,
+                self.size_mm / self.size_px_z,
+                self.size_mm / self.size_px_xy,
+                self.size_mm / self.size_px_xy,
             ),
             coord_space_world=True,
             mode=mode,
+            order=self.order,
         )
 
         # ensure same datatype...
@@ -77,7 +80,7 @@ class MalignancyProcessor:
             logging.info("Processing in " + mode)
 
         if mode == "3D":
-            output_shape = [self.size_px, self.size_px, self.size_px]
+            output_shape = [self.size_px_z, self.size_px_xy, self.size_px_xy]
             model = self.model_3d
 
         nodules = []

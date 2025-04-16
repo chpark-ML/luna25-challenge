@@ -292,6 +292,7 @@ def extract_patch(
     translations=None,
     coord_space_world=False,
     mode="2D",
+    order=1,
 ):
     transform_matrix = np.eye(3)
 
@@ -340,7 +341,7 @@ def extract_patch(
         center=overrideCoord,
         output_shape=np.array(output_shape),
         output_voxel_spacing=np.array(voxel_spacing),
-        order=1,
+        order=order,
         prefilter=False,
     )
 
@@ -367,8 +368,10 @@ class CTCaseDataset(data.Dataset):
         rotations: tuple = None,
         size_xy: int = 128,
         size_z: int = 64,
-        size_px: int = 64,
+        size_px_xy: int = 72,
+        size_px_z: int = 48,
         size_mm: int = 50,
+        interpolate_order: int = 1,
         dataset_infos=None,
         target_dataset_train=None,
         target_dataset_val_test=None,
@@ -395,9 +398,10 @@ class CTCaseDataset(data.Dataset):
         self.translations = translations
         self.size_xy = size_xy
         self.size_z = size_z
-        self.size_px = size_px
+        self.size_px_xy = size_px_xy
+        self.size_px_z = size_px_z
         self.size_mm = size_mm
-
+        self.order = interpolate_order
         # data augmentation
         if self.mode == RunMode.TRAIN:
             self.transform = ComposeAugmentation(
@@ -408,7 +412,7 @@ class CTCaseDataset(data.Dataset):
                         p=augmentation["coarse_dropout_3d"]["aug_prob"],
                         max_holes=augmentation["coarse_dropout_3d"]["max_holes"],
                         size_limit=(0.08, 0.16),
-                        patch_size=(self.size_px, self.size_px, self.size_px),
+                        patch_size=(self.size_px_z, self.size_px_xy, self.size_px_xy),
                     ),
                     RescaleImage(
                         p=augmentation["rescale_image_3d"]["aug_prob"],
@@ -475,9 +479,9 @@ class CTCaseDataset(data.Dataset):
             translations = radius if radius > 0 else None
 
         if self.mode_model == "2D":
-            output_shape = (1, self.size_px, self.size_px)
+            output_shape = (1, self.size_px_xy, self.size_px_xy)
         else:
-            output_shape = (self.size_px, self.size_px, self.size_px)
+            output_shape = (self.size_px_z, self.size_px_xy, self.size_px_xy)
 
         patch = extract_patch(
             CTData=img,
@@ -487,14 +491,15 @@ class CTCaseDataset(data.Dataset):
             srcVoxelSpacing=spacing,
             output_shape=output_shape,
             voxel_spacing=(
-                self.size_mm / self.size_px,
-                self.size_mm / self.size_px,
-                self.size_mm / self.size_px,
+                self.size_mm / self.size_px_z,
+                self.size_mm / self.size_px_xy,
+                self.size_mm / self.size_px_xy,
             ),
             rotations=self.rotations,
             translations=translations,
             coord_space_world=False,
             mode=self.mode_model,
+            order=self.order,
         )
 
         # ensure same datatype...

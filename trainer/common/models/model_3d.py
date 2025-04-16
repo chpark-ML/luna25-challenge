@@ -265,11 +265,11 @@ class I3D(torch.nn.Module):
         out = self.mixed_4f(out)
         out = self.maxPool3d_5a_2x2(out)
         out = self.mixed_5b(out)
-        out = self.mixed_5c(out)
-        out = torch.nn.AvgPool3d((2, 2, 2), (1, 1, 1))(out)
+        out = self.mixed_5c(out)  # (B, 1024, 6, 3, 3)
+        out = torch.nn.AvgPool3d(out.size()[-3:])(out)
         out = self.dropout(out)
-        out = self.conv3d_0c_1x1(out)
-        out = out.mean(2).reshape(out.shape[0])  # (B,)
+        out = self.conv3d_0c_1x1(out)  # (B, 1, 1, 1, 1)
+        out = out.reshape(out.shape[0])  # (B,)
 
         return out
 
