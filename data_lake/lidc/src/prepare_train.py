@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 
-from data_lake.constants import TARGET_DB, DataLakeKey, DBKey, NUM_FOLD
+from data_lake.constants import NUM_FOLD, TARGET_DB, DataLakeKey, DBKey
 from data_lake.dataset_handler import DatasetHandler
 from data_lake.lidc.constants import ClusterLevelInfo, CollectionName, HFileKey, ImageLevelInfo, NoduleLevelInfo
 from data_lake.lidc.enums import NoduleAttribute

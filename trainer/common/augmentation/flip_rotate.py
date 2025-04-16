@@ -1,7 +1,7 @@
 import random
 
 import numpy as np
-from albumentations import Rotate
+from albumentations import RandomRotate90, Rotate
 
 
 class Flip3D:
@@ -40,3 +40,26 @@ class FlipXY:
         if mask is not None:
             return img, mask
         return img
+
+
+class RandomRotate903D:
+    def __init__(self, p=0.5):
+        assert 0.0 <= p <= 1.0
+        self.rotate = RandomRotate90(p=p)
+
+    def __call__(self, img, mask=None):
+        if mask is not None:
+            img = np.transpose(img, axes=(1, 2, 0)).copy()
+            mask = np.transpose(mask, axes=(1, 2, 0)).copy()
+            res = self.rotate(image=img, mask=mask)
+            img = res["image"]
+            mask = res["mask"]
+            img = np.transpose(img, axes=(2, 0, 1))
+            mask = np.transpose(mask, axes=(2, 0, 1))
+            return img, mask
+        else:
+            img = np.transpose(img, axes=(1, 2, 0)).copy()
+            res = self.rotate(image=img)
+            img = res["image"]
+            img = np.transpose(img, axes=(2, 0, 1))
+            return img

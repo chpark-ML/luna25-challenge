@@ -15,16 +15,16 @@ from shared_lib.enums import RunMode
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-_OVERWRITE_ALLOWED = {DataLakeKeyDict.h5_file_path}
+_OVERWRITE_ALLOWED = {DataLakeKeyDict.HFILE_PATH}
 
 
 class DatasetHandler:
     def __init__(self) -> None:
         # dataset/collection-specific info
-        self.h5_path_key = DataLakeKeyDict.h5_file_path
-        self.hfile_image_key = DataLakeKeyDict.hfile_image_key
-        self.constant_mapper = DataLakeKeyDict.constant_mapper
-        self.field_name_mapper = DataLakeKeyDict.field_name_mapper
+        self.h5_path_key = DataLakeKeyDict.HFILE_PATH
+        self.hfile_image_key = DataLakeKeyDict.HFILE_IMAGE
+        self.constant_mapper = DataLakeKeyDict.CONSTANT_MAPPER
+        self.field_name_mapper = DataLakeKeyDict.FIELD_NAME_MAPPER
 
     @staticmethod
     def get_fold_indices(mode, dataset_info: dict) -> List[int]:
