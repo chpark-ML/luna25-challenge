@@ -9,7 +9,6 @@ class FocalLoss(nn.Module):
         self.gamma = gamma
         self.alpha = alpha  # can be considered to either the positive annotation ratio or the weight for negatives
         self.smoothing = smoothing
-        assert self.smoothing < 0.5, "smoothing should be less than 0.5."
         self.eps = torch.finfo(torch.float32).eps
         if isinstance(alpha, omegaconf.listconfig.ListConfig):
             alpha = omegaconf.OmegaConf.to_container(alpha, resolve=True)
@@ -45,12 +44,12 @@ class FocalLoss(nn.Module):
         logpt = torch.log(pt)  # (B * N, C)
 
         # get target
-        if self.smoothing:
+        if isinstance(self.smoothing, float):
             num_classes = 2 if is_logistic else target.size(1)  # C (number of classes)
             one_hot = torch.zeros_like(pt).scatter(1, target_int, 1)
             smoothed_target = one_hot * (1 - self.smoothing) + self.smoothing / num_classes  # (B * N, C)
         else:
-            smoothed_target = torch.zeros_like(pt).scatter(1, target_int, 1)
+            smoothed_target = torch.cat([1-target, target], dim=1)  # (B * N, C)
 
         # Focal loss
         loss = -1 * ((1 - pt) ** self.gamma * logpt * smoothed_target).sum(dim=1, keepdims=True)  # (B * N, 1)

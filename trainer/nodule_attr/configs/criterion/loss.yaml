@@ -3,7 +3,7 @@ cls_criterion:
   _target_: trainer.common.criterions.cls_loss.ClsLoss
   gamma: 2
   use_alpha: True
-  smoothing: 0.05
+  smoothing:
   target_attr_total: ${trainer.target_attr_total}
   target_attr_to_train: ${trainer.target_attr_to_train}
   loss_weight: 1.0
@@ -16,7 +16,7 @@ aux_criterion:
   _target_: trainer.common.criterions.cls_loss.ClsLoss
   gamma: 2
   use_alpha: True
-  smoothing: 0.05
+  smoothing:
   target_attr_total: ${trainer.target_attr_total}
   target_attr_to_train: ${trainer.target_attr_to_train}
   loss_weight: 0.0
