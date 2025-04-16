@@ -15,16 +15,16 @@ from shared_lib.enums import RunMode
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-_OVERWRITE_ALLOWED = {DataLakeKeyDict.h5_file_path}
+_OVERWRITE_ALLOWED = {DataLakeKeyDict.HFILE_PATH}
 
 
 class DatasetHandler:
     def __init__(self) -> None:
         # dataset/collection-specific info
-        self.h5_path_key = DataLakeKeyDict.h5_file_path
-        self.hfile_image_key = DataLakeKeyDict.hfile_image_key
-        self.constant_mapper = DataLakeKeyDict.constant_mapper
-        self.field_name_mapper = DataLakeKeyDict.field_name_mapper
+        self.h5_path_key = DataLakeKeyDict.HFILE_PATH
+        self.hfile_image_key = DataLakeKeyDict.HFILE_IMAGE
+        self.constant_mapper = DataLakeKeyDict.CONSTANT_MAPPER
+        self.field_name_mapper = DataLakeKeyDict.FIELD_NAME_MAPPER
 
     @staticmethod
     def get_fold_indices(mode, dataset_info: dict) -> List[int]:
@@ -105,26 +105,6 @@ class DatasetHandler:
             df[DatasetInfoKey.DATASET] = dataset
             if DatasetInfoKey.COLLECTION_NAME in dataset_info.keys():
                 df[DataLakeKey.COLLECTION] = dataset_info[DatasetInfoKey.COLLECTION_NAME]
-
-            # TODO: will be deprecated, should assign to "field_name_mapper"
-            # if h5_path is set to dict type instead of str type,
-            # e.g., h5_path:
-            #         source: dicom_series_info
-            #         field: h5_path
-            if self.h5_path_key in dataset_info.keys():
-                value = dataset_info[self.h5_path_key]
-                if isinstance(value, omegaconf.dictconfig.DictConfig):
-                    source = value.source
-                    field = value.field
-                    df[self.h5_path_key] = df[source].apply(lambda x: x[field])
-
-            # TODO: will be deprecated, should assign to "constant_mapper"
-            # hf["dicom_pixels"], hf["data"], etc.
-            if self.hfile_image_key in dataset_info.keys():
-                if self.hfile_image_key in df:
-                    raise ValueError(f"The new feature name '{self.hfile_image_key}' has already been given.")
-                value = dataset_info[self.hfile_image_key]
-                df[self.hfile_image_key] = value if value else None
 
             # constant_mapper
             if self.constant_mapper in dataset_info.keys():

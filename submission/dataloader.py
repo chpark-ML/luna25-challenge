@@ -12,13 +12,13 @@ def _calculateAllPermutations(itemList):
 
 
 def volumeTransform(
-        image,
-        voxel_spacing,
-        transform_matrix,
-        center=None,
-        output_shape=None,
-        output_voxel_spacing=None,
-        **argv,
+    image,
+    voxel_spacing,
+    transform_matrix,
+    center=None,
+    output_shape=None,
+    output_voxel_spacing=None,
+    **argv,
 ):
     """
     Parameters
@@ -177,17 +177,17 @@ def sample_random_coordinate_on_sphere(radius):
 
 
 def extract_patch(
-        CTData,
-        coord,
-        srcVoxelOrigin,
-        srcWorldMatrix,
-        srcVoxelSpacing,
-        output_shape=(64, 64, 64),
-        voxel_spacing=(50.0 / 64, 50.0 / 64, 50.0 / 64),
-        rotations=None,
-        translations=None,
-        coord_space_world=False,
-        mode="2D",
+    CTData,
+    coord,
+    srcVoxelOrigin,
+    srcWorldMatrix,
+    srcVoxelSpacing,
+    output_shape=(64, 64, 64),
+    voxel_spacing=(50.0 / 64, 50.0 / 64, 50.0 / 64),
+    rotations=None,
+    translations=None,
+    coord_space_world=False,
+    mode="2D",
 ):
     transform_matrix = np.eye(3)
 

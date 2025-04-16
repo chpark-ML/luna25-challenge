@@ -2,7 +2,7 @@
 defaults:
   - _self_
   - trainer: default
-  - inputs: default.yaml
+  - loader: default.yaml
   - criterion: focal_loss
   - model: model_3d
   - optim: adamw

@@ -2,12 +2,12 @@
 
 
 class DataLakeKeyDict:
-    h5_file_path = "h5_path"  # e.g., /nvme1/...
-    hfile_image_key = "hfile_image_key"  # e.g., dicom_pixels, dicom_pixels_resampled, etc.
-    spacing = "spacing"
-    origin = "origin"
-    constant_mapper = "constant_mapper"
-    field_name_mapper = "field_name_mapper"  # feature mapper for dataset-specific variations with identical context.
+    HFILE_PATH = "h5_path"  # e.g., /nvme1/...
+    HFILE_IMAGE = "hfile_image_key"  # e.g., dicom_pixels, dicom_pixels_resampled, etc.
+    SPACING = "spacing"
+    ORIGIN = "origin"
+    CONSTANT_MAPPER = "constant_mapper"
+    FIELD_NAME_MAPPER = "field_name_mapper"  # feature mapper for dataset-specific variations with identical context.
 
 
 class DatasetInfoKey:

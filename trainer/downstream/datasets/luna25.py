@@ -373,9 +373,11 @@ class CTCaseDataset(data.Dataset):
         target_dataset_train=None,
         target_dataset_val_test=None,
         augmentation=None,
+        use_weighted_sampler=None,
     ):
         self.mode: RunMode = RunMode(mode) if isinstance(mode, str) else mode
         self.mode_model = mode_model
+        self.use_weighted_sampler = use_weighted_sampler
 
         # load dataset
         if self.mode == RunMode.TRAIN:
@@ -534,6 +536,6 @@ if __name__ == "__main__":
 
     run_modes = [RunMode(m) for m in config.run_modes] if "run_modes" in config else [x for x in RunMode]
     loaders = {
-        mode: hydra.utils.instantiate(config.inputs, dataset={"mode": mode}, drop_last=False, shuffle=False)
+        mode: hydra.utils.instantiate(config.loader, dataset={"mode": mode}, drop_last=False, shuffle=False)
         for mode in run_modes
     }
