@@ -1,5 +1,5 @@
 model_C:
-  _target_: trainer.downstream.models.resnest.ResNest
+  _target_: trainer.common.models.resnest.ResNest
   model_depth: 34
   in_planes: [48, 64, 96]
   widen_factor: 1.0
