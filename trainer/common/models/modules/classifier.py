@@ -13,10 +13,14 @@ class Classifier(nn.Module):
         drop_prob,
         target_attr_total,
         target_attr_to_train,
+        target_attr_downstream,
+        return_logit,
     ):
         super(Classifier, self).__init__()
         self.target_attr_total = target_attr_total
         self.target_attr_to_train = target_attr_to_train
+        self.target_attr_downstream = target_attr_downstream
+        self.return_logit = return_logit
 
         self.classifiers = nn.ModuleDict(
             {
@@ -38,6 +42,9 @@ class Classifier(nn.Module):
             f_flatten = torch.flatten(x, start_dim=1)  # (B, 192)
             logits[i_attr] = self.classifiers[i_attr](f_flatten)  # (B, 1)
 
+        if self.return_logit:
+            return logits[self.target_attr_downstream]
+
         return {LOGIT_KEY: logits}
 
 
@@ -52,9 +59,11 @@ class MultiScaleAttnClassifier(nn.Module):
         num_fpn_layers,
         target_attr_total,
         target_attr_to_train,
+        target_attr_downstream,
         use_gate,
         use_coord,
         use_fusion,
+        return_logit,
     ):
         super(MultiScaleAttnClassifier, self).__init__()
 
@@ -64,9 +73,11 @@ class MultiScaleAttnClassifier(nn.Module):
 
         self.target_attr_total = target_attr_total
         self.target_attr_to_train = target_attr_to_train
+        self.target_attr_downstream = target_attr_downstream
         self.use_gate = use_gate
         self.use_coord = use_coord
         self.use_fusion = use_fusion
+        self.return_logit = return_logit
 
         # f1, f2, f3 > g1, g2, g3_attr
         self.gate_block = (
@@ -145,6 +156,9 @@ class MultiScaleAttnClassifier(nn.Module):
 
             # aggregate probs provided from multi-scale
             logits[i_attr] = torch.cat(_logits, dim=1).sum(1, keepdim=True) / gates_total
+
+        if self.return_logit:
+            return logits[self.target_attr_downstream]
 
         return {
             LOGIT_KEY: logits,

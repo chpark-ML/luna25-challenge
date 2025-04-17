@@ -15,6 +15,8 @@ model_C:
     num_fpn_layers: 2
     target_attr_total: ${trainer.target_attr_total}
     target_attr_to_train: ${trainer.target_attr_to_train}
+    target_attr_downstream: ${trainer.target_attr_downstream}
     use_gate: True
     use_coord: True
     use_fusion: True
+    return_logit: False

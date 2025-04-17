@@ -363,7 +363,6 @@ class CTCaseDataset(data.Dataset):
         data_dir: str = None,
         fetch_from_patch: bool = True,
         dicom_window: list = None,
-        patch_size: list = None,
         translations: bool = None,
         rotations: tuple = None,
         size_xy: int = 128,
@@ -393,7 +392,7 @@ class CTCaseDataset(data.Dataset):
         self.fetch_from_patch = fetch_from_patch
 
         self.dicom_window = dicom_window
-        self.patch_size = patch_size
+        self.patch_size = [size_z, size_xy, size_xy]
         self.rotations = ast.literal_eval(rotations) if isinstance(rotations, str) else rotations
         self.translations = translations
         self.size_xy = size_xy

@@ -1,4 +1,3 @@
-import omegaconf
 import torch
 import torch.nn as nn
 
@@ -29,6 +28,7 @@ class ClsLoss(nn.Module):
         target_attr_total: list = None,
         target_attr_to_train: list = None,
         dict_threshold: dict = None,
+        target_threshold_gte: float = None,
     ):
         super(ClsLoss, self).__init__()
         self.gamma = gamma
@@ -39,13 +39,19 @@ class ClsLoss(nn.Module):
         self.target_attr_total = target_attr_total
         self.target_attr_to_train = target_attr_to_train
         self.dict_threshold = dict_threshold
+        self.target_threshold_gte = target_threshold_gte
 
         self.dict_criterion = dict()
         self.threshold_mode = "youden"
         for i_attr in self.target_attr_total:
             if LOGISTIC_TASK_POSTFIX in i_attr:
                 alpha = None
-                self.dict_criterion[i_attr] = FocalLoss(gamma=self.gamma, alpha=alpha, smoothing=self.smoothing)
+                self.dict_criterion[i_attr] = FocalLoss(
+                    gamma=self.gamma,
+                    alpha=alpha,
+                    smoothing=self.smoothing,
+                    target_threshold_gte=self.target_threshold_gte,
+                )
             elif RESAMPLED_FEATURE_POSTFIX in i_attr:
                 self.dict_criterion[i_attr] = nn.SmoothL1Loss(reduction="none")
 
@@ -57,7 +63,12 @@ class ClsLoss(nn.Module):
                     if self.use_alpha
                     else None
                 )
-                self.dict_criterion[i_attr] = FocalLoss(gamma=self.gamma, alpha=alpha, smoothing=self.smoothing)
+                self.dict_criterion[i_attr] = FocalLoss(
+                    gamma=self.gamma,
+                    alpha=alpha,
+                    smoothing=self.smoothing,
+                    target_threshold_gte=self.target_threshold_gte,
+                )
             elif RESAMPLED_FEATURE_POSTFIX in i_attr:
                 self.dict_criterion[i_attr] = nn.SmoothL1Loss(reduction="none")
 

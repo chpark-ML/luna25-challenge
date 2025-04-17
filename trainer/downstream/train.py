@@ -54,9 +54,6 @@ class Trainer(comm_train.Trainer):
         thresholding_mode_representative,
         thresholding_mode,
         grad_clip_max_norm,
-        target_attr_total,
-        target_attr_to_train,
-        target_attr_downstream,
         **kwargs,
     ) -> None:
         self.repr_model_name = ModelName.CLASSIFIER
@@ -64,10 +61,6 @@ class Trainer(comm_train.Trainer):
         self.thresholding_mode_representative = ThresholdMode.get_mode(thresholding_mode_representative)
         self.thresholding_mode = ThresholdMode.get_mode(thresholding_mode)
         self.grad_clip_max_norm = grad_clip_max_norm
-
-        self.target_attr_total = target_attr_total
-        self.target_attr_to_train = target_attr_to_train
-        self.target_attr_downstream = target_attr_downstream
 
     @classmethod
     def instantiate_trainer(
@@ -261,10 +254,10 @@ class Trainer(comm_train.Trainer):
 
     @staticmethod
     def get_binary_classification_metrics(
-            prob: torch.Tensor,
-            annot: torch.Tensor,
-            threshold: dict,
-            threshold_mode: ThresholdMode = ThresholdMode.YOUDEN,
+        prob: torch.Tensor,
+        annot: torch.Tensor,
+        threshold: dict,
+        threshold_mode: ThresholdMode = ThresholdMode.YOUDEN,
     ):
         assert type(prob) == type(annot)
         result_dict = dict()

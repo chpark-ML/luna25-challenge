@@ -3,7 +3,7 @@ defaults:
   - trainer: default
   - loader: lidc
   - criterion: loss
-  - model: unet_3d_cls
+  - model: unet_3d_MS
   - optim: adamw
   - scheduler: one_cycle_lr
   - experiment_tool: mlflow

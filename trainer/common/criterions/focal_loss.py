@@ -4,11 +4,12 @@ import torch.nn as nn
 
 
 class FocalLoss(nn.Module):
-    def __init__(self, gamma=0, alpha=None, smoothing=0.0):
+    def __init__(self, gamma=0, alpha=None, smoothing=0.0, target_threshold_gte=None):
         super(FocalLoss, self).__init__()
         self.gamma = gamma
         self.alpha = alpha  # can be considered to either the positive annotation ratio or the weight for negatives
         self.smoothing = smoothing
+        self.target_threshold_gte = target_threshold_gte
         self.eps = torch.finfo(torch.float32).eps
         if isinstance(alpha, omegaconf.listconfig.ListConfig):
             alpha = omegaconf.OmegaConf.to_container(alpha, resolve=True)
@@ -30,7 +31,11 @@ class FocalLoss(nn.Module):
         target = target.view(-1, 1)  # (B * N, C)
 
         # (B * N, 1) # smooth target을 고려해서 round 연산
-        target_int = target.round().data.long()
+        if isinstance(self.target_threshold_gte, float):
+            target_int = (target >= self.target_threshold_gte).long()
+            target = target_int
+        else:
+            target_int = target.round().data.long()
 
         # get probability
         if is_logistic:
@@ -45,11 +50,14 @@ class FocalLoss(nn.Module):
 
         # get target
         if isinstance(self.smoothing, float):
-            num_classes = 2 if is_logistic else target.size(1)  # C (number of classes)
-            one_hot = torch.zeros_like(pt).scatter(1, target_int, 1)
-            smoothed_target = one_hot * (1 - self.smoothing) + self.smoothing / num_classes  # (B * N, C)
+            if is_logistic:
+                smoothed_target = torch.cat([1 - target, target], dim=1)
+                smoothed_target = smoothed_target * (1 - self.smoothing) + self.smoothing / 2
+            else:
+                # multi-class target assumed to be [B, num_classes]
+                smoothed_target = target * (1 - self.smoothing) + self.smoothing / target.size(1)
         else:
-            smoothed_target = torch.cat([1-target, target], dim=1)  # (B * N, C)
+            smoothed_target = torch.cat([1 - target, target], dim=1)  # (B * N, C)
 
         # Focal loss
         loss = -1 * ((1 - pt) ** self.gamma * logpt * smoothed_target).sum(dim=1, keepdims=True)  # (B * N, 1)

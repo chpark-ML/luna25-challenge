@@ -11,12 +11,12 @@ fast_dev_run: False
 use_amp: False
 
 # hyper params
-max_epoch: 200
+max_epoch: 100
 early_stop_patience: null
 grad_clip_max_norm: 1.0
 
 # loss, threshold
-remove_ambiguous_in_val_test: False
+remove_ambiguous_in_val_test: True
 lower_bound_ambiguous_label: 0.4  # used only when remove_ambiguous_in_val_test is True.
 upper_bound_ambiguous_label: 0.6  # used only when remove_ambiguous_in_val_test is True.
 thresholding_mode_representative: youden
