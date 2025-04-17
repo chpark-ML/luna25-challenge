@@ -66,9 +66,7 @@ def itk_image_to_numpy_image(input_image):
 
 
 class NoduleProcessor:
-    def __init__(
-        self, ct_image_file, nodule_locations, clinical_information, mode="3D", model_name="LUNA25-baseline-3D"
-    ):
+    def __init__(self, ct_image_file, nodule_locations, clinical_information, models, mode="3D"):
         """
         Parameters
         ----------
@@ -76,15 +74,13 @@ class NoduleProcessor:
         nodule_locations: Dictionary containing nodule coordinates and annotationIDs
         clinical_information: Dictionary containing clinical information (Age and Gender)
         mode: 2D or 3D
-        model_name: Name of the model to be used for prediction
         """
         self._image_file = ct_image_file
         self.nodule_locations = nodule_locations
         self.clinical_information = clinical_information
         self.mode = mode
-        self.model_name = model_name
 
-        self.processor = MalignancyProcessor(mode=mode, suppress_logs=True, model_name=model_name)
+        self.processor = MalignancyProcessor(models=models, mode=mode, suppress_logs=True)
 
     def predict(self, input_image: SimpleITK.Image, coords: np.array) -> Dict:
         """
@@ -104,7 +100,7 @@ class NoduleProcessor:
         malignancy_risks = []
         for i in range(len(coords)):
             self.processor.define_inputs(numpyImage, header, [coords[i]])
-            malignancy_risk, logits = self.processor.predict()
+            malignancy_risk = self.processor.predict()
             malignancy_risk = np.array(malignancy_risk).reshape(-1)[0]
             malignancy_risks.append(malignancy_risk)
 
@@ -152,7 +148,7 @@ class NoduleProcessor:
         return results
 
 
-def run(mode="3D", model_name="LUNA25-baseline-3D"):
+def run(models, mode="3D"):
     # Read the inputs
     input_nodule_locations = load_json_file(
         location=INPUT_PATH / "nodule-locations.json",
@@ -175,8 +171,8 @@ def run(mode="3D", model_name="LUNA25-baseline-3D"):
         ct_image_file=input_chest_ct,
         nodule_locations=input_nodule_locations,
         clinical_information=input_clinical_information,
+        models=models,
         mode=mode,
-        model_name=model_name,
     )
     malignancy_risks = processor.process()
 
@@ -225,7 +221,3 @@ def _show_torch_cuda_info():
         print(f"\tcurrent device: { (current_device := torch.cuda.current_device())}")
         print(f"\tproperties: {torch.cuda.get_device_properties(current_device)}")
     print("=+=" * 10)
-
-
-if __name__ == "__main__":
-    raise SystemExit(run(mode="3D", model_name="cv_val_fold4"))
