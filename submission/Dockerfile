@@ -12,14 +12,12 @@ WORKDIR /opt/app
 # Copy files to the container
 COPY --chown=user:user requirements.txt processor.py dataloader.py /opt/app/
 COPY --chown=user:user configs /opt/app/configs
-COPY --chown=user:user models /opt/app/models
-COPY --chown=user:user results /opt/app/resources
+COPY --chown=user:user resources /opt/app/resources
 COPY --chown=user:user inference.py /opt/app/
 COPY --chown=user:user main.py /opt/app/
 
 # You can add any Python dependencies to requirements.txt
 RUN python -m pip install \
-    --user \
     --no-cache-dir \
     --no-color \
     --requirement /opt/app/requirements.txt

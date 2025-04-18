@@ -5,6 +5,7 @@ import re
 import socket
 import warnings
 from pathlib import Path
+from typing import Union
 
 import GPUtil
 import numpy as np
@@ -13,6 +14,7 @@ import rich.tree
 import torch
 from omegaconf import DictConfig, OmegaConf
 from rich.style import Style
+from torch import Tensor, nn as nn
 
 
 # Automatically detect project root by looking for a specific marker file or folder
@@ -134,10 +136,12 @@ def set_config(config: OmegaConf, default_config_path: str = _DEFAULT_CONFIG_FIL
     return config
 
 
-def get_device():
-    device_ids: list = GPUtil.getAvailable(order="memory", limit=1, maxLoad=0.5, maxMemory=0.5, includeNan=False)
+def get_device(device_idx: int = None):
+    device_ids: list = GPUtil.getAvailable(order="memory", limit=1, maxLoad=0.8, maxMemory=0.8, includeNan=False)
     assert len(device_ids) > 0, "There is no available GPU."
-    dict_device = {"cpu": torch.device(f"cpu"), "cuda": torch.device(f"cuda:{int(device_ids[0])}")}
+    dict_device = {"cpu": torch.device(f"cpu"),
+                   "cuda": torch.device(f"cuda:{device_idx}") if device_idx is not None else torch.device(
+                       f"cuda:{int(device_ids[0])}")}
     return dict_device
 
 
@@ -154,3 +158,27 @@ def set_seed(seed=42):
     torch.backends.cudnn.benchmark = False
     np.random.seed(seed)
     random.seed(seed)
+
+
+def get_torch_model(model: nn.Module, model_path: str) -> torch.nn.Module:
+    """Loads checkpoint from directory"""
+    assert os.path.exists(model_path)
+    checkpoint = torch.load(model_path, map_location="cpu")
+    if isinstance(checkpoint, nn.Module):
+        model = checkpoint
+    elif isinstance(checkpoint, dict):
+        # keys of checkpoint, (epoch, model, optimizer, scaler)
+        model.load_state_dict(checkpoint["model"], strict=True)
+    return model
+
+
+@torch.no_grad()
+def get_inference_result(
+        fn: Union[nn.Module, torch.jit._script.RecursiveScriptModule],
+        sample: Tensor,
+        device: torch.device,
+) -> torch.Tensor:
+    if isinstance(fn, nn.Module):
+        fn.to(device).eval()
+    result = fn(sample.to(device))
+    return result

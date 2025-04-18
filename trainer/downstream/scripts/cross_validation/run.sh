@@ -12,7 +12,7 @@ paired_values=(
   "6 5 5"
 )
 
-my_session=1
+my_session=0
 tmux new-session -d -s ${my_session}  # 새로운 tmux 세션 생성
 
 for pair in "${paired_values[@]}"

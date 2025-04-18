@@ -2,4 +2,4 @@ name: mlflow
 enable: True
 experiment_name: lct-malignancy
 run_group: default
-run_name: test
+run_name: default

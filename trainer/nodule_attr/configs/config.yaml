@@ -17,6 +17,6 @@ path_best_model: None
 
 hydra:
   run:
-    dir: ./outputs/cls/${experiment_tool.run_group}/${experiment_tool.run_name}
+    dir: ./outputs/${experiment_tool.run_group}/${experiment_tool.run_name}
   job:
     chdir: True  # keep hydra = 1.1 change directory behavior
