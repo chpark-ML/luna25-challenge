@@ -139,9 +139,12 @@ def set_config(config: OmegaConf, default_config_path: str = _DEFAULT_CONFIG_FIL
 def get_device(device_idx: int = None):
     device_ids: list = GPUtil.getAvailable(order="memory", limit=1, maxLoad=0.8, maxMemory=0.8, includeNan=False)
     assert len(device_ids) > 0, "There is no available GPU."
-    dict_device = {"cpu": torch.device(f"cpu"),
-                   "cuda": torch.device(f"cuda:{device_idx}") if device_idx is not None else torch.device(
-                       f"cuda:{int(device_ids[0])}")}
+    dict_device = {
+        "cpu": torch.device(f"cpu"),
+        "cuda": (
+            torch.device(f"cuda:{device_idx}") if device_idx is not None else torch.device(f"cuda:{int(device_ids[0])}")
+        ),
+    }
     return dict_device
 
 
@@ -174,9 +177,9 @@ def get_torch_model(model: nn.Module, model_path: str) -> torch.nn.Module:
 
 @torch.no_grad()
 def get_inference_result(
-        fn: Union[nn.Module, torch.jit._script.RecursiveScriptModule],
-        sample: Tensor,
-        device: torch.device,
+    fn: Union[nn.Module, torch.jit._script.RecursiveScriptModule],
+    sample: Tensor,
+    device: torch.device,
 ) -> torch.Tensor:
     if isinstance(fn, nn.Module):
         fn.to(device).eval()
