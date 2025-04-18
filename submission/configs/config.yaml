@@ -1,4 +1,5 @@
 defaults:
-  - model: models.yaml
+  - _self_
+  - models: 2_0_1.yaml
 
 mode: 3D

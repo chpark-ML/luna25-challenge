@@ -4,6 +4,7 @@ Inference script for predicting malignancy of lung nodules
 
 import logging
 import os
+from pathlib import Path
 
 import dataloader
 import numpy as np
@@ -22,7 +23,7 @@ class MalignancyProcessor:
     Loads a chest CT scan, and predicts the malignancy around a nodule
     """
 
-    def __init__(self, models=None, mode="2D", suppress_logs=False):
+    def __init__(self, config_models=None, mode="3D", suppress_logs=False):
         self.device = torch.device("cuda:0")
         self.size_px_xy = 72
         self.size_px_z = 48
@@ -37,11 +38,9 @@ class MalignancyProcessor:
         self.model_root = "/opt/app/resources/"
 
         self.models = dict()
-        for model_name, model in models.items():
-            ckpt = torch.load(os.path.join(self.model_root, model_name, "model.pth"), map_location=self.device)
-            model.load_state_dict(ckpt["model"])
-            model.eval()
-            self.models[model_name] = model.to(self.device)
+        for model_indicator, config_model in config_models.items():
+            model_path = Path(config_model.root_path) / config_model.exp_name / config_model.file_name
+            self.models[model_indicator] = torch.jit.load(model_path, map_location=self.device).to(self.device).eval()
 
     def define_inputs(self, image, header, coords):
         self.image = image
@@ -95,6 +94,8 @@ class MalignancyProcessor:
 
         probs = list()
         for model_name, model in self.models.items():
+            # print(f"[INFO] Input device: {nodules.device}")
+            # print(f"[INFO] Model device: {next(model.parameters()).device}")
             logits = model(nodules)
             logits = logits.data.cpu().numpy()
             probs.append(torch.sigmoid(torch.from_numpy(logits)).numpy())

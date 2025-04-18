@@ -3,8 +3,10 @@ from glob import glob
 from pathlib import Path
 from typing import Dict
 
+import hydra
 import numpy as np
 import SimpleITK
+import torch
 from processor import MalignancyProcessor
 
 INPUT_PATH = Path("/input")
@@ -66,7 +68,7 @@ def itk_image_to_numpy_image(input_image):
 
 
 class NoduleProcessor:
-    def __init__(self, ct_image_file, nodule_locations, clinical_information, models, mode="3D"):
+    def __init__(self, ct_image_file, nodule_locations, clinical_information, config_models, mode="3D"):
         """
         Parameters
         ----------
@@ -80,7 +82,7 @@ class NoduleProcessor:
         self.clinical_information = clinical_information
         self.mode = mode
 
-        self.processor = MalignancyProcessor(models=models, mode=mode, suppress_logs=True)
+        self.processor = MalignancyProcessor(config_models=config_models, mode=mode, suppress_logs=True)
 
     def predict(self, input_image: SimpleITK.Image, coords: np.array) -> Dict:
         """
@@ -148,20 +150,11 @@ class NoduleProcessor:
         return results
 
 
-def run(models, mode="3D"):
+def run(config_models, mode="3D"):
     # Read the inputs
-    input_nodule_locations = load_json_file(
-        location=INPUT_PATH / "nodule-locations.json",
-    )
-    input_clinical_information = load_json_file(
-        location=INPUT_PATH / "clinical-information-lung-ct.json",
-    )
-    input_chest_ct = load_image_path(
-        location=INPUT_PATH / "images/chest-ct",
-    )
-    # # Read a resource file: the model weights
-    # with open(RESOURCE_PATH / "some_resource.txt", "r") as f:
-    #     print(f.read())
+    input_nodule_locations = load_json_file(location=INPUT_PATH / "nodule-locations.json")
+    input_clinical_information = load_json_file(location=INPUT_PATH / "clinical-information-lung-ct.json")
+    input_chest_ct = load_image_path(location=INPUT_PATH / "images/chest-ct")
 
     # Validate access to GPU
     _show_torch_cuda_info()
@@ -171,7 +164,7 @@ def run(models, mode="3D"):
         ct_image_file=input_chest_ct,
         nodule_locations=input_nodule_locations,
         clinical_information=input_clinical_information,
-        models=models,
+        config_models=config_models,
         mode=mode,
     )
     malignancy_risks = processor.process()

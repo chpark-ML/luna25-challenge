@@ -23,5 +23,5 @@ use_amp: False
 # pretrained model
 fine_tune_info:
   enable: False
-  pretrained_encoder:
-  freeze_encoder: True
+  freeze_encoder: False
+  pretrained_weight_path:

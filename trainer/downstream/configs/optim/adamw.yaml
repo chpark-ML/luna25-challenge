@@ -1,5 +1,5 @@
 optim_C:
   _target_: torch.optim.AdamW
-  lr: 1e-04
-  weight_decay: 5e-04
+  lr: 1e-03
+  weight_decay: 1e-2
   amsgrad: False

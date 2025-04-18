@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /opt/challenge/trainer/nodule_attr/scripts/cross_validation/phase_2 || exit 1
+cd /opt/challenge/trainer/nodule_attr/scripts/cross_validation || exit 1
 
 # tmux_window gpu_num val_fold
 paired_values=(
@@ -12,7 +12,7 @@ paired_values=(
   "6 5 5"
 )
 
-my_session=5-fine
+my_session=5
 tmux new-session -d -s ${my_session}  # 새로운 tmux 세션 생성
 
 for pair in "${paired_values[@]}"

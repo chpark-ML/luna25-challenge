@@ -4,7 +4,8 @@
 set -e
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-DOCKER_IMAGE_TAG="nodulex"
+source "$SCRIPT_DIR/config.sh"
+
 INPUT_DIR="${SCRIPT_DIR}/test/input"
 OUTPUT_DIR="${SCRIPT_DIR}/test/output"
 DOCKER_NOOP_VOLUME="${DOCKER_IMAGE_TAG}-volume"
@@ -15,7 +16,7 @@ if [ "$#" -eq 1 ]; then
 fi
 
 echo "=+= (Re)build the container"
-source "${SCRIPT_DIR}/do_build.sh" "$DOCKER_IMAGE_TAG"
+source "${SCRIPT_DIR}/1_build.sh" "$DOCKER_IMAGE_TAG"
 
 cleanup() {
     echo "=+= Cleaning permissions ..."
@@ -73,4 +74,4 @@ docker run --rm \
 
 echo "=+= Wrote results to ${OUTPUT_DIR}"
 
-echo "=+= Save this image for uploading via ./do_save.sh \"${DOCKER_IMAGE_TAG}\""
+echo "=+= Save this image for uploading via ./4_save.sh \"${DOCKER_IMAGE_TAG}\""

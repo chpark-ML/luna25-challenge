@@ -152,8 +152,8 @@ class Trainer(ABC):
 
         # Load pretrained encoder
         self.fine_tune_info = fine_tune_info
-        if fine_tune_info.pretrained_encoder:
-            self.load_pretrained_weight(fine_tune_info.pretrained_encoder)
+        if fine_tune_info.pretrained_weight_path:
+            self.load_pretrained_weight(fine_tune_info.pretrained_weight_path)
 
     @classmethod
     @abstractmethod

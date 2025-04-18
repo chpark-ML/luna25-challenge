@@ -1,6 +1,7 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-DOCKER_IMAGE_TAG="nodulex"
+source "$SCRIPT_DIR/config.sh"
+
 INPUT_DIR="${SCRIPT_DIR}/test/input"
 OUTPUT_DIR="${SCRIPT_DIR}/test/output"
 DOCKER_NOOP_VOLUME="${DOCKER_IMAGE_TAG}-volume"

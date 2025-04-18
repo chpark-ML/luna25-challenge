@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /opt/challenge/trainer/nodule_attr/scripts/cross_validation/phase_1 || exit 1
+cd /opt/challenge/trainer/downstream/scripts/cross_validation_finetune || exit 1
 
 # tmux_window gpu_num val_fold
 paired_values=(
@@ -12,7 +12,7 @@ paired_values=(
   "6 5 5"
 )
 
-my_session=5
+my_session=1
 tmux new-session -d -s ${my_session}  # 새로운 tmux 세션 생성
 
 for pair in "${paired_values[@]}"
@@ -22,5 +22,5 @@ do
   val_fold=$(echo "$pair" | cut -d ' ' -f3)
 
   tmux new-window -t "${my_session}:" -n "${my_window}"  # 새로운 윈도우 생성
-  tmux send-keys -t "${my_session}:${my_window}" "bash main.sh ${gpu_num} ${val_fold}" Enter  # 해당 윈도우로 명령어 전달
+  tmux send-keys -t "${my_session}:${my_window}" "bash cross_validation_base.sh ${gpu_num} ${val_fold}" Enter  # 해당 윈도우로 명령어 전달
 done
