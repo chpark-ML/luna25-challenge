@@ -1,0 +1,2 @@
+_target_: analyzer.malignancy.processor.MalignancyProcessor
+models: ${analyzer.malignancy.models.default.yaml}

@@ -1,0 +1,11 @@
+# specify default training configuration
+defaults:
+  - analyzer: default
+  - loader: default
+  - processor: malignancy
+
+hydra:
+  run:
+    dir: ./outputs
+  job:
+    chdir: True  # keep hydra = 1.1 change directory behavior
