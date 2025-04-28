@@ -20,7 +20,7 @@ class AddCoords(nn.Module):
         """
         if self.rank == 1:
             batch_size_shape, channel_in_shape, dim_x = input_tensor.shape
-            xx_range = torch.arange(dim_x, dtype=torch.int32)
+            xx_range = torch.arange(dim_x, dtype=torch.int32, device=self.device)
             xx_channel = xx_range[None, None, :]
 
             xx_channel = xx_channel.float() / (dim_x - 1)
@@ -36,11 +36,11 @@ class AddCoords(nn.Module):
 
         elif self.rank == 2:
             batch_size_shape, channel_in_shape, dim_y, dim_x = input_tensor.shape
-            xx_ones = torch.ones([1, 1, 1, dim_x], dtype=torch.int32)
-            yy_ones = torch.ones([1, 1, 1, dim_y], dtype=torch.int32)
+            xx_ones = torch.ones([1, 1, 1, dim_x], dtype=torch.int32, device=self.device)
+            yy_ones = torch.ones([1, 1, 1, dim_y], dtype=torch.int32, device=self.device)
 
-            xx_range = torch.arange(dim_y, dtype=torch.int32)
-            yy_range = torch.arange(dim_x, dtype=torch.int32)
+            xx_range = torch.arange(dim_y, dtype=torch.int32, device=self.device)
+            yy_range = torch.arange(dim_x, dtype=torch.int32, device=self.device)
             xx_range = xx_range[None, None, :, None]
             yy_range = yy_range[None, None, :, None]
 
@@ -69,17 +69,17 @@ class AddCoords(nn.Module):
 
         elif self.rank == 3:
             batch_size_shape, channel_in_shape, dim_z, dim_y, dim_x = input_tensor.shape
-            xx_ones = torch.ones([1, 1, 1, 1, dim_x], dtype=torch.int32)
-            yy_ones = torch.ones([1, 1, 1, 1, dim_y], dtype=torch.int32)
-            zz_ones = torch.ones([1, 1, 1, 1, dim_z], dtype=torch.int32)
+            xx_ones = torch.ones([1, 1, 1, 1, dim_x], dtype=torch.int32, device=self.device)
+            yy_ones = torch.ones([1, 1, 1, 1, dim_y], dtype=torch.int32, device=self.device)
+            zz_ones = torch.ones([1, 1, 1, 1, dim_z], dtype=torch.int32, device=self.device)
 
-            xy_range = torch.arange(dim_y, dtype=torch.int32)
+            xy_range = torch.arange(dim_y, dtype=torch.int32, device=self.device)
             xy_range = xy_range[None, None, None, :, None]
 
-            yz_range = torch.arange(dim_z, dtype=torch.int32)
+            yz_range = torch.arange(dim_z, dtype=torch.int32, device=self.device)
             yz_range = yz_range[None, None, None, :, None]
 
-            zx_range = torch.arange(dim_x, dtype=torch.int32)
+            zx_range = torch.arange(dim_x, dtype=torch.int32, device=self.device)
             zx_range = zx_range[None, None, None, :, None]
 
             xy_channel = torch.matmul(xy_range, xx_ones)
