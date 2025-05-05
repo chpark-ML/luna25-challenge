@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 _BEST_CHECKPOINT_NAME = "model"
 _FINAL_CHECKPOINT_POSTFIX = "final"
-_WEIGHT_STEM = "nodulex-v2.0.0"
+_WEIGHT_STEM = "nodulex-v2.0.2"
 _WEIGHT_SUFFIX = ".pt.enc"
 _REPRESENTATIVE_MODEL_NAME = "model_C"
 _WEIGHT_FILE_NAME_BEST = _WEIGHT_STEM + _WEIGHT_SUFFIX
@@ -28,7 +28,7 @@ _THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 def main() -> None:
     logger.info("Encrypt weight file and export TorchScript.")
 
-    list_prefix = [_THIS_DIR + f"/outputs/default/cv_fine_val_fold{fold_index}" for fold_index in range(6)]
+    list_prefix = [_THIS_DIR + f"/outputs/default/cv_val_fold{fold_index}" for fold_index in range(6)]
     print(list_prefix)
 
     for prefix in list_prefix:
@@ -44,7 +44,10 @@ def main() -> None:
             # Load model config
             cfg = omegaconf.OmegaConf.load(prefix + "/.hydra/config.yaml")
             cfg_model = cfg.model[_REPRESENTATIVE_MODEL_NAME]
-            cfg_model.classifier.return_logit = True
+            if hasattr(cfg_model, "return_logit"):
+                # If the model has a return_logit attribute, set it to True
+                cfg_model.return_logit = True
+
 
             # Dummy input for tracing
             sample = torch.rand((1, 1, 48, 72, 72), dtype=torch.float32)
