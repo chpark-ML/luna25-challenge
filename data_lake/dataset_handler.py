@@ -33,17 +33,14 @@ class DatasetHandler:
         """
         if mode == RunMode.TRAIN:
             fold_indices = dataset_info[DatasetInfoKey.TOTAL_FOLD]
-
             # Remove all validation folds
             for val_fold in dataset_info.get(DatasetInfoKey.VALIDATE_FOLD, []):
                 if val_fold in fold_indices:
                     fold_indices.remove(val_fold)
-
             # Remove all test folds (if any)
             for test_fold in dataset_info.get(DatasetInfoKey.TEST_FOLD, []):
                 if test_fold in fold_indices:
                     fold_indices.remove(test_fold)
-            
         elif mode == RunMode.VALIDATE:
             fold_indices = dataset_info.get(DatasetInfoKey.VALIDATE_FOLD, [])
         elif mode == RunMode.TEST:
