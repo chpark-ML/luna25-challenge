@@ -357,8 +357,9 @@ class Trainer(ABC):
 
         # Test if possible
         if RunMode.TEST in loaders and epoch >= self.test_epoch_start:
-            test_metrics = self.test_epoch(epoch, loaders[RunMode.TEST])
-            self.log_metrics(RunMode.TEST.value, epoch, test_metrics, mlflow_log_prefix="EPOCH")
+            if len(loaders[RunMode.TEST].dataset) == 0:
+                test_metrics = self.test_epoch(epoch, loaders[RunMode.TEST])
+                self.log_metrics(RunMode.TEST.value, epoch, test_metrics, mlflow_log_prefix="EPOCH")
 
         # Save model and return metrics
         best_metrics, found_better = self.save_best_metrics(val_metrics, best_model_metrics, epoch)
@@ -419,8 +420,10 @@ class Trainer(ABC):
             self.log_metrics("checkpoint_val", None, best_model_test_metrics)
 
         if RunMode.TEST in loaders:
-            best_model_test_metrics = self.test_epoch(self.epoch_best_model, loaders[RunMode.TEST], export_results=True)
-            self.log_metrics("checkpoint_test", None, best_model_test_metrics)
+            # except when test dataset is empty
+            if len(loaders[RunMode.TEST].dataset) == 0:
+                best_model_test_metrics = self.test_epoch(self.epoch_best_model, loaders[RunMode.TEST], export_results=True)
+                self.log_metrics("checkpoint_test", None, best_model_test_metrics)
 
     def log_metrics(
         self,
