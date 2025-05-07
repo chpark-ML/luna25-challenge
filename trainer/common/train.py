@@ -357,7 +357,7 @@ class Trainer(ABC):
 
         # Test if possible
         if RunMode.TEST in loaders and epoch >= self.test_epoch_start:
-            if len(loaders[RunMode.TEST].dataset) == 0:
+            if len(loaders[RunMode.TEST].dataset) != 0:
                 test_metrics = self.test_epoch(epoch, loaders[RunMode.TEST])
                 self.log_metrics(RunMode.TEST.value, epoch, test_metrics, mlflow_log_prefix="EPOCH")
 
@@ -421,7 +421,7 @@ class Trainer(ABC):
 
         if RunMode.TEST in loaders:
             # except when test dataset is empty
-            if len(loaders[RunMode.TEST].dataset) == 0:
+            if len(loaders[RunMode.TEST].dataset) != 0:
                 best_model_test_metrics = self.test_epoch(self.epoch_best_model, loaders[RunMode.TEST], export_results=True)
                 self.log_metrics("checkpoint_test", None, best_model_test_metrics)
 
