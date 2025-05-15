@@ -60,13 +60,10 @@ def run(config_models, mode="3D"):
 
     # Run your algorithm here
     processor = NoduleProcessor(
-        ct_image_file=input_chest_ct,
-        nodule_locations=input_nodule_locations,
-        clinical_information=input_clinical_information,
         config_models=config_models,
         mode=mode,
     )
-    malignancy_risks = processor.process()
+    malignancy_risks = processor.process(input_chest_ct, input_nodule_locations, input_clinical_information)
 
     # Save your output
     _write_json_file(

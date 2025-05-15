@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 import dataloader
 import numpy as np
@@ -73,8 +73,8 @@ class MalignancyProcessor:
     Loads a chest CT scan, and predicts the malignancy around a nodule
     """
 
-    def __init__(self, config_models=None, mode="3D", suppress_logs=False):
-        self.device = torch.device("cuda:0")
+    def __init__(self, config_models=None, mode="3D", device=torch.device("cuda:0"), suppress_logs=False):
+        self.device = device
         self.size_px_xy = 72
         self.size_px_z = 48
         self.size_mm = 50
@@ -157,7 +157,7 @@ class MalignancyProcessor:
 
 
 class NoduleProcessor:
-    def __init__(self, ct_image_file, nodule_locations, clinical_information, config_models, mode="3D"):
+    def __init__(self, config_models, mode="3D"):
         """
         Parameters
         ----------
@@ -166,14 +166,10 @@ class NoduleProcessor:
         clinical_information: Dictionary containing clinical information (Age and Gender)
         mode: 2D or 3D
         """
-        self._image_file = ct_image_file
-        self.nodule_locations = nodule_locations
-        self.clinical_information = clinical_information
         self.mode = mode
-
         self.processor = MalignancyProcessor(config_models=config_models, mode=mode, suppress_logs=True)
 
-    def predict(self, input_image: SimpleITK.Image, coords: np.array) -> Dict:
+    def predict(self, input_image: SimpleITK.Image, coords: np.array) -> List:
         """
 
         Parameters
@@ -186,11 +182,11 @@ class NoduleProcessor:
         malignancy risk of the nodules provided in /input/nodule-locations.json
         """
 
-        numpyImage, header = itk_image_to_numpy_image(input_image)
+        numpy_image, header = itk_image_to_numpy_image(input_image)
 
         malignancy_risks = []
         for i in range(len(coords)):
-            self.processor.define_inputs(numpyImage, header, [coords[i]])
+            self.processor.define_inputs(numpy_image, header, [coords[i]])
             malignancy_risk = self.processor.predict()
             malignancy_risk = np.array(malignancy_risk).reshape(-1)[0]
             malignancy_risks.append(malignancy_risk)
@@ -201,28 +197,29 @@ class NoduleProcessor:
 
         return malignancy_risks
 
-    def load_inputs(self):
+    @staticmethod
+    def load_inputs(ct_image_file, nodule_locations):
         # load image
-        print(f"Reading {self._image_file}")
-        image = SimpleITK.ReadImage(str(self._image_file))
+        print(f"Reading {ct_image_file}")
+        image = SimpleITK.ReadImage(str(ct_image_file))
 
-        self.annotationIDs = [p["name"] for p in self.nodule_locations["points"]]
-        self.coords = np.array([p["point"] for p in self.nodule_locations["points"]])
-        self.coords = np.flip(self.coords, axis=1)  # reverse to [z, y, x] format
+        annotation_ids = [p["name"] for p in nodule_locations["points"]]
+        coords = np.array([p["point"] for p in nodule_locations["points"]])
+        coords = np.flip(coords, axis=1)  # reverse to [z, y, x] format
 
-        return image, self.coords, self.annotationIDs
+        return image, coords, annotation_ids
 
-    def process(self):
+    def process(self, ct_image_file, nodule_locations, clinical_information=None) -> Dict:
         """
         Load CT scan(s) and nodule coordinates, predict malignancy risk and write the outputs
         Returns
         -------
         None
         """
-        image, coords, annotationIDs = self.load_inputs()
+        image, coords, annotation_ids = self.load_inputs(ct_image_file, nodule_locations)
         output = self.predict(image, coords)
 
-        assert len(output) == len(annotationIDs), "Number of outputs should match number of inputs"
+        assert len(output) == len(annotation_ids), "Number of outputs should match number of inputs"
         results = {
             "name": "Points of interest",
             "type": "Multiple points",
@@ -232,8 +229,8 @@ class NoduleProcessor:
 
         # Populate the "points" section dynamically
         coords = np.flip(coords, axis=1)
-        for i in range(len(annotationIDs)):
+        for i in range(len(annotation_ids)):
             results["points"].append(
-                {"name": annotationIDs[i], "point": coords[i].tolist(), "probability": float(output[i])}
+                {"name": annotation_ids[i], "point": coords[i].tolist(), "probability": float(output[i])}
             )
         return results
