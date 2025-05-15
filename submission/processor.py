@@ -1,13 +1,10 @@
-"""
-Inference script for predicting malignancy of lung nodules
-"""
-
 import logging
-import os
 from pathlib import Path
+from typing import Dict
 
 import dataloader
 import numpy as np
+import SimpleITK
 import torch
 
 logging.basicConfig(
@@ -15,6 +12,59 @@ logging.basicConfig(
     format="[%(levelname)s][%(asctime)s] %(message)s",
     datefmt="%I:%M:%S",
 )
+
+
+def transform(input_image, point):
+    """
+
+    Parameters
+    ----------
+    input_image: SimpleITK Image
+    point: array of points
+
+    Returns
+    -------
+    tNumpyOrigin
+
+    """
+    return np.array(list(reversed(input_image.TransformContinuousIndexToPhysicalPoint(list(reversed(point))))))
+
+
+def itk_image_to_numpy_image(input_image):
+    """
+
+    Parameters
+    ----------
+    input_image: SimpleITK image
+
+    Returns
+    -------
+    numpyImage: SimpleITK image to numpy image
+    header: dict containing origin, spacing and transform in numpy format
+
+    """
+
+    numpyImage = SimpleITK.GetArrayFromImage(input_image)
+    numpyOrigin = np.array(list(reversed(input_image.GetOrigin())))
+    numpySpacing = np.array(list(reversed(input_image.GetSpacing())))
+
+    # get numpyTransform
+    tNumpyOrigin = transform(input_image, np.zeros((numpyImage.ndim,)))
+    tNumpyMatrixComponents = [None] * numpyImage.ndim
+    for i in range(numpyImage.ndim):
+        v = [0] * numpyImage.ndim
+        v[i] = 1
+        tNumpyMatrixComponents[i] = transform(input_image, v) - tNumpyOrigin
+    numpyTransform = np.vstack(tNumpyMatrixComponents).dot(np.diag(1 / numpySpacing))
+
+    # define necessary image metadata in header
+    header = {
+        "origin": numpyOrigin,
+        "spacing": numpySpacing,
+        "transform": numpyTransform,
+    }
+
+    return numpyImage, header
 
 
 # define processor
@@ -104,3 +154,86 @@ class MalignancyProcessor:
         mean_probs = np.mean(probs, axis=0)
 
         return mean_probs
+
+
+class NoduleProcessor:
+    def __init__(self, ct_image_file, nodule_locations, clinical_information, config_models, mode="3D"):
+        """
+        Parameters
+        ----------
+        ct_image_file: Path to the CT image file
+        nodule_locations: Dictionary containing nodule coordinates and annotationIDs
+        clinical_information: Dictionary containing clinical information (Age and Gender)
+        mode: 2D or 3D
+        """
+        self._image_file = ct_image_file
+        self.nodule_locations = nodule_locations
+        self.clinical_information = clinical_information
+        self.mode = mode
+
+        self.processor = MalignancyProcessor(config_models=config_models, mode=mode, suppress_logs=True)
+
+    def predict(self, input_image: SimpleITK.Image, coords: np.array) -> Dict:
+        """
+
+        Parameters
+        ----------
+        input_image: SimpleITK Image
+        coords: numpy array with list of nodule coordinates in /input/nodule-locations.json
+
+        Returns
+        -------
+        malignancy risk of the nodules provided in /input/nodule-locations.json
+        """
+
+        numpyImage, header = itk_image_to_numpy_image(input_image)
+
+        malignancy_risks = []
+        for i in range(len(coords)):
+            self.processor.define_inputs(numpyImage, header, [coords[i]])
+            malignancy_risk = self.processor.predict()
+            malignancy_risk = np.array(malignancy_risk).reshape(-1)[0]
+            malignancy_risks.append(malignancy_risk)
+
+        malignancy_risks = np.array(malignancy_risks)
+
+        malignancy_risks = list(malignancy_risks)
+
+        return malignancy_risks
+
+    def load_inputs(self):
+        # load image
+        print(f"Reading {self._image_file}")
+        image = SimpleITK.ReadImage(str(self._image_file))
+
+        self.annotationIDs = [p["name"] for p in self.nodule_locations["points"]]
+        self.coords = np.array([p["point"] for p in self.nodule_locations["points"]])
+        self.coords = np.flip(self.coords, axis=1)  # reverse to [z, y, x] format
+
+        return image, self.coords, self.annotationIDs
+
+    def process(self):
+        """
+        Load CT scan(s) and nodule coordinates, predict malignancy risk and write the outputs
+        Returns
+        -------
+        None
+        """
+        image, coords, annotationIDs = self.load_inputs()
+        output = self.predict(image, coords)
+
+        assert len(output) == len(annotationIDs), "Number of outputs should match number of inputs"
+        results = {
+            "name": "Points of interest",
+            "type": "Multiple points",
+            "points": [],
+            "version": {"major": 1, "minor": 0},
+        }
+
+        # Populate the "points" section dynamically
+        coords = np.flip(coords, axis=1)
+        for i in range(len(annotationIDs)):
+            results["points"].append(
+                {"name": annotationIDs[i], "point": coords[i].tolist(), "probability": float(output[i])}
+            )
+        return results
