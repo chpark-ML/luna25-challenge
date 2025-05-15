@@ -108,14 +108,14 @@ class MalignancyProcessor:
             coord_space_world=True,
             mode=mode,
             order=self.order,
-        )
+        )  # (1, w, h, d)
 
         # ensure same datatype...
         patch = patch.astype(np.float32)
 
         # clip and scale...
         patch = dataloader.clip_and_scale(patch)
-        return patch
+        return patch  # (1, w, h, d)
 
     def _prepare_patch(self, image, header, coord, mode="3D") -> torch.Tensor:
         if not self.suppress_logs:
@@ -123,11 +123,10 @@ class MalignancyProcessor:
 
         assert mode == "3D"
         output_shape = [self.size_px_z, self.size_px_xy, self.size_px_xy]
-
-        patch = self._extract_patch(image, header, coord, output_shape, mode=mode)
+        patch = self._extract_patch(image, header, coord, output_shape, mode=mode)  # (1, w, h, d)
         patch = torch.from_numpy(patch).to(self.device)
 
-        return patch.unsqueeze(0).unsqueeze(1)  # 1, 1, w, h, d
+        return patch.unsqueeze(0)  # 1, 1, w, h, d
 
     def predict(self, numpy_image, header, coord):
         patch = self._prepare_patch(numpy_image, header, coord, self.mode)
@@ -178,7 +177,7 @@ class ImageProcessor:
         # predict malignancy risk
         malignancy_risks = []
         for i in range(len(coords)):
-            malignancy_risk = self.malignancy_processor.predict(numpy_image, header, [coords[i]])
+            malignancy_risk = self.malignancy_processor.predict(numpy_image, header, coords[i])
             malignancy_risk = np.array(malignancy_risk).reshape(-1)[0]
             malignancy_risks.append(malignancy_risk)
         malignancy_risks = np.array(malignancy_risks)

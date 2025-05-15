@@ -16,7 +16,7 @@ if [ "$#" -eq 1 ]; then
 fi
 
 echo "=+= (Re)build the container"
-source "${SCRIPT_DIR}/1_build.sh" "$DOCKER_IMAGE_TAG"
+source "${SCRIPT_DIR}/1_build.sh"
 
 cleanup() {
     echo "=+= Cleaning permissions ..."

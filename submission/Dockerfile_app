@@ -1,0 +1,10 @@
+FROM nodulex-base:latest
+
+# Copy application files
+COPY --chown=user:user processor.py dataloader.py /opt/app/
+COPY --chown=user:user configs /opt/app/configs
+COPY --chown=user:user resources /opt/app/resources
+COPY --chown=user:user inference.py /opt/app/
+COPY --chown=user:user main.py /opt/app/
+
+ENTRYPOINT ["python", "main.py"]
