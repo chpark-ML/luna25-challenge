@@ -7,7 +7,7 @@ from glob import glob
 from pathlib import Path
 
 import torch
-from processor import NoduleProcessor
+from processor import ImageProcessor
 
 INPUT_PATH = Path("/input")
 OUTPUT_PATH = Path("/output")
@@ -59,7 +59,7 @@ def run(config_models, mode="3D"):
     _show_torch_cuda_info()
 
     # Run your algorithm here
-    processor = NoduleProcessor(
+    processor = ImageProcessor(
         config_models=config_models,
         mode=mode,
     )

@@ -92,18 +92,13 @@ class MalignancyProcessor:
             model_path = Path(config_model.root_path) / config_model.exp_name / config_model.file_name
             self.models[model_indicator] = torch.jit.load(model_path, map_location=self.device).to(self.device).eval()
 
-    def define_inputs(self, image, header, coords):
-        self.image = image
-        self.header = header
-        self.coords = coords
-
-    def extract_patch(self, coord, output_shape, mode):
+    def _extract_patch(self, image, header, coord, output_shape, mode) -> np.array:
         patch = dataloader.extract_patch(
-            CTData=self.image,
+            CTData=image,
             coord=coord,
-            srcVoxelOrigin=self.header["origin"],
-            srcWorldMatrix=self.header["transform"],
-            srcVoxelSpacing=self.header["spacing"],
+            srcVoxelOrigin=header["origin"],
+            srcWorldMatrix=header["transform"],
+            srcVoxelSpacing=header["spacing"],
             output_shape=output_shape,
             voxel_spacing=(
                 self.size_mm / self.size_px_z,
@@ -122,31 +117,24 @@ class MalignancyProcessor:
         patch = dataloader.clip_and_scale(patch)
         return patch
 
-    def _prepare_input(self, mode):
+    def _prepare_patch(self, image, header, coord, mode="3D") -> torch.Tensor:
         if not self.suppress_logs:
             logging.info("Processing in " + mode)
 
         assert mode == "3D"
         output_shape = [self.size_px_z, self.size_px_xy, self.size_px_xy]
 
-        nodules = []
-        for _coord in self.coords:
-            patch = self.extract_patch(_coord, output_shape, mode=mode)
-            nodules.append(patch)
+        patch = self._extract_patch(image, header, coord, output_shape, mode=mode)
+        patch = torch.from_numpy(patch).to(self.device)
 
-        nodules = np.array(nodules)
-        nodules = torch.from_numpy(nodules).to(self.device)
+        return patch.unsqueeze(0).unsqueeze(1)  # 1, 1, w, h, d
 
-        return nodules
-
-    def predict(self):
-        nodules = self._prepare_input(self.mode)
+    def predict(self, numpy_image, header, coord):
+        patch = self._prepare_patch(numpy_image, header, coord, self.mode)
 
         probs = list()
         for model_name, model in self.models.items():
-            # print(f"[INFO] Input device: {nodules.device}")
-            # print(f"[INFO] Model device: {next(model.parameters()).device}")
-            logits = model(nodules)
+            logits = model(patch)
             logits = logits.data.cpu().numpy()
             probs.append(torch.sigmoid(torch.from_numpy(logits)).numpy())
 
@@ -156,7 +144,7 @@ class MalignancyProcessor:
         return mean_probs
 
 
-class NoduleProcessor:
+class ImageProcessor:
     def __init__(self, config_models, mode="3D"):
         """
         Parameters
@@ -167,9 +155,9 @@ class NoduleProcessor:
         mode: 2D or 3D
         """
         self.mode = mode
-        self.processor = MalignancyProcessor(config_models=config_models, mode=mode, suppress_logs=True)
+        self.malignancy_processor = MalignancyProcessor(config_models=config_models, mode=mode, suppress_logs=True)
 
-    def predict(self, input_image: SimpleITK.Image, coords: np.array) -> List:
+    def _predict(self, input_image: SimpleITK.Image, coords: np.array, clinical_information) -> List:
         """
 
         Parameters
@@ -182,23 +170,24 @@ class NoduleProcessor:
         malignancy risk of the nodules provided in /input/nodule-locations.json
         """
 
+        # image loader
         numpy_image, header = itk_image_to_numpy_image(input_image)
 
+        # prepare image-level features, e.g., lobe seg mask, image-level feature representation, etc.
+
+        # predict malignancy risk
         malignancy_risks = []
         for i in range(len(coords)):
-            self.processor.define_inputs(numpy_image, header, [coords[i]])
-            malignancy_risk = self.processor.predict()
+            malignancy_risk = self.malignancy_processor.predict(numpy_image, header, [coords[i]])
             malignancy_risk = np.array(malignancy_risk).reshape(-1)[0]
             malignancy_risks.append(malignancy_risk)
-
         malignancy_risks = np.array(malignancy_risks)
-
         malignancy_risks = list(malignancy_risks)
 
         return malignancy_risks
 
     @staticmethod
-    def load_inputs(ct_image_file, nodule_locations):
+    def _load_inputs(ct_image_file, nodule_locations):
         # load image
         print(f"Reading {ct_image_file}")
         image = SimpleITK.ReadImage(str(ct_image_file))
@@ -216,8 +205,11 @@ class NoduleProcessor:
         -------
         None
         """
-        image, coords, annotation_ids = self.load_inputs(ct_image_file, nodule_locations)
-        output = self.predict(image, coords)
+        # prepare image and coords
+        image, coords, annotation_ids = self._load_inputs(ct_image_file, nodule_locations)
+
+        # get malignancy risk score
+        output = self._predict(image, coords, clinical_information)
 
         assert len(output) == len(annotation_ids), "Number of outputs should match number of inputs"
         results = {
@@ -231,6 +223,8 @@ class NoduleProcessor:
         coords = np.flip(coords, axis=1)
         for i in range(len(annotation_ids)):
             results["points"].append(
-                {"name": annotation_ids[i], "point": coords[i].tolist(), "probability": float(output[i])}
+                {"name": annotation_ids[i],
+                 "point": coords[i].tolist(),
+                 "probability": float(output[i])}
             )
         return results
