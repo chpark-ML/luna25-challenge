@@ -96,26 +96,26 @@ class swin_classifier(nn.Module):
         
         # Final classification head
         self.head = nn.Sequential(
-            nn.Linear(feature_size * 16, 512),
+            nn.Linear(feature_size * 16, 32),
             nn.ReLU(inplace=True),
             nn.Dropout(p=drop_rate),
-            nn.Linear(512, num_classes)
+            nn.Linear(32, num_classes)
         )
 
     def forward(self, x_in):
         hidden_states_out = self.swinViT(x_in, self.normalize)
         x = hidden_states_out[-1]
-        print("Shape after swinViT:", x.shape)  # [1, 768, 2, 2, 2]
+        # print("Shape after swinViT:", x.shape)  # [1, 768, 2, 2, 2]
         
         if self.spatial_dims == 3:
             x = self.avg_pool(x)
-            print("Shape after pooling:", x.shape)  # [1, 2, 1, 1, 1]
+            # print("Shape after pooling:", x.shape)  # [1, 2, 1, 1, 1]
         else:
             x = self.avg_pool(x) # 2D cases 
-            print("Shape after pooling:", x.shape)  # [1, 2, 1, 1, 1]  
+            # print("Shape after pooling:", x.shape)  # [1, 2, 1, 1, 1]  
         
         x = torch.flatten(x, 1)
-        print("Shape after flatten:", x.shape)  # [1, 2]
+        # print("Shape after flatten:", x.shape)  # [1, 2]
         x = self.head(x)
         
         if self.num_classes == 1:
@@ -175,12 +175,12 @@ class swin_classifier(nn.Module):
 if __name__ == "__main__":
     # Example usage
     model = swin_classifier(
-        img_size=(64, 64, 64),  # D, H, W
+        img_size=(32, 32, 32),  # D, H, W
         in_channels=1,            # RGB input
         num_classes=1,            # Binary classification
-        feature_size=48,          # Base feature size
+        feature_size=16,          # Base feature size
         depths=(2, 2, 2, 2),      # Number of blocks in each stage
-        num_heads=(3, 6, 12, 24), # Number of attention heads in each stage
+        num_heads=(2, 4, 8, 16), # Number of attention heads in each stage
         drop_rate=0.0,
         attn_drop_rate=0.0,
         dropout_path_rate=0.0,
@@ -188,7 +188,7 @@ if __name__ == "__main__":
     ).cuda()
     
     # Test with a random input
-    x = torch.randn(1, 1, 64, 64, 64).cuda()  # B, C, D, H, W
+    x = torch.randn(1, 1, 32, 32, 32).cuda()  # B, C, D, H, W
     with torch.no_grad():
         y = model(x)
         print(f"Input shape: {x.shape}")
