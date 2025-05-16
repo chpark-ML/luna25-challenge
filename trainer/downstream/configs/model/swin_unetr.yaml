@@ -1,5 +1,5 @@
 model_C:
-  _target_: trainer.common.models.swin_unetr.swin_slassifier
+  _target_: trainer.common.models.swin_unetr.swin_classifier
   in_channels: 1
   num_classes: 1
   depths: [2, 2, 2, 2]
