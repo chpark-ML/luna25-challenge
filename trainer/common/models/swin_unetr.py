@@ -1259,6 +1259,10 @@ if __name__ == "__main__":
     
     # Test with a random input
     x = torch.randn(1, 1, 64, 64, 64).cuda()  # B, C, D, H, W
-    y = model(x)
-    print(f"Input shape: {x.shape}")
-    print(f"Output shape: {y.shape}")  # Should be (1,) for binary classification 
+    with torch.no_grad():
+        y = model(x)
+        print(f"Input shape: {x.shape}")
+        print(f"Output shape: {y.shape}")  # Should be (1,) for binary classification 
+        
+    del model, x, y
+    torch.cuda.empty_cache()
