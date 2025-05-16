@@ -1,5 +1,5 @@
 model_C:
-  _target_: trainer.common.models.swin_unetr.SwinUNETRClassifier
+  _target_: trainer.common.models.swin_unetr.swin_slassifier
   in_channels: 1
   num_classes: 1
   depths: [2, 2, 2, 2]
@@ -10,4 +10,3 @@ model_C:
   dropout_path_rate: 0.0
   normalize: True
   spatial_dims: 3
-  
