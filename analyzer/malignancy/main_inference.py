@@ -8,7 +8,7 @@ from omegaconf import DictConfig
 from sklearn import metrics
 
 from shared_lib.enums import RunMode
-from shared_lib.utils.utils import set_seed
+from shared_lib.utils.utils import print_config, set_seed
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 
 @hydra.main(version_base="1.2", config_path="configs", config_name="config_inference")
 def main(config: DictConfig):
+    # print config
+    print_config(config, resolve=True)
+
     # set seed
     set_seed()
 
