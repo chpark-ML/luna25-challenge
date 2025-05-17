@@ -1,6 +1,9 @@
 import logging
+import os
+from pathlib import Path
 
 import hydra
+import pandas as pd
 from omegaconf import DictConfig
 from sklearn import metrics
 
@@ -38,6 +41,14 @@ def main(config: DictConfig):
     # get auroc score
     auroc = metrics.roc_auc_score(annots, probs)
     print(f"Auroc score: {auroc}")
+
+    # Save to DataFrame
+    df = pd.DataFrame({"annotations": annots, "probabilities": probs})
+    output_dir = Path(config.output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+    df_path = output_dir / f"inference_results_{config.run_name}.csv"
+    df.to_csv(df_path, index=False)
+    print(f"Results saved to: {df_path}")
 
 
 if __name__ == "__main__":
