@@ -1,5 +1,5 @@
 import logging
-from pathlib import Path
+from tqdm import tqdm
 
 import numpy as np
 import torch
@@ -75,3 +75,34 @@ class MalignancyProcessor:
         mean_probs = np.mean(probs, axis=0)
 
         return mean_probs
+
+    def inference(self, loader, sanity_check=False):
+        list_probs = []
+        list_annots = []
+
+        for data in tqdm(loader):
+            # prediction
+            patch_image = data["image"].to(self.device)
+
+            # annotation
+            annot = data["label"].to(self.device).float()
+
+            # inference
+            probs = list()
+            for model_name, model in self.models.items():
+                logits = model.get_prediction(patch_image)  # (B, 1)
+                probs.append(torch.sigmoid(logits))
+            probs = torch.stack(probs)  # (num_models, B, 1)
+            probs = torch.mean(probs, axis=0)  # (B, 1)
+
+            list_probs.append(probs)
+            list_annots.append(annot)
+
+            # sanity check
+            if sanity_check:
+                break
+
+        probs = torch.vstack(list_probs)
+        annots = torch.vstack(list_annots)
+
+        return probs, annots
