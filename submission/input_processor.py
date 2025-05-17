@@ -5,7 +5,7 @@ import hydra
 import numpy as np
 import SimpleITK
 
-from shared_lib.malignancy_processor import MalignancyProcessor
+from shared_lib.utils.utils import set_seed
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -77,6 +77,7 @@ class ImageProcessor:
         clinical_information: Dictionary containing clinical information (Age and Gender)
         mode: 2D or 3D
         """
+        set_seed()
         self.mode = config.mode
         models = dict()
         for model_indicator, config_model in config.models.items():

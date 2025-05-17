@@ -1,13 +1,11 @@
 import ast
 import logging
 from pathlib import Path
-from typing import List, Union
+from typing import Union
 
 import hydra
 import numpy as np
 import numpy.linalg as npl
-import pandas as pd
-import pymongo
 import scipy.ndimage as ndi
 import torch
 import torch.utils.data as data

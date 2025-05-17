@@ -158,8 +158,8 @@ def set_seed(seed=42):
     torch.cuda.manual_seed_all(seed)  # For multi-GPU
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
-    np.random.seed(seed)
     random.seed(seed)
+    np.random.seed(seed)
 
 
 def get_torch_model(model: nn.Module, model_path: str) -> torch.nn.Module:

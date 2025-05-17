@@ -80,6 +80,7 @@ class MalignancyProcessor:
         list_probs = list()
         dict_probs = {model_name: [] for model_name in self.models.keys()}
         list_annots = list()
+        list_annot_ids = list()
 
         for data in tqdm(loader):
             # prediction
@@ -87,6 +88,7 @@ class MalignancyProcessor:
 
             # annotation
             annot = data["label"].to(self.device).float()
+            annot_ids = data["ID"]
 
             # inference (model-wise)
             batch_probs = list()
@@ -106,7 +108,7 @@ class MalignancyProcessor:
 
             list_probs.append(mean_probs)
             list_annots.append(annot)
-
+            list_annot_ids.extend(annot_ids)
             # sanity check
             if sanity_check:
                 break
@@ -122,4 +124,4 @@ class MalignancyProcessor:
         # Convert dict_probs to numpy
         dict_probs = {k: torch.vstack(v).squeeze().cpu().numpy() for k, v in dict_probs.items()}
 
-        return overall_probs, overall_annots, dict_probs
+        return overall_probs, overall_annots, list_annot_ids, dict_probs

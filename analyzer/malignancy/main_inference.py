@@ -8,6 +8,7 @@ from omegaconf import DictConfig
 from sklearn import metrics
 
 from shared_lib.enums import RunMode
+from shared_lib.utils.utils import set_seed
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -15,6 +16,9 @@ logger = logging.getLogger(__name__)
 
 @hydra.main(version_base="1.2", config_path="configs", config_name="config_inference")
 def main(config: DictConfig):
+    # set seed
+    set_seed()
+
     # runner
     models = dict()
     for model_indicator, config_model in config.models.items():
@@ -36,7 +40,9 @@ def main(config: DictConfig):
     }
 
     # get inference results
-    probs, annots, dict_probs = malignancy_processor.inference(loaders[RunMode.TEST], sanity_check=config.sanity_check)
+    probs, annots, annot_ids, dict_probs = malignancy_processor.inference(
+        loaders[RunMode.TEST], sanity_check=config.sanity_check
+    )
 
     # get auroc score
     auroc = metrics.roc_auc_score(annots, probs)
@@ -44,6 +50,7 @@ def main(config: DictConfig):
 
     # Prepare DataFrame
     df_data = {
+        "annot_ids": annot_ids,
         "annotation": annots,
         "prob_ensemble": probs,
     }
