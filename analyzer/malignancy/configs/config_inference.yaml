@@ -5,7 +5,6 @@ defaults:
   - models: 2_0_1.yaml
 
 run_modes:
-  - val
   - test
 sanity_check: False
 

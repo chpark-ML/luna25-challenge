@@ -1,8 +1,8 @@
 import logging
-from tqdm import tqdm
 
 import numpy as np
 import torch
+from tqdm import tqdm
 
 from shared_lib.tools.image_parser import clip_and_scale, extract_patch
 
@@ -105,4 +105,4 @@ class MalignancyProcessor:
         probs = torch.vstack(list_probs)
         annots = torch.vstack(list_annots)
 
-        return probs, annots
+        return probs.squeeze().cpu().numpy(), annots.squeeze().cpu().numpy()
