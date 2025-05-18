@@ -11,7 +11,7 @@ def _calculateAllPermutations(itemList):
         return [[i] + p for i in itemList[0] for p in sub_permutations]
 
 
-def volumeTransform(
+def _volumeTransform(
     image,
     voxel_spacing,
     transform_matrix,
@@ -230,7 +230,7 @@ def extract_patch(
         overrideCoord = coord * srcVoxelSpacing
     overrideMatrix = (invSrcMatrix.dot(thisTransformMatrix.T) * srcVoxelSpacing).T
 
-    patch = volumeTransform(
+    patch = _volumeTransform(
         CTData,
         srcVoxelSpacing,
         overrideMatrix,

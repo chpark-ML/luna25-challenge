@@ -1,4 +1,4 @@
-# specify default training configuration
+# specify default configuration
 defaults:
   - loader: default
   - processor: default
