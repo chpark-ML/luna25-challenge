@@ -23,8 +23,15 @@ class CTPlane(Enum):
     sagittal = 2
 
 
+class ThresholdMode(Enum):
+    F1 = "f1"
+    YOUDEN = "youden"
+
+
 class BaseBestModelStandard(Enum):
     REPRESENTATIVE = "representative_metric"
+    LAST = "last_epoch"
+    AUROC = "auroc"
 
 
 class NoduleType(IntEnum):

@@ -12,7 +12,7 @@ import tqdm
 from sklearn import metrics
 
 import trainer.common.train as comm_train
-from shared_lib.enums import RunMode
+from shared_lib.enums import RunMode, BaseBestModelStandard
 from trainer.common.enums import ModelName, ThresholdMode
 from trainer.downstream.datasets.luna25 import DataLoaderKeys
 
@@ -325,15 +325,38 @@ class Trainer(comm_train.Trainer):
         found_better = False
         if val_metrics.loss < best_metrics.loss:
             found_better = True
-            model_path = f"model.pth"
+            model_path = f"model_loss.pth"
             logger.info(
                 f"loss improved from {best_metrics.loss:4f} to {val_metrics.loss:4f}, " f"saving model to {model_path}."
             )
 
             best_metrics = val_metrics
-            self.path_best_model = model_path
-            self.epoch_best_model = epoch
+            self.path_best_model[BaseBestModelStandard.REPRESENTATIVE] = model_path
+            self.epoch_best_model[BaseBestModelStandard.REPRESENTATIVE] = epoch
+            self.threshold_best_model[BaseBestModelStandard.REPRESENTATIVE] = self.dict_threshold
             self.save_checkpoint(model_path, thresholds=self.dict_threshold)
+
+        if val_metrics.eval_metrics["auroc"] > best_metrics.eval_metrics["auroc"]:
+            found_better = True
+            model_path = f"model_auroc.pth"
+            logger.info(
+                f"loss improved from {best_metrics.eval_metrics['auroc']:4f} to {val_metrics.eval_metrics['auroc']:4f}, " f"saving model to {model_path}."
+            )
+
+            best_metrics = val_metrics
+            self.path_best_model[BaseBestModelStandard.AUROC] = model_path
+            self.epoch_best_model[BaseBestModelStandard.AUROC] = epoch
+            self.threshold_best_model[BaseBestModelStandard.AUROC] = self.dict_threshold
+            self.save_checkpoint(model_path, thresholds=self.dict_threshold)
+
+        if epoch == self.max_epoch - 1:  # the given `epoch` is in the range of (0, self.max_epoch)
+            found_better = True
+            model_path = f"model_final.pth"
+            logger.info(f"saving model to {model_path}.")
+            self.path_best_model[BaseBestModelStandard.LAST] = model_path
+            self.epoch_best_model[BaseBestModelStandard.LAST] = epoch
+            self.threshold_best_model[BaseBestModelStandard.LAST] = self.current_threshold
+            self.save_checkpoint(model_path)
 
         return best_metrics, found_better
 
