@@ -14,7 +14,7 @@ from sklearn import metrics
 
 import trainer.common.train as comm_train
 from data_lake.lidc.constants import LOGISTIC_TASK_POSTFIX, RESAMPLED_FEATURE_POSTFIX
-from shared_lib.enums import RunMode, BaseBestModelStandard
+from shared_lib.enums import BaseBestModelStandard, RunMode
 from trainer.common.constants import ANNOTATION_KEY, INPUT_PATCH_KEY, LOGIT_KEY, LossKey
 from trainer.common.enums import ModelName, ThresholdMode
 from trainer.common.utils import freeze_layers
@@ -47,7 +47,7 @@ def _check_any_nan(arr):
 
 
 def get_binary_classification_metrics(
-        logit: dict, prob: dict, annot: dict, threshold: dict, threshold_mode: ThresholdMode = ThresholdMode.YOUDEN
+    logit: dict, prob: dict, annot: dict, threshold: dict, threshold_mode: ThresholdMode = ThresholdMode.YOUDEN
 ):
     assert type(prob) == type(annot)
     result_dict = dict()
@@ -75,21 +75,21 @@ class Trainer(comm_train.Trainer):
     """Trainer to train model"""
 
     def __init__(
-            self,
-            model,
-            optimizer,
-            scheduler,
-            criterion,
-            remove_ambiguous_in_val_test,
-            lower_bound_ambiguous_label,
-            upper_bound_ambiguous_label,
-            thresholding_mode_representative,
-            thresholding_mode,
-            target_attr_total,
-            target_attr_to_train,
-            target_attr_downstream,
-            grad_clip_max_norm,
-            **kwargs,
+        self,
+        model,
+        optimizer,
+        scheduler,
+        criterion,
+        remove_ambiguous_in_val_test,
+        lower_bound_ambiguous_label,
+        upper_bound_ambiguous_label,
+        thresholding_mode_representative,
+        thresholding_mode,
+        target_attr_total,
+        target_attr_to_train,
+        target_attr_downstream,
+        grad_clip_max_norm,
+        **kwargs,
     ) -> None:
         self.repr_model_name = ModelName.CLASSIFIER
         super().__init__(model, optimizer, scheduler, criterion, **kwargs)
@@ -111,7 +111,7 @@ class Trainer(comm_train.Trainer):
 
     @classmethod
     def instantiate_trainer(
-            cls, config: omegaconf.DictConfig, loaders, logging_tool, optuna_trial=None
+        cls, config: omegaconf.DictConfig, loaders, logging_tool, optuna_trial=None
     ) -> comm_train.Trainer:
         # Init model
         if isinstance(config.model, (omegaconf.DictConfig, dict)):
@@ -292,7 +292,7 @@ class Trainer(comm_train.Trainer):
         if LOGISTIC_TASK_POSTFIX in target_attr_downstream:
             # samples where annotation label is not ambiguous, 0.5.
             index_to_be_validated = (dict_annots[target_attr_downstream][:, 0] < self.lower_bound_ambiguous_label) | (
-                    dict_annots[target_attr_downstream][:, 0] > self.upper_bound_ambiguous_label
+                dict_annots[target_attr_downstream][:, 0] > self.upper_bound_ambiguous_label
             )
             assert index_to_be_validated.sum() != 0, f"{target_attr_downstream} has no sample for validation"
             dict_logits[target_attr_downstream] = dict_logits[target_attr_downstream][index_to_be_validated]

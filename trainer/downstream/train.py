@@ -12,7 +12,7 @@ import tqdm
 from sklearn import metrics
 
 import trainer.common.train as comm_train
-from shared_lib.enums import RunMode, BaseBestModelStandard
+from shared_lib.enums import BaseBestModelStandard, RunMode
 from trainer.common.enums import ModelName, ThresholdMode
 from trainer.downstream.datasets.luna25 import DataLoaderKeys
 
@@ -340,7 +340,8 @@ class Trainer(comm_train.Trainer):
             found_better = True
             model_path = f"model_auroc.pth"
             logger.info(
-                f"loss improved from {best_metrics.eval_metrics['auroc']:4f} to {val_metrics.eval_metrics['auroc']:4f}, " f"saving model to {model_path}."
+                f"loss improved from {best_metrics.eval_metrics['auroc']:4f} to {val_metrics.eval_metrics['auroc']:4f}, "
+                f"saving model to {model_path}."
             )
 
             best_metrics = val_metrics

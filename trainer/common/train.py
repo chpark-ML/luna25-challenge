@@ -15,7 +15,7 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.cuda.amp as amp
 
-from shared_lib.enums import RunMode, BaseBestModelStandard, ThresholdMode
+from shared_lib.enums import BaseBestModelStandard, RunMode, ThresholdMode
 from shared_lib.utils.utils import get_torch_device_string, print_config, set_config
 from trainer.common.experiment_tool import load_logging_tool
 from trainer.common.sampler import make_weights_for_balanced_classes
@@ -87,24 +87,24 @@ class Metrics(ABC):
 
 class Trainer(ABC):
     def __init__(
-            self,
-            model,
-            optimizer,
-            scheduler,
-            criterion,
-            logging_tool,
-            gpus,
-            fast_dev_run,
-            max_epoch,
-            log_every_n_steps=1,
-            test_epoch_start=0,
-            resume_from_checkpoint=False,
-            benchmark=False,
-            deterministic=True,
-            fine_tune_info=None,
-            early_stop_patience: int = None,
-            use_amp: bool = True,
-            optuna_trial: optuna.Trial = None,
+        self,
+        model,
+        optimizer,
+        scheduler,
+        criterion,
+        logging_tool,
+        gpus,
+        fast_dev_run,
+        max_epoch,
+        log_every_n_steps=1,
+        test_epoch_start=0,
+        resume_from_checkpoint=False,
+        benchmark=False,
+        deterministic=True,
+        fine_tune_info=None,
+        early_stop_patience: int = None,
+        use_amp: bool = True,
+        optuna_trial: optuna.Trial = None,
     ):
         self.model = model
         if not hasattr(self, "repr_model_name"):
@@ -121,8 +121,7 @@ class Trainer(ABC):
 
         # threshold storage
         self.threshold_best_model = {
-            standard: {threshold_mode: 0.5 for threshold_mode in ThresholdMode}
-            for standard in BaseBestModelStandard
+            standard: {threshold_mode: 0.5 for threshold_mode in ThresholdMode} for standard in BaseBestModelStandard
         }
 
         self.optimizer = optimizer
@@ -328,10 +327,10 @@ class Trainer(ABC):
 
     @abstractmethod
     def save_best_metrics(
-            self,
-            val_metrics: Union[object, dict],
-            best_model_metrics: Union[object, dict],
-            epoch,
+        self,
+        val_metrics: Union[object, dict],
+        best_model_metrics: Union[object, dict],
+        epoch,
     ) -> (object, bool):
         """Save best metrics and return best metrics and whether it better metrics was found"""
 
@@ -403,8 +402,8 @@ class Trainer(ABC):
         patience = 0
         best_model_metrics = self.get_initial_model_metric()
         for epoch in range(
-                self.resume_epoch,
-                self.resume_epoch + 2 if self.fast_dev_run else self.max_epoch,
+            self.resume_epoch,
+            self.resume_epoch + 2 if self.fast_dev_run else self.max_epoch,
         ):
             best_model_metrics, found_better = self.run_epoch(
                 epoch,
@@ -422,8 +421,9 @@ class Trainer(ABC):
     def test(self, loaders):
         # Test the checkpoints
         for standard in BaseBestModelStandard:
-            model_path = self.path_best_model[standard] if isinstance(self.path_best_model,
-                                                                      dict) else self.path_best_model
+            model_path = (
+                self.path_best_model[standard] if isinstance(self.path_best_model, dict) else self.path_best_model
+            )
             if os.path.exists(model_path):
                 self.load_checkpoint(model_path)
             else:
@@ -438,18 +438,19 @@ class Trainer(ABC):
             if RunMode.TEST in loaders:
                 # except when test dataset is empty
                 if len(loaders[RunMode.TEST].dataset) != 0:
-                    best_model_test_metrics = self.test_epoch(self.epoch_best_model[standard], loaders[RunMode.TEST],
-                                                              export_results=True)
+                    best_model_test_metrics = self.test_epoch(
+                        self.epoch_best_model[standard], loaders[RunMode.TEST], export_results=True
+                    )
                     self.log_metrics("checkpoint_test", None, best_model_test_metrics)
 
     def log_metrics(
-            self,
-            run_mode_str: str,
-            step,
-            metrics: object,
-            log_prefix="",
-            mlflow_log_prefix="",
-            duration=None,
+        self,
+        run_mode_str: str,
+        step,
+        metrics: object,
+        log_prefix="",
+        mlflow_log_prefix="",
+        duration=None,
     ):
         """Log the metrics to logger and to mlflow if mlflow is used. Metrics could be None if learning isn't
         performed for the epoch."""
