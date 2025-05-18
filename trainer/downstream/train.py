@@ -355,8 +355,8 @@ class Trainer(comm_train.Trainer):
             logger.info(f"saving model to {model_path}.")
             self.path_best_model[BaseBestModelStandard.LAST] = model_path
             self.epoch_best_model[BaseBestModelStandard.LAST] = epoch
-            self.threshold_best_model[BaseBestModelStandard.LAST] = self.current_threshold
-            self.save_checkpoint(model_path)
+            self.threshold_best_model[BaseBestModelStandard.LAST] = self.dict_threshold
+            self.save_checkpoint(model_path, thresholds=self.dict_threshold)
 
         return best_metrics, found_better
 

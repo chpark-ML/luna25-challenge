@@ -124,7 +124,6 @@ class Trainer(ABC):
             standard: {threshold_mode: 0.5 for threshold_mode in ThresholdMode}
             for standard in BaseBestModelStandard
         }
-        self.current_threshold = {threshold_mode: 0.5 for threshold_mode in ThresholdMode}
 
         self.optimizer = optimizer
         if isinstance(scheduler, omegaconf.DictConfig):
