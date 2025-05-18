@@ -8,10 +8,9 @@ run_name: "2_0_1"
 run_modes:
   - test
 sanity_check: False
-output_dir: ./results
 
 hydra:
   run:
-    dir: ./outputs
+    dir: ./outputs/inference_results
   job:
     chdir: True  # keep hydra = 1.1 change directory behavior

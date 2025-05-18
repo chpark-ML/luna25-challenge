@@ -62,9 +62,7 @@ def main(config: DictConfig):
     df = pd.DataFrame(df_data)
 
     # Save to DataFrame
-    output_dir = Path(config.output_dir)
-    os.makedirs(output_dir, exist_ok=True)
-    df_path = output_dir / f"result_{config.run_name}_auroc{auroc:.4f}.csv"
+    df_path = Path(f"result_{config.run_name}_auroc{auroc:.4f}.csv")
     df.to_csv(df_path, index=False)
     print(f"Results saved to: {df_path}")
 
