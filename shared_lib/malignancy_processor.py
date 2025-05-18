@@ -76,7 +76,7 @@ class MalignancyProcessor:
 
         return mean_probs
 
-    def inference(self, loader, sanity_check=False):
+    def inference(self, loader, mode, sanity_check=False):
         list_probs = list()
         dict_probs = {model_name: [] for model_name in self.models.keys()}
         list_annots = list()

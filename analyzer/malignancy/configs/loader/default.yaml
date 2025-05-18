@@ -49,7 +49,7 @@ dataset:
   dataset_infos:
     luna25:
       total_fold: [ 0, 1, 2, 3, 4, 5, 6 ]
-      val_fold: [ 5 ]
+      val_fold: [ 0, 1, 2, 3, 4, 5 ]
       test_fold: [ 6 ]
       collection_name: LUNA25-Malignancy
       query:

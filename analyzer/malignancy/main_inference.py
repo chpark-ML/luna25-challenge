@@ -1,5 +1,4 @@
 import logging
-import os
 from pathlib import Path
 
 import hydra
@@ -42,28 +41,39 @@ def main(config: DictConfig):
         for mode in run_modes
     }
 
+    # Initialize an empty list to store all results
+    all_results = []
+
     # get inference results
-    probs, annots, annot_ids, dict_probs = malignancy_processor.inference(
-        loaders[RunMode.TEST], sanity_check=config.sanity_check
-    )
+    for mode in run_modes:
+        print(f"Mode: {mode}")
+        probs, annots, annot_ids, dict_probs = malignancy_processor.inference(
+            loaders[mode], mode=mode, sanity_check=config.sanity_check
+        )
 
-    # get auroc score
-    auroc = metrics.roc_auc_score(annots, probs)
-    print(f"Auroc score: {auroc}")
+        # get auroc score
+        auroc = metrics.roc_auc_score(annots, probs)
+        print(f"Auroc score: {auroc}")
 
-    # Prepare DataFrame
-    df_data = {
-        "annot_ids": annot_ids,
-        "annotation": annots,
-        "prob_ensemble": probs,
-    }
-    for model_name, model_probs in dict_probs.items():
-        df_data[f"prob_{model_name}"] = model_probs
-    df = pd.DataFrame(df_data)
+        # Prepare DataFrame data
+        df_data = {
+            "mode": [mode.value] * len(annot_ids),
+            "annot_ids": annot_ids,
+            "annotation": annots,
+            "prob_ensemble": probs,
+        }
+        for model_name, model_probs in dict_probs.items():
+            df_data[f"prob_{model_name}"] = model_probs
 
-    # Save to DataFrame
-    df_path = Path(f"result_{config.run_name}_auroc{auroc:.4f}.csv")
-    df.to_csv(df_path, index=False)
+        # Append to the combined results list
+        all_results.append(pd.DataFrame(df_data))
+
+    # Combine all results into a single DataFrame
+    combined_df = pd.concat(all_results, ignore_index=True)
+
+    # Save to a single CSV file
+    df_path = Path(f"result_{config.run_name}.csv")
+    combined_df.to_csv(df_path, index=False)
     print(f"Results saved to: {df_path}")
 
 
