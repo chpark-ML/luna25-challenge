@@ -1,4 +1,3 @@
-import ast
 import logging
 import os
 from pathlib import Path
@@ -7,12 +6,10 @@ import hydra
 import numpy as np
 import pandas as pd
 import pymongo
-from h5py import File
 from omegaconf import DictConfig
 from tqdm import tqdm
 
-from data_lake.constants import DB_ADDRESS, TARGET_COLLECTION, TARGET_DB, DBKey, H5DataKey
-from shared_lib.tools.preprocess import patch_extract
+from data_lake.constants import DB_ADDRESS, TARGET_COLLECTION, TARGET_DB, DBKey
 from shared_lib.tools.image_parser import extract_patch
 from shared_lib.utils.utils import print_config
 from shared_lib.utils.utils_vis import save_plot
@@ -55,12 +52,7 @@ def _fn_save_fig(df, output_dir=f"./fig_volume"):
         patch_size = [size_z, size_xy, size_xy]
         output_shape = (size_px_z, size_px_xy, size_px_xy)
 
-        img = extract_patch_dicom_space(
-            h5_path,
-            d_coord_zyx,
-            xy_size=size_xy,
-            z_size=size_z
-        )
+        img = extract_patch_dicom_space(h5_path, d_coord_zyx, xy_size=size_xy, z_size=size_z)
 
         patch = extract_patch(
             CTData=img,
@@ -84,10 +76,12 @@ def _fn_save_fig(df, output_dir=f"./fig_volume"):
 
         # save visualization result
         figure_title = ""
-        attr = {"annotation_id": row.at["annotation_id"],
-                "annotation": row.at["annotation"],
-                "prob_ensemble": row.at["prob_ensemble"],
-                "prob_variance": row.at["prob_variance"]}
+        attr = {
+            "annotation_id": row.at["annotation_id"],
+            "annotation": row.at["annotation"],
+            "prob_ensemble": row.at["prob_ensemble"],
+            "prob_variance": row.at["prob_variance"],
+        }
 
         save_plot(
             input_image=patch,
