@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 _CLIENT = pymongo.MongoClient(DB_ADDRESS)
 
 
-def _fn_save_fig(df, output_dir=f"./fig_volume"):
+def _fn_save_fig(df, output_dir):
     # loop for computing individual nodule, which is corresponding to the row.
     for index, row in tqdm(df.iterrows(), total=len(df)):
         annotation = row.at["annotation"]
@@ -95,7 +95,7 @@ def _fn_save_fig(df, output_dir=f"./fig_volume"):
         )
 
 
-def _get_topk_interests(df, sort_criterion="prob_variance", top_k=20):
+def _get_topk_interests(df, sort_criterion="prob_ensemble", top_k=20):
     # Extract model probability columns (e.g., prob_model_0, prob_model_1, ...)
     model_cols = [col for col in df.columns if col.startswith("prob_model_")]
 
@@ -109,8 +109,14 @@ def _get_topk_interests(df, sort_criterion="prob_variance", top_k=20):
     df["prob_variance"] = df[model_cols].var(axis=1)
 
     # Sort by entropy, variance, and CV for each annotation
-    sorted_positive = df[df["annotation"] == 1].sort_values(by=sort_criterion, ascending=False)
-    sorted_negative = df[df["annotation"] == 0].sort_values(by=sort_criterion, ascending=False)
+    if sort_criterion == "prob_variance":
+        sorted_positive = df[df["annotation"] == 1].sort_values(by=sort_criterion, ascending=False)
+        sorted_negative = df[df["annotation"] == 0].sort_values(by=sort_criterion, ascending=False)
+    else:
+        # currently if sort_criterion is not "prob_variance", it considered as probability key.
+        # And, target samples to visualize are set to edge cases.
+        sorted_positive = df[df["annotation"] == 1].sort_values(by=sort_criterion, ascending=True)
+        sorted_negative = df[df["annotation"] == 0].sort_values(by=sort_criterion, ascending=False)
 
     # Select top N samples
     top_positive = sorted_positive.head(top_k).copy()
@@ -129,13 +135,14 @@ def _get_topk_interests(df, sort_criterion="prob_variance", top_k=20):
 def main(config: DictConfig):
     print_config(config, resolve=True)
     result_csv_path = config.result_csv_path
+    sort_criterion = config.sort_criterion
 
     # read result csv
     df = pd.read_csv(result_csv_path)
     df = df[df["mode"] == "test"]
 
     # get nodules of interest
-    df_interest = _get_topk_interests(df)
+    df_interest = _get_topk_interests(df, sort_criterion=sort_criterion)
 
     # Prepare query for MongoDB
     annotation_ids = df_interest["annot_ids"].tolist()
@@ -152,7 +159,8 @@ def main(config: DictConfig):
     merged_df = df_interest.merge(db_df, left_on="annot_ids", right_on="annotation_id", how="left")
 
     # Visualization
-    _fn_save_fig(merged_df)
+    output_dir = f"fig_volume/{sort_criterion}"
+    _fn_save_fig(merged_df, output_dir=output_dir)
 
 
 if __name__ == "__main__":
