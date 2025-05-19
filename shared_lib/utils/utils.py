@@ -27,10 +27,6 @@ def find_project_root(marker: str = "docker") -> Path:
     raise FileNotFoundError(f"Project root not found. '{marker}' not present in any parent directories.")
 
 
-# Define project root and config file path
-PROJECT_ROOT = find_project_root()
-_DEFAULT_CONFIG_FILE = PROJECT_ROOT / "trainer" / "common" / "configs" / "config.yaml"
-
 logger = logging.getLogger(__name__)
 
 
@@ -91,7 +87,7 @@ def print_config(config: DictConfig, resolve: bool = True) -> None:
     rich.print(tree)
 
 
-def set_config(config: OmegaConf, default_config_path: str = _DEFAULT_CONFIG_FILE) -> OmegaConf:
+def set_config(config: OmegaConf) -> OmegaConf:
     """
     Applies optional utilities, controlled by main config file:
     - disabling warnings
@@ -103,8 +99,11 @@ def set_config(config: OmegaConf, default_config_path: str = _DEFAULT_CONFIG_FIL
 
     Args:
         config (DictConfig): Configuration composed by Hydra.
-        default_config_path (str): path of the default config to base on.
     """
+    # Define project root and config file path
+    PROJECT_ROOT = find_project_root()
+    default_config_path = PROJECT_ROOT / "trainer" / "common" / "configs" / "config.yaml"
+
     if default_config_path:
         config = OmegaConf.merge(OmegaConf.load(default_config_path), config)
 

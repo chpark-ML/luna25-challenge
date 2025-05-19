@@ -26,6 +26,7 @@ mkdir -p "${SCRIPT_DIR}/resources"
 cp -r  /team/team_blu3/lung/project/luna25/weights/${DOCKER_IMAGE_TAG}/* "${SCRIPT_DIR}/resources"
 
 # copy shared_lib
+rm -rf "${SCRIPT_DIR}/shared_lib"
 cp -r "${SCRIPT_DIR}/../shared_lib" "${SCRIPT_DIR}/shared_lib"
 
 docker build \

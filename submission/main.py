@@ -5,7 +5,7 @@ from omegaconf import DictConfig
 
 @hydra.main(version_base="1.2", config_path="configs", config_name="config")
 def main(config: DictConfig):
-    return run(config_models=config.models, mode=config.mode)
+    return run(config=config)
 
 
 if __name__ == "__main__":

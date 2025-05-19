@@ -1,8 +1,12 @@
 # specify default training configuration
 defaults:
-  - analyzer: default
   - loader: default
-  - processor: malignancy
+  - processor: default
+  - models: 2_0_1.yaml
+
+run_modes:
+  - val
+  - test
 
 hydra:
   run:

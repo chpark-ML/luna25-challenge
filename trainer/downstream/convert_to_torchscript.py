@@ -48,7 +48,6 @@ def main() -> None:
                 # If the model has a return_logit attribute, set it to True
                 cfg_model.return_logit = True
 
-
             # Dummy input for tracing
             sample = torch.rand((1, 1, 48, 72, 72), dtype=torch.float32)
 

@@ -12,7 +12,7 @@ class MalignancyProcessor:
     Loads a chest CT scan, and predicts the malignancy around a nodule
     """
 
-    def __init__(self, config_models=None, mode="3D", device=torch.device("cuda:0"), suppress_logs=False):
+    def __init__(self, models=None, mode="3D", device=torch.device("cuda:0"), suppress_logs=False):
         self.device = device
         self.size_px_xy = 72
         self.size_px_z = 48
@@ -24,12 +24,7 @@ class MalignancyProcessor:
             logging.info("Initializing the deep learning system")
 
         self.mode = mode
-        self.model_root = "/opt/app/resources/"
-
-        self.models = dict()
-        for model_indicator, config_model in config_models.items():
-            model_path = Path(config_model.root_path) / config_model.exp_name / config_model.file_name
-            self.models[model_indicator] = torch.jit.load(model_path, map_location=self.device).to(self.device).eval()
+        self.models = models
 
     def _extract_patch(self, image, header, coord, output_shape, mode) -> np.array:
         patch = extract_patch(
@@ -72,7 +67,7 @@ class MalignancyProcessor:
 
         probs = list()
         for model_name, model in self.models.items():
-            logits = model(patch)
+            logits = model.get_prediction(patch)
             logits = logits.data.cpu().numpy()
             probs.append(torch.sigmoid(torch.from_numpy(logits)).numpy())
 

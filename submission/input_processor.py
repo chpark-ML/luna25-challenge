@@ -1,9 +1,9 @@
 import logging
 from typing import Dict, List
 
+import hydra
 import numpy as np
 import SimpleITK
-
 
 from shared_lib.malignancy_processor import MalignancyProcessor
 
@@ -67,8 +67,8 @@ def itk_image_to_numpy_image(input_image):
     return numpyImage, header
 
 
-class InputProcessor:
-    def __init__(self, config_models, mode="3D"):
+class ImageProcessor:
+    def __init__(self, config):
         """
         Parameters
         ----------
@@ -77,8 +77,11 @@ class InputProcessor:
         clinical_information: Dictionary containing clinical information (Age and Gender)
         mode: 2D or 3D
         """
-        self.mode = mode
-        self.malignancy_processor = MalignancyProcessor(config_models=config_models, mode=mode, suppress_logs=True)
+        self.mode = config.mode
+        models = dict()
+        for model_indicator, config_model in config.models.items():
+            models[model_indicator] = hydra.utils.instantiate(config_model)
+        self.malignancy_processor = hydra.utils.instantiate(config.processor, models=models)
 
     def _predict(self, input_image: SimpleITK.Image, coords: np.array, clinical_information) -> List:
         """
@@ -130,7 +133,7 @@ class InputProcessor:
         """
         # prepare image and coords
         image, coords, annotation_ids = self._load_inputs(ct_image_file, nodule_locations)
-
+        print("test")
         # get malignancy risk score
         output = self._predict(image, coords, clinical_information)
 
@@ -146,8 +149,6 @@ class InputProcessor:
         coords = np.flip(coords, axis=1)
         for i in range(len(annotation_ids)):
             results["points"].append(
-                {"name": annotation_ids[i],
-                 "point": coords[i].tolist(),
-                 "probability": float(output[i])}
+                {"name": annotation_ids[i], "point": coords[i].tolist(), "probability": float(output[i])}
             )
         return results

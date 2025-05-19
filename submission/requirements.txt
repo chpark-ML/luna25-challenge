@@ -1,4 +1,5 @@
 --extra-index-url https://download.pytorch.org/whl/cu118
+gputil
 torch==2.4.1
 torchvision==0.19.1
 numpy==2.2.4
@@ -7,4 +8,5 @@ pandas==2.2.3
 SimpleITK==2.4.1
 hydra-core
 omegaconf
+rich
 tqdm
