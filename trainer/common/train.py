@@ -15,7 +15,7 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.cuda.amp as amp
 
-from shared_lib.enums import RunMode
+from shared_lib.enums import BaseBestModelStandard, RunMode, ThresholdMode
 from shared_lib.utils.utils import get_torch_device_string, print_config, set_config
 from trainer.common.experiment_tool import load_logging_tool
 from trainer.common.sampler import make_weights_for_balanced_classes
@@ -110,8 +110,20 @@ class Trainer(ABC):
         if not hasattr(self, "repr_model_name"):
             self.repr_model_name = None
         self.dict_threshold = dict()
-        self.path_best_model = None
-        self.epoch_best_model = 0
+
+        # model path storage
+        self.path_best_model = {
+            standard: "" for standard in BaseBestModelStandard
+        }  # best model can be defined based on the various standard.
+
+        # epoch storage
+        self.epoch_best_model = {standard: 0 for standard in BaseBestModelStandard}
+
+        # threshold storage
+        self.threshold_best_model = {
+            standard: {threshold_mode: 0.5 for threshold_mode in ThresholdMode} for standard in BaseBestModelStandard
+        }
+
         self.optimizer = optimizer
         if isinstance(scheduler, omegaconf.DictConfig):
             self.scheduler = dict()
@@ -378,7 +390,7 @@ class Trainer(ABC):
         """
         logger.info(f"Size of datasets {dict((mode, len(loader.dataset)) for mode, loader in loaders.items())}")
         if self.resume_from_checkpoint:
-            self.load_checkpoint(self.path_best_model)
+            self.load_checkpoint(self.path_best_model[BaseBestModelStandard.REPRESENTATIVE])
 
         self.logging_tool.log_param("save_dir", os.getcwd())
 
@@ -408,22 +420,28 @@ class Trainer(ABC):
 
     def test(self, loaders):
         # Test the checkpoints
-        if os.path.exists(self.path_best_model):
-            self.load_checkpoint(self.path_best_model)
-        else:
-            logger.info("The best model path has never been updated, initial model has been used for testing.")
-
-        if RunMode.VALIDATE in loaders:
-            best_model_test_metrics = self.test_epoch(
-                self.epoch_best_model, loaders[RunMode.VALIDATE], export_results=True
+        for standard in BaseBestModelStandard:
+            model_path = (
+                self.path_best_model[standard] if isinstance(self.path_best_model, dict) else self.path_best_model
             )
-            self.log_metrics("checkpoint_val", None, best_model_test_metrics)
+            if os.path.exists(model_path):
+                self.load_checkpoint(model_path)
+            else:
+                logger.info("The best model path has never been updated, initial model has been used for testing.")
 
-        if RunMode.TEST in loaders:
-            # except when test dataset is empty
-            if len(loaders[RunMode.TEST].dataset) != 0:
-                best_model_test_metrics = self.test_epoch(self.epoch_best_model, loaders[RunMode.TEST], export_results=True)
-                self.log_metrics("checkpoint_test", None, best_model_test_metrics)
+            if RunMode.VALIDATE in loaders:
+                best_model_test_metrics = self.test_epoch(
+                    self.epoch_best_model[standard], loaders[RunMode.VALIDATE], export_results=True
+                )
+                self.log_metrics("checkpoint_val", None, best_model_test_metrics)
+
+            if RunMode.TEST in loaders:
+                # except when test dataset is empty
+                if len(loaders[RunMode.TEST].dataset) != 0:
+                    best_model_test_metrics = self.test_epoch(
+                        self.epoch_best_model[standard], loaders[RunMode.TEST], export_results=True
+                    )
+                    self.log_metrics("checkpoint_test", None, best_model_test_metrics)
 
     def log_metrics(
         self,

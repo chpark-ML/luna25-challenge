@@ -14,7 +14,7 @@ from sklearn import metrics
 
 import trainer.common.train as comm_train
 from data_lake.lidc.constants import LOGISTIC_TASK_POSTFIX, RESAMPLED_FEATURE_POSTFIX
-from shared_lib.enums import RunMode
+from shared_lib.enums import BaseBestModelStandard, RunMode
 from trainer.common.constants import ANNOTATION_KEY, INPUT_PATCH_KEY, LOGIT_KEY, LossKey
 from trainer.common.enums import ModelName, ThresholdMode
 from trainer.common.utils import freeze_layers
@@ -359,8 +359,17 @@ class Trainer(comm_train.Trainer):
             )
 
             best_metrics = val_metrics
-            self.path_best_model = model_path
-            self.epoch_best_model = epoch
+            self.path_best_model[BaseBestModelStandard.REPRESENTATIVE] = model_path
+            self.epoch_best_model[BaseBestModelStandard.REPRESENTATIVE] = epoch
+            self.save_checkpoint(model_path, thresholds=self.dict_threshold)
+
+        if epoch == self.max_epoch - 1:  # the given `epoch` is in the range of (0, self.max_epoch)
+            found_better = True
+            model_path = f"model_final.pth"
+            logger.info(f"saving model to {model_path}.")
+            self.path_best_model[BaseBestModelStandard.LAST] = model_path
+            self.epoch_best_model[BaseBestModelStandard.LAST] = epoch
+            self.threshold_best_model[BaseBestModelStandard.LAST] = self.dict_threshold
             self.save_checkpoint(model_path, thresholds=self.dict_threshold)
 
         return best_metrics, found_better
