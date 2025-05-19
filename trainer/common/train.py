@@ -433,7 +433,7 @@ class Trainer(ABC):
                 best_model_test_metrics = self.test_epoch(
                     self.epoch_best_model[standard], loaders[RunMode.VALIDATE], export_results=True
                 )
-                self.log_metrics("checkpoint_val", None, best_model_test_metrics)
+                self.log_metrics(f"checkpoint_val_{standard.value}", None, best_model_test_metrics)
 
             if RunMode.TEST in loaders:
                 # except when test dataset is empty
@@ -441,7 +441,7 @@ class Trainer(ABC):
                     best_model_test_metrics = self.test_epoch(
                         self.epoch_best_model[standard], loaders[RunMode.TEST], export_results=True
                     )
-                    self.log_metrics("checkpoint_test", None, best_model_test_metrics)
+                    self.log_metrics(f"checkpoint_test_{standard.value}", None, best_model_test_metrics)
 
     def log_metrics(
         self,
