@@ -77,8 +77,9 @@ class MalignancyProcessor:
         return mean_probs
 
     def inference(self, loader, sanity_check=False):
-        list_probs = []
-        list_annots = []
+        list_probs = list()
+        dict_probs = {model_name: [] for model_name in self.models.keys()}
+        list_annots = list()
 
         for data in tqdm(loader):
             # prediction
@@ -87,22 +88,38 @@ class MalignancyProcessor:
             # annotation
             annot = data["label"].to(self.device).float()
 
-            # inference
-            probs = list()
+            # inference (model-wise)
+            batch_probs = list()
             for model_name, model in self.models.items():
                 logits = model.get_prediction(patch_image)  # (B, 1)
-                probs.append(torch.sigmoid(logits))
-            probs = torch.stack(probs)  # (num_models, B, 1)
-            probs = torch.mean(probs, axis=0)  # (B, 1)
+                prob = torch.sigmoid(logits)  # (B, 1)
 
-            list_probs.append(probs)
+                # Save per-model probabilities
+                dict_probs[model_name].append(prob)
+
+                # Aggregate for overall averaging
+                batch_probs.append(prob)
+
+            # Mean across models
+            batch_probs = torch.stack(batch_probs)  # (num_models, B, 1)
+            mean_probs = torch.mean(batch_probs, dim=0)  # (B, 1)
+
+            list_probs.append(mean_probs)
             list_annots.append(annot)
 
             # sanity check
             if sanity_check:
                 break
 
+        # Combine batches
         probs = torch.vstack(list_probs)
         annots = torch.vstack(list_annots)
 
-        return probs.squeeze().cpu().numpy(), annots.squeeze().cpu().numpy()
+        # Convert to numpy
+        overall_probs = probs.squeeze().cpu().numpy()
+        overall_annots = annots.squeeze().cpu().numpy()
+
+        # Convert dict_probs to numpy
+        dict_probs = {k: torch.vstack(v).squeeze().cpu().numpy() for k, v in dict_probs.items()}
+
+        return overall_probs, overall_annots, dict_probs

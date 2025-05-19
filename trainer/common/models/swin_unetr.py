@@ -17,8 +17,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
-from monai.networks.blocks import MLPBlock as Mlp
-from monai.networks.blocks import PatchEmbed, UnetOutBlock, UnetrBasicBlock, UnetrUpBlock
+from monai.networks.blocks import MLPBlock as Mlp, PatchEmbed, UnetOutBlock, UnetrBasicBlock, UnetrUpBlock
 from monai.networks.layers import DropPath, trunc_normal_
 from monai.utils import ensure_tuple_rep, look_up_option, optional_import
 from torch.nn import LayerNorm
@@ -141,9 +140,7 @@ class SwinUNETR(nn.Module):
             norm_layer=nn.LayerNorm,
             use_checkpoint=use_checkpoint,
             spatial_dims=spatial_dims,
-            downsample=look_up_option(downsample, MERGING_MODE)
-            if isinstance(downsample, str)
-            else downsample,
+            downsample=look_up_option(downsample, MERGING_MODE) if isinstance(downsample, str) else downsample,
         )
 
         self.encoder1 = UnetrBasicBlock(
@@ -245,18 +242,12 @@ class SwinUNETR(nn.Module):
             res_block=True,
         )
 
-        self.out = UnetOutBlock(
-            spatial_dims=spatial_dims, in_channels=feature_size, out_channels=out_channels
-        )
+        self.out = UnetOutBlock(spatial_dims=spatial_dims, in_channels=feature_size, out_channels=out_channels)
 
     def load_from(self, weights):
         with torch.no_grad():
-            self.swinViT.patch_embed.proj.weight.copy_(
-                weights["state_dict"]["module.patch_embed.proj.weight"]
-            )
-            self.swinViT.patch_embed.proj.bias.copy_(
-                weights["state_dict"]["module.patch_embed.proj.bias"]
-            )
+            self.swinViT.patch_embed.proj.weight.copy_(weights["state_dict"]["module.patch_embed.proj.weight"])
+            self.swinViT.patch_embed.proj.bias.copy_(weights["state_dict"]["module.patch_embed.proj.bias"])
             for bname, block in self.swinViT.layers1[0].blocks.named_children():
                 block.load_from(weights, n_block=bname, layer="layers1")
             self.swinViT.layers1[0].downsample.reduction.weight.copy_(
@@ -316,9 +307,6 @@ class SwinUNETR(nn.Module):
         out = self.decoder1(dec0, enc0)
         logits = self.out(out)
         return logits
-        
-        
-        
 
 
 def window_partition(x, window_size):
@@ -345,16 +333,12 @@ def window_partition(x, window_size):
             c,
         )
         windows = (
-            x.permute(0, 1, 3, 5, 2, 4, 6, 7)
-            .contiguous()
-            .view(-1, window_size[0] * window_size[1] * window_size[2], c)
+            x.permute(0, 1, 3, 5, 2, 4, 6, 7).contiguous().view(-1, window_size[0] * window_size[1] * window_size[2], c)
         )
     elif len(x_shape) == 4:
         b, h, w, c = x.shape
         x = x.view(b, h // window_size[0], window_size[0], w // window_size[1], window_size[1], c)
-        windows = (
-            x.permute(0, 1, 3, 2, 4, 5).contiguous().view(-1, window_size[0] * window_size[1], c)
-        )
+        windows = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(-1, window_size[0] * window_size[1], c)
     return windows
 
 
@@ -385,9 +369,7 @@ def window_reverse(windows, window_size, dims):
 
     elif len(dims) == 3:
         b, h, w = dims
-        x = windows.view(
-            b, h // window_size[0], w // window_size[1], window_size[0], window_size[1], -1
-        )
+        x = windows.view(b, h // window_size[0], w // window_size[1], window_size[0], window_size[1], -1)
         x = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(b, h, w, -1)
     return x
 
@@ -457,9 +439,7 @@ class WindowAttention(nn.Module):
         if len(self.window_size) == 3:
             self.relative_position_bias_table = nn.Parameter(
                 torch.zeros(
-                    (2 * self.window_size[0] - 1)
-                    * (2 * self.window_size[1] - 1)
-                    * (2 * self.window_size[2] - 1),
+                    (2 * self.window_size[0] - 1) * (2 * self.window_size[1] - 1) * (2 * self.window_size[2] - 1),
                     num_heads,
                 )
             )
@@ -476,9 +456,7 @@ class WindowAttention(nn.Module):
             relative_coords[:, :, 0] += self.window_size[0] - 1
             relative_coords[:, :, 1] += self.window_size[1] - 1
             relative_coords[:, :, 2] += self.window_size[2] - 1
-            relative_coords[:, :, 0] *= (2 * self.window_size[1] - 1) * (
-                2 * self.window_size[2] - 1
-            )
+            relative_coords[:, :, 0] *= (2 * self.window_size[1] - 1) * (2 * self.window_size[2] - 1)
             relative_coords[:, :, 1] *= 2 * self.window_size[2] - 1
         elif len(self.window_size) == 2:
             self.relative_position_bias_table = nn.Parameter(
@@ -508,9 +486,7 @@ class WindowAttention(nn.Module):
 
     def forward(self, x, mask):
         b, n, c = x.shape
-        qkv = (
-            self.qkv(x).reshape(b, n, 3, self.num_heads, c // self.num_heads).permute(2, 0, 3, 1, 4)
-        )
+        qkv = self.qkv(x).reshape(b, n, 3, self.num_heads, c // self.num_heads).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]
         q = q * self.scale
         attn = q @ k.transpose(-2, -1)
@@ -627,9 +603,7 @@ class SwinTransformerBlock(nn.Module):
 
         if any(i > 0 for i in shift_size):
             if len(x_shape) == 5:
-                shifted_x = torch.roll(
-                    x, shifts=(-shift_size[0], -shift_size[1], -shift_size[2]), dims=(1, 2, 3)
-                )
+                shifted_x = torch.roll(x, shifts=(-shift_size[0], -shift_size[1], -shift_size[2]), dims=(1, 2, 3))
             elif len(x_shape) == 4:
                 shifted_x = torch.roll(x, shifts=(-shift_size[0], -shift_size[1]), dims=(1, 2))
             attn_mask = mask_matrix
@@ -642,9 +616,7 @@ class SwinTransformerBlock(nn.Module):
         shifted_x = window_reverse(attn_windows, window_size, dims)
         if any(i > 0 for i in shift_size):
             if len(x_shape) == 5:
-                x = torch.roll(
-                    shifted_x, shifts=(shift_size[0], shift_size[1], shift_size[2]), dims=(1, 2, 3)
-                )
+                x = torch.roll(shifted_x, shifts=(shift_size[0], shift_size[1], shift_size[2]), dims=(1, 2, 3))
             elif len(x_shape) == 4:
                 x = torch.roll(shifted_x, shifts=(shift_size[0], shift_size[1]), dims=(1, 2))
         else:
@@ -683,9 +655,7 @@ class SwinTransformerBlock(nn.Module):
         with torch.no_grad():
             self.norm1.weight.copy_(weights["state_dict"][root + block_names[0]])
             self.norm1.bias.copy_(weights["state_dict"][root + block_names[1]])
-            self.attn.relative_position_bias_table.copy_(
-                weights["state_dict"][root + block_names[2]]
-            )
+            self.attn.relative_position_bias_table.copy_(weights["state_dict"][root + block_names[2]])
             self.attn.relative_position_index.copy_(weights["state_dict"][root + block_names[3]])
             self.attn.qkv.weight.copy_(weights["state_dict"][root + block_names[4]])
             self.attn.qkv.bias.copy_(weights["state_dict"][root + block_names[5]])
@@ -720,9 +690,7 @@ class PatchMergingV2(nn.Module):
     https://github.com/microsoft/Swin-Transformer
     """
 
-    def __init__(
-        self, dim: int, norm_layer: Type[LayerNorm] = nn.LayerNorm, spatial_dims: int = 3
-    ) -> None:
+    def __init__(self, dim: int, norm_layer: Type[LayerNorm] = nn.LayerNorm, spatial_dims: int = 3) -> None:
         """
         Args:
             dim: number of feature channels.
@@ -747,10 +715,7 @@ class PatchMergingV2(nn.Module):
             if pad_input:
                 x = F.pad(x, (0, 0, 0, w % 2, 0, h % 2, 0, d % 2))
             x = torch.cat(
-                [
-                    x[:, i::2, j::2, k::2, :]
-                    for i, j, k in itertools.product(range(2), range(2), range(2))
-                ],
+                [x[:, i::2, j::2, k::2, :] for i, j, k in itertools.product(range(2), range(2), range(2))],
                 -1,
             )
 
@@ -759,9 +724,7 @@ class PatchMergingV2(nn.Module):
             pad_input = (h % 2 == 1) or (w % 2 == 1)
             if pad_input:
                 x = F.pad(x, (0, 0, 0, w % 2, 0, h % 2))
-            x = torch.cat(
-                [x[:, j::2, i::2, :] for i, j in itertools.product(range(2), range(2))], -1
-            )
+            x = torch.cat([x[:, j::2, i::2, :] for i, j in itertools.product(range(2), range(2))], -1)
 
         x = self.norm(x)
         x = self.reduction(x)
@@ -853,9 +816,7 @@ def compute_mask(dims, window_size, shift_size, device):
     mask_windows = window_partition(img_mask, window_size)
     mask_windows = mask_windows.squeeze(-1)
     attn_mask = mask_windows.unsqueeze(1) - mask_windows.unsqueeze(2)
-    attn_mask = attn_mask.masked_fill(attn_mask != 0, float(-100.0)).masked_fill(
-        attn_mask == 0, float(0.0)
-    )
+    attn_mask = attn_mask.masked_fill(attn_mask != 0, float(-100.0)).masked_fill(attn_mask == 0, float(0.0))
 
     return attn_mask
 
@@ -925,9 +886,7 @@ class BasicLayer(nn.Module):
         )
         self.downsample = downsample
         if callable(self.downsample):
-            self.downsample = downsample(
-                dim=dim, norm_layer=norm_layer, spatial_dims=len(self.window_size)
-            )
+            self.downsample = downsample(dim=dim, norm_layer=norm_layer, spatial_dims=len(self.window_size))
 
     def forward(self, x):
         x_shape = x.size()
@@ -1030,9 +989,7 @@ class SwinTransformer(nn.Module):
         self.layers2 = nn.ModuleList()
         self.layers3 = nn.ModuleList()
         self.layers4 = nn.ModuleList()
-        down_sample_mod = (
-            look_up_option(downsample, MERGING_MODE) if isinstance(downsample, str) else downsample
-        )
+        down_sample_mod = look_up_option(downsample, MERGING_MODE) if isinstance(downsample, str) else downsample
         for i_layer in range(self.num_layers):
             layer = BasicLayer(
                 dim=int(embed_dim * 2**i_layer),
@@ -1086,4 +1043,3 @@ class SwinTransformer(nn.Module):
         x4 = self.layers4[0](x3.contiguous())
         x4_out = self.proj_out(x4, normalize)
         return [x0_out, x1_out, x2_out, x3_out, x4_out]
-    
