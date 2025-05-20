@@ -77,3 +77,4 @@ if __name__ == "__main__":
     x = torch.randn(1, 1, 32, 32, 32)
     y = model(x).squeeze(-1)
     print(y.shape)
+    
