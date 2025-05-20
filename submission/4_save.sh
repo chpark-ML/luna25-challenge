@@ -14,7 +14,7 @@ if [ "$#" -eq 1 ]; then
 fi
 
 echo "=+= (Re)build the container"
-source "${SCRIPT_DIR}/1_build.sh" "$DOCKER_IMAGE_TAG"
+source "${SCRIPT_DIR}/1_build.sh"
 
 # Get the build information from the Docker image tag
 build_timestamp=$( docker inspect --format='{{ .Created }}' "$DOCKER_IMAGE_TAG")

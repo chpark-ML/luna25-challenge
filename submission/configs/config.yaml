@@ -1,5 +1,6 @@
 defaults:
   - _self_
+  - processor: default.yaml
   - models: 2_0_1.yaml
 
 mode: 3D

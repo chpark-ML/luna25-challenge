@@ -17,21 +17,21 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
-from monai.networks.blocks import MLPBlock as Mlp
-from monai.networks.blocks import PatchEmbed, UnetOutBlock, UnetrBasicBlock, UnetrUpBlock
+from monai.networks.blocks import MLPBlock as Mlp, PatchEmbed, UnetOutBlock, UnetrBasicBlock, UnetrUpBlock
 from monai.networks.layers import DropPath, trunc_normal_
 from monai.utils import ensure_tuple_rep, look_up_option, optional_import
 from torch.nn import LayerNorm
+
 from trainer.common.models.swin_unetr import SwinTransformer
 
 rearrange, _ = optional_import("einops", name="rearrange")
 
 
-    
 class swin_classifier(nn.Module):
     """
     Swin UNETR based classifier adapted from segmentation model
     """
+
     def __init__(
         self,
         img_size: tuple = (32, 224, 224),  # D, H, W
@@ -93,7 +93,7 @@ class swin_classifier(nn.Module):
         )
 
         self.avg_pool = nn.AdaptiveAvgPool3d(1) if spatial_dims == 3 else nn.AdaptiveAvgPool2d(1)
-        
+
         # Final classification head
         self.head = nn.Sequential(
             nn.Linear(feature_size * 16, 32),
@@ -106,21 +106,21 @@ class swin_classifier(nn.Module):
         hidden_states_out = self.swinViT(x_in, self.normalize)
         x = hidden_states_out[-1]
         # print("Shape after swinViT:", x.shape)  # [1, 768, 2, 2, 2]
-        
+
         if self.spatial_dims == 3:
             x = self.avg_pool(x)
             # print("Shape after pooling:", x.shape)  # [1, 2, 1, 1, 1]
         else:
             x = self.avg_pool(x) # 2D cases 
             # print("Shape after pooling:", x.shape)  # [1, 2, 1, 1, 1]  
-        
+
         x = torch.flatten(x, 1)
         # print("Shape after flatten:", x.shape)  # [1, 2]
         x = self.head(x)
-        
+
         if self.num_classes == 1:
             x = x.squeeze(-1)
-        
+
         return x
 
     def load_from(self, weights):
@@ -172,6 +172,7 @@ class swin_classifier(nn.Module):
                 weights["state_dict"]["module.layers4.0.downsample.norm.bias"]
             )
 
+
 if __name__ == "__main__":
     # Example usage
     model = swin_classifier(
@@ -186,14 +187,13 @@ if __name__ == "__main__":
         dropout_path_rate=0.0,
         spatial_dims=3,
     ).cuda()
-    
+
     # Test with a random input
     x = torch.randn(1, 1, 32, 32, 32).cuda()  # B, C, D, H, W
     with torch.no_grad():
         y = model(x)
         print(f"Input shape: {x.shape}")
-        print(f"Output shape: {y.shape}")  # Should be (1,) for binary classification 
-        
+        print(f"Output shape: {y.shape}")  # Should be (1,) for binary classification
+
     del model, x, y
     torch.cuda.empty_cache()
-            

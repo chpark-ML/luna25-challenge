@@ -1,0 +1,5 @@
+_target_: shared_lib.malignancy_processor.MalignancyProcessor
+models:
+mode: 3D
+device: 0
+suppress_logs: False

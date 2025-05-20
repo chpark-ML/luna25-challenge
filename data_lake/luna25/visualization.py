@@ -21,18 +21,10 @@ _CLIENT = pymongo.MongoClient(DB_ADDRESS)
 _TARGET_FIELD = []
 _PROJECTION = dict()
 
-# constants
-_PATCH_SIZE = (48, 72, 72)
-_HU_RANGE = (-1000, 600)
 
-# output directory
-_OUTPUT_DIR = f"./fig_volume"
-
-
-def fn_save_fig(df_chunk):
-    use_r_coord = True
+def _fn_save_fig(df, patch_size=(48, 72, 72), output_dir=f"./fig_volume", use_r_coord=True):
     # loop for computing individual nodule, which is corresponding to the row.
-    for index, row in tqdm(df_chunk.iterrows(), total=len(df_chunk)):
+    for index, row in tqdm(df.iterrows(), total=len(df)):
         series_instance_uid = row.at[DBKey.SERIES_INSTANCE_UID]
         label = row.at[DBKey.LABEL]
         if use_r_coord:
@@ -50,12 +42,12 @@ def fn_save_fig(df_chunk):
             )
             coord = [round(_coord) for _coord in coord]
 
-        file_path = row.at[DBKey.H5_PATH]
+        file_path = row.at[DBKey.H5_PATH_NFS]
 
         # make directory to save visualization results
         save_dir = Path(
             os.path.join(
-                _OUTPUT_DIR,
+                output_dir,
                 f"{label}/{series_instance_uid}_{coord[0]}_{coord[1]}_{coord[2]}.png",
             )
         )
@@ -67,7 +59,7 @@ def fn_save_fig(df_chunk):
             img = patch_extract(
                 hf[H5DataKey.resampled_image] if use_r_coord else hf[H5DataKey.image],
                 center_coord=coord,
-                voxel_width=_PATCH_SIZE,
+                voxel_width=patch_size,
                 pad_value=0,
             )
 
@@ -78,7 +70,7 @@ def fn_save_fig(df_chunk):
                 img,
                 mask_image=None,
                 nodule_zyx=None,
-                patch_size=_PATCH_SIZE,
+                patch_size=patch_size,
                 figure_title=figure_title,
                 meta=attr,
                 use_norm=True,
@@ -91,7 +83,7 @@ def parallel_process(df, num_jobs=1):
     chunk_size = len(df) // num_jobs
     chunks = [df.iloc[i : i + chunk_size] for i in range(0, len(df), chunk_size)]
 
-    Parallel(n_jobs=num_jobs)(delayed(fn_save_fig)(chunk) for chunk in chunks)
+    Parallel(n_jobs=num_jobs)(delayed(_fn_save_fig)(chunk) for chunk in chunks)
 
 
 def main():
