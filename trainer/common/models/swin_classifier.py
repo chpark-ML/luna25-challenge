@@ -23,6 +23,7 @@ from monai.utils import ensure_tuple_rep, look_up_option, optional_import
 from torch.nn import LayerNorm
 
 from trainer.common.models.swin_unetr import SwinTransformer
+from trainer.common.constants import LOGIT_KEY, MULTI_SCALE_LOGIT_KEY, GATE_KEY, GATED_LOGIT_KEY
 
 rearrange, _ = optional_import("einops", name="rearrange")
 
@@ -47,6 +48,7 @@ class swin_classifier(nn.Module):
         normalize: bool = True,
         use_checkpoint: bool = False,
         spatial_dims: int = 3,
+        classifier: nn.Module = None,
     ) -> None:
         super().__init__()
 
@@ -95,33 +97,29 @@ class swin_classifier(nn.Module):
         self.avg_pool = nn.AdaptiveAvgPool3d(1) if spatial_dims == 3 else nn.AdaptiveAvgPool2d(1)
 
         # Final classification head
-        self.head = nn.Sequential(
-            nn.Linear(feature_size * 16, 32),
-            nn.ReLU(inplace=True),
-            nn.Dropout(p=drop_rate),
-            nn.Linear(32, num_classes)
-        )
+        # self.head = nn.Sequential(
+        #     nn.Linear(feature_size * 16, 32),
+        #     nn.ReLU(inplace=True),
+        #     nn.Dropout(p=drop_rate),
+        #     nn.Linear(32, num_classes)
+        # )
+        self.classifier = classifier
 
     def forward(self, x_in):
         hidden_states_out = self.swinViT(x_in, self.normalize)
-        x = hidden_states_out[-1]
-        # print("Shape after swinViT:", x.shape)  # [1, 768, 2, 2, 2]
-
-        if self.spatial_dims == 3:
-            x = self.avg_pool(x)
-            # print("Shape after pooling:", x.shape)  # [1, 2, 1, 1, 1]
+        
+        if self.classifier is not None:
+            result = self.classifier(hidden_states_out)
+            return result
         else:
-            x = self.avg_pool(x) # 2D cases 
-            # print("Shape after pooling:", x.shape)  # [1, 2, 1, 1, 1]  
-
-        x = torch.flatten(x, 1)
-        # print("Shape after flatten:", x.shape)  # [1, 2]
-        x = self.head(x)
-
-        if self.num_classes == 1:
-            x = x.squeeze(-1)
-
-        return x
+            x = hidden_states_out[-1]
+            if self.spatial_dims == 3:
+                x = self.avg_pool(x)
+            else:
+                x = self.avg_pool(x) 
+                
+            x = torch.flatten(x, 1)
+            return {LOGIT_KEY: x}
 
     def load_from(self, weights):
         with torch.no_grad():
