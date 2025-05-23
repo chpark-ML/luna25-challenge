@@ -1,15 +1,20 @@
 import torch
 import torch.nn as nn
 
+
 class ConvNeXtBlockBase(nn.Module):
-    def __init__(self, dim, conv_layer, drop_path=0., layer_scale_init_value=1e-6):
+    def __init__(self, dim, conv_layer, drop_path=0.0, layer_scale_init_value=1e-6):
         super().__init__()
-        self.dwconv = conv_layer(dim, dim, kernel_size=7, padding=3, groups=dim) 
-        self.norm = nn.GroupNorm(num_groups=1, num_channels=dim) 
+        self.dwconv = conv_layer(dim, dim, kernel_size=7, padding=3, groups=dim)
+        self.norm = nn.GroupNorm(num_groups=1, num_channels=dim)
         self.pwconv1 = nn.Linear(dim, 4 * dim)
         self.act = nn.GELU()
         self.pwconv2 = nn.Linear(4 * dim, dim)
-        self.gamma = nn.Parameter(layer_scale_init_value * torch.ones((dim,)), requires_grad=True) if layer_scale_init_value > 0 else None
+        self.gamma = (
+            nn.Parameter(layer_scale_init_value * torch.ones((dim,)), requires_grad=True)
+            if layer_scale_init_value > 0
+            else None
+        )
         self.drop_path = nn.Identity()
 
     def forward(self, x):
@@ -22,17 +27,17 @@ class ConvNeXtBlockBase(nn.Module):
         x = self.pwconv2(x)
         if self.gamma is not None:
             x = self.gamma * x
-        x = x.permute(0, -1, *range(1, x.ndim - 1)) 
+        x = x.permute(0, -1, *range(1, x.ndim - 1))
         x = shortcut + self.drop_path(x)
         return x
+
 
 class ConvNeXtBase(nn.Module):
     def __init__(self, in_channels, num_classes, depths, dims, conv_layer, pool_layer):
         super().__init__()
         self.downsample_layers = nn.ModuleList()
         stem = nn.Sequential(
-            conv_layer(in_channels, dims[0], kernel_size=4, stride=4),
-            nn.GroupNorm(num_groups=1, num_channels=dims[0])
+            conv_layer(in_channels, dims[0], kernel_size=4, stride=4), nn.GroupNorm(num_groups=1, num_channels=dims[0])
         )
         self.downsample_layers.append(stem)
         for i in range(3):
@@ -44,9 +49,7 @@ class ConvNeXtBase(nn.Module):
 
         self.stages = nn.ModuleList()
         for i in range(4):
-            stage = nn.Sequential(
-                *[ConvNeXtBlockBase(dim=dims[i], conv_layer=conv_layer) for _ in range(depths[i])]
-            )
+            stage = nn.Sequential(*[ConvNeXtBlockBase(dim=dims[i], conv_layer=conv_layer) for _ in range(depths[i])])
             self.stages.append(stage)
 
         self.norm = nn.GroupNorm(num_groups=1, num_channels=dims[-1])
@@ -67,14 +70,14 @@ class ConvNeXt3D(ConvNeXtBase):
     def __init__(self, in_channels=1, num_classes=2, depths=[3, 3, 9, 3], dims=[96, 192, 384, 768]):
         super().__init__(in_channels, num_classes, depths, dims, conv_layer=nn.Conv3d, pool_layer=[-1, -2, -3])
 
+
 class ConvNeXt2D(ConvNeXtBase):
     def __init__(self, in_channels=1, num_classes=2, depths=[3, 3, 9, 3], dims=[96, 192, 384, 768]):
         super().__init__(in_channels, num_classes, depths, dims, conv_layer=nn.Conv2d, pool_layer=[-1, -2])
-        
-        
+
+
 if __name__ == "__main__":
     model = ConvNeXt3D(in_channels=1, num_classes=1, depths=[3, 3, 9, 3], dims=[96, 192, 384, 768])
     x = torch.randn(1, 1, 32, 32, 32)
     y = model(x).squeeze(-1)
     print(y.shape)
-    

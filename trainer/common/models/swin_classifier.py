@@ -22,8 +22,8 @@ from monai.networks.layers import DropPath, trunc_normal_
 from monai.utils import ensure_tuple_rep, look_up_option, optional_import
 from torch.nn import LayerNorm
 
+from trainer.common.constants import GATE_KEY, GATED_LOGIT_KEY, LOGIT_KEY, MULTI_SCALE_LOGIT_KEY
 from trainer.common.models.swin_unetr import SwinTransformer
-from trainer.common.constants import LOGIT_KEY, MULTI_SCALE_LOGIT_KEY, GATE_KEY, GATED_LOGIT_KEY
 
 rearrange, _ = optional_import("einops", name="rearrange")
 
@@ -157,11 +157,11 @@ if __name__ == "__main__":
     # Example usage
     model = swin_classifier(
         img_size=(32, 32, 32),  # D, H, W
-        in_channels=1,            # RGB input
-        num_classes=1,            # Binary classification
-        feature_size=16,          # Base feature size
-        depths=(2, 2, 2, 2),      # Number of blocks in each stage
-        num_heads=(2, 4, 8, 16), # Number of attention heads in each stage
+        in_channels=1,  # RGB input
+        num_classes=1,  # Binary classification
+        feature_size=16,  # Base feature size
+        depths=(2, 2, 2, 2),  # Number of blocks in each stage
+        num_heads=(2, 4, 8, 16),  # Number of attention heads in each stage
         drop_rate=0.0,
         attn_drop_rate=0.0,
         dropout_path_rate=0.0,
