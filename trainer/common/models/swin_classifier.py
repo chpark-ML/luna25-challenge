@@ -96,13 +96,6 @@ class swin_classifier(nn.Module):
 
         self.avg_pool = nn.AdaptiveAvgPool3d(1) if spatial_dims == 3 else nn.AdaptiveAvgPool2d(1)
 
-        # Final classification head
-        # self.head = nn.Sequential(
-        #     nn.Linear(feature_size * 16, 32),
-        #     nn.ReLU(inplace=True),
-        #     nn.Dropout(p=drop_rate),
-        #     nn.Linear(32, num_classes)
-        # )
         self.classifier = classifier
 
     def forward(self, x_in):
