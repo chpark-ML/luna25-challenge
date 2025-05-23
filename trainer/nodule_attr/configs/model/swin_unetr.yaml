@@ -19,3 +19,4 @@ model_C:
     target_attr_to_train: ${trainer.target_attr_to_train}
     target_attr_downstream: ${trainer.target_attr_downstream}
     return_logit: false
+    
