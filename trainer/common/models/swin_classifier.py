@@ -100,19 +100,8 @@ class swin_classifier(nn.Module):
 
     def forward(self, x_in):
         hidden_states_out = self.swinViT(x_in, self.normalize)
-        
-        if self.classifier is not None:
-            result = self.classifier(hidden_states_out)
-            return result
-        else:
-            x = hidden_states_out[-1]
-            if self.spatial_dims == 3:
-                x = self.avg_pool(x)
-            else:
-                x = self.avg_pool(x) 
-                
-            x = torch.flatten(x, 1)
-            return {LOGIT_KEY: x}
+        result = self.classifier(hidden_states_out)
+        return result
 
     def load_from(self, weights):
         with torch.no_grad():
@@ -185,7 +174,7 @@ if __name__ == "__main__":
         y = model(x)
         print(f"Input shape: {x.shape}")
         print(f"Output keys: {y.keys()}")
-        print(f"Logits shape: {y[LOGIT_KEY].shape}")  # Should be (1,) for binary classification
+        print(f"Logits shape: {y[LOGIT_KEY]['malignancy'].shape}")  # Should be (1,) for binary classification
 
     del model, x, y
     torch.cuda.empty_cache()
