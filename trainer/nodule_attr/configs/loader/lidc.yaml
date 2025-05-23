@@ -40,8 +40,8 @@ dataset:
       aug_prob: 1.0
       is_same_across_axes: True
       scale_factor:
-        min: 0.9
-        max: 1.1
+        min: 0.8
+        max: 1.2
 
   # dataset-specific information
   target_dataset: [ "pylidc" ]
