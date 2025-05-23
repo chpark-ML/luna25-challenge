@@ -9,7 +9,7 @@ from data_lake.constants import DB_ADDRESS
 from data_lake.lidc.constants import LOGISTIC_TASK_POSTFIX, RESAMPLED_FEATURE_POSTFIX, ClusterLevelInfo
 from shared_lib.constants import DataLakeKeyDict
 from shared_lib.enums import RunMode
-from trainer.common.constants import ANNOTATION_KEY, INPUT_PATCH_KEY
+from trainer.common.constants import ANNOTATION_KEY, INPUT_PATCH_KEY, MASK_KEY
 from trainer.common.datasets.lidc import LctDataset
 
 _LUNG_DB = DB_ADDRESS
@@ -86,42 +86,32 @@ def patch_extract_3d_pylidc(
     Returns:
         np.ndarray: A 3D cube-shaped patch extracted from the given volume.
     """
-    # Load cached data
-    hf_file = File(h5_path, "r")
     patchsize = (z_size, xy_size, xy_size)
     repr_center = [x + y for x, y in zip(r_coord, center_shift_zyx)]
 
-    file_shape = hf_file["dicom_pixels_resampled"].shape
-    rlower, rupper, dlower, dupper = get_patch_extract_3d_meta(file_shape, repr_center, patchsize=patchsize)
+    with File(h5_path, "r") as hf_file:
+        file_shape = hf_file["dicom_pixels_resampled"].shape
+        rlower, rupper, dlower, dupper = get_patch_extract_3d_meta(file_shape, repr_center, patchsize=patchsize)
 
-    # Load ROI only
-    file = hf_file["dicom_pixels_resampled"][rlower[0] : rupper[0], rlower[1] : rupper[1], rlower[2] : rupper[2]]
-    mask = hf_file["mask_annotation_resampled"][rlower[0] : rupper[0], rlower[1] : rupper[1], rlower[2] : rupper[2]]
+        patch_image = hf_file["dicom_pixels_resampled"][rlower[0]:rupper[0], rlower[1]:rupper[1], rlower[2]:rupper[2]]
+        mask = hf_file["mask_annotation_resampled"][rlower[0]:rupper[0], rlower[1]:rupper[1], rlower[2]:rupper[2]]
 
-    if file.shape != patchsize:
+    if patch_image.shape != patchsize:
         pad_width = [pair for pair in zip(dlower, dupper)]
-        file = np.pad(file, pad_width=pad_width, mode="constant", constant_values=fill)
+        patch_image = np.pad(patch_image, pad_width=pad_width, mode="constant", constant_values=fill)
         mask = np.pad(mask, pad_width=pad_width, mode="constant", constant_values=0.0)
 
-    file = file.astype("float32")
-    mask = mask.astype("float32")
-
-    # FIXME: nested scope?
-    # with open() as hf_file:
-    #     with open() as hf_mask:
-    hf_file.close()
-
-    assert file.shape == (
+    assert patch_image.shape == (
         z_size,
         xy_size,
         xy_size,
-    ), f"Sanity check failed: {file.shape} == ({z_size}, {xy_size}, {xy_size})"
+    ), f"Sanity check failed: {patch_image.shape} == ({z_size}, {xy_size}, {xy_size})"
     assert mask.shape == (
         z_size,
         xy_size,
         xy_size,
     ), f"Sanity check failed: {mask.shape} == ({z_size}, {xy_size}, {xy_size})"
-    return file, mask
+    return patch_image, mask
 
 
 class Dataset(LctDataset):
@@ -185,7 +175,7 @@ class Dataset(LctDataset):
 
         # Data augmentation
         if self.mode == RunMode.TRAIN:
-            img = self.transform(img)
+            img, mask = self.transform(img, mask)
 
         # Data preprocessing
         img = [fn(img)[np.newaxis, ...] for fn in self.dicom_windowing]  # [(1, 48, 72, 72), ...]
@@ -193,6 +183,7 @@ class Dataset(LctDataset):
 
         return {
             INPUT_PATCH_KEY: img,
+            MASK_KEY: mask,
             ANNOTATION_KEY: attributes,
             "file_path": img_path,
             "mask_path": mask_path,
