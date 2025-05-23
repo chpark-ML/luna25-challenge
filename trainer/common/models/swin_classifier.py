@@ -191,7 +191,8 @@ if __name__ == "__main__":
     with torch.no_grad():
         y = model(x)
         print(f"Input shape: {x.shape}")
-        print(f"Output shape: {y.shape}")  # Should be (1,) for binary classification
+        print(f"Output keys: {y.keys()}")
+        print(f"Logits shape: {y[LOGIT_KEY].shape}")  # Should be (1,) for binary classification
 
     del model, x, y
     torch.cuda.empty_cache()
