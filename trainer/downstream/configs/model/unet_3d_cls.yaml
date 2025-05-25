@@ -1,4 +1,4 @@
-model_C:
+model_repr:
   _target_: trainer.common.models.unet_3d_cls.Model
   in_channels: 1
   f_maps: 8

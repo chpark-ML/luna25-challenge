@@ -1,4 +1,4 @@
-model_C:
+model_repr:
   _target_: trainer.common.models.unet_3d_MS.Model
   in_channels: 1
   f_maps: 8
@@ -7,8 +7,8 @@ model_C:
   layer_order: gcr
   classifier:
     _target_: trainer.common.models.modules.classifier.MultiScaleAttnClassifier
-    f_maps: ${model.model_C.f_maps}
-    num_levels: ${model.model_C.num_levels}
+    f_maps: ${model.model_repr.f_maps}
+    num_levels: ${model.model_repr.num_levels}
     num_features: 3
     drop_prob: 0.05
     pyramid_channels: 128

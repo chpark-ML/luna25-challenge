@@ -9,7 +9,7 @@ from data_lake.constants import DB_ADDRESS
 from data_lake.lidc.constants import LOGISTIC_TASK_POSTFIX, RESAMPLED_FEATURE_POSTFIX, ClusterLevelInfo
 from shared_lib.constants import DataLakeKeyDict
 from shared_lib.enums import RunMode
-from trainer.common.constants import ANNOTATION_KEY, INPUT_PATCH_KEY, MASK_KEY
+from trainer.common.constants import ATTR_ANNOTATION_KEY, INPUT_PATCH_KEY, SEG_ANNOTATION_KEY
 from trainer.common.datasets.lidc import LctDataset
 
 _LUNG_DB = DB_ADDRESS
@@ -180,11 +180,12 @@ class Dataset(LctDataset):
         # Data preprocessing
         img = [fn(img)[np.newaxis, ...] for fn in self.dicom_windowing]  # [(1, 48, 72, 72), ...]
         img = np.concatenate(img, axis=0)  # (n, 48, 72, 72)
+        mask = mask[None, ...]  # (1, 48, 72, 72)
 
         return {
             INPUT_PATCH_KEY: img,
-            MASK_KEY: mask,
-            ANNOTATION_KEY: attributes,
+            SEG_ANNOTATION_KEY: mask,
+            ATTR_ANNOTATION_KEY: attributes,
             "file_path": img_path,
             "mask_path": mask_path,
             "index": index,

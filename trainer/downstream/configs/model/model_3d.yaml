@@ -1,4 +1,4 @@
-model_C:
+model_repr:
   _target_: trainer.common.models.model_3d.I3D
   num_classes: 1
   input_channels: 3

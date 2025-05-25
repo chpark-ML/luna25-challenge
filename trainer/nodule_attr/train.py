@@ -1,7 +1,5 @@
 import json
 import logging
-import os
-import random
 import time
 from dataclasses import dataclass
 
@@ -15,7 +13,8 @@ from sklearn import metrics
 import trainer.common.train as comm_train
 from data_lake.lidc.constants import LOGISTIC_TASK_POSTFIX, RESAMPLED_FEATURE_POSTFIX
 from shared_lib.enums import BaseBestModelStandard, RunMode
-from trainer.common.constants import ANNOTATION_KEY, INPUT_PATCH_KEY, LOGIT_KEY, LossKey
+from trainer.common.constants import ATTR_ANNOTATION_KEY, INPUT_PATCH_KEY, LOGIT_KEY, LossKey, SEG_ANNOTATION_KEY, \
+    SEG_LOGIT_KEY
 from trainer.common.enums import ModelName, ThresholdMode
 from trainer.common.utils import freeze_layers
 
@@ -24,19 +23,25 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Metrics(comm_train.Metrics):
-    loss: float = np.inf
-    multi_label_losses: dict = None
-    multi_label_metrics: dict = None
-    multi_label_threshold: dict = None
+    loss_total: float = np.inf
+
+    loss_cls: float = np.inf
+    cls_losses: dict = None
+    cls_metrics: dict = None
+
+    loss_seg: float = np.inf
+    seg_metrics: dict = None
+
+    thresholds: dict = None
 
     def __str__(self):
-        return f"loss_{self.loss:.4f}"
+        return f"loss_cls_{self.loss_cls:.4f}_loss_seg_{self.loss_seg:.4f}"
 
     def get_representative_metric(self):
         """
         Returns: float type evaluation metric
         """
-        return self.loss
+        return self.loss_cls + self.loss_seg
 
 
 def _check_any_nan(arr):
@@ -47,7 +52,7 @@ def _check_any_nan(arr):
 
 
 def get_binary_classification_metrics(
-    logit: dict, prob: dict, annot: dict, threshold: dict, threshold_mode: ThresholdMode = ThresholdMode.YOUDEN
+        logit: dict, prob: dict, annot: dict, threshold: dict, threshold_mode: ThresholdMode = ThresholdMode.YOUDEN
 ):
     assert type(prob) == type(annot)
     result_dict = dict()
@@ -71,27 +76,84 @@ def get_binary_classification_metrics(
     return result_dict
 
 
+def compute_dice(
+        input_array,
+        target_array,
+        epsilon=1e-6,
+        weight=None,
+        squared=True,
+        per_channel=False,
+        reduction="mean",  # "mean" or "none"
+):
+    """
+    Computes Dice coefficient between input and target NumPy arrays.
+
+    Args:
+        input_array (np.ndarray): (N, C, ...) predicted values (float or binary)
+        target_array (np.ndarray): (N, C, ...) ground truth (binary)
+        epsilon (float): small constant to avoid division by zero
+        weight (np.ndarray, optional): (C,) or (C, 1), per-channel weight
+        squared (bool): whether to square input and target in denominator
+        per_channel (bool): if True, return per-channel dice (N, C) or (C,)
+        reduction (str): "mean" (default) or "none"
+
+    Returns:
+        float or np.ndarray: Dice score
+    """
+    assert input_array.shape == target_array.shape, "'input_array' and 'target_array' must have the same shape"
+    N, C = input_array.shape[:2]
+    input_flat = input_array.reshape(N, C, -1)
+    target_flat = target_array.astype(np.float32).reshape(N, C, -1)
+
+    intersect = np.sum(input_flat * target_flat, axis=-1)  # shape: (N, C)
+
+    if squared:
+        input_sum = np.sum(input_flat ** 2, axis=-1)
+        target_sum = np.sum(target_flat ** 2, axis=-1)
+    else:
+        input_sum = np.sum(input_flat, axis=-1)
+        target_sum = np.sum(target_flat, axis=-1)
+
+    denominator = input_sum + target_sum
+    dice = (2.0 * intersect) / (np.maximum(denominator, epsilon))  # shape: (N, C)
+
+    if weight is not None:
+        weight = weight.reshape(1, -1)  # shape: (1, C)
+        dice = dice * weight
+
+    if per_channel:
+        if reduction == "mean":
+            return dice.mean(axis=0)  # (C,)
+        elif reduction == "none":
+            return dice  # (N, C)
+        else:
+            raise ValueError(f"Invalid reduction mode: {reduction}")
+    else:
+        return dice.mean()
+
+
 class Trainer(comm_train.Trainer):
     """Trainer to train model"""
 
     def __init__(
-        self,
-        model,
-        optimizer,
-        scheduler,
-        criterion,
-        remove_ambiguous_in_val_test,
-        lower_bound_ambiguous_label,
-        upper_bound_ambiguous_label,
-        thresholding_mode_representative,
-        thresholding_mode,
-        target_attr_total,
-        target_attr_to_train,
-        target_attr_downstream,
-        grad_clip_max_norm,
-        **kwargs,
+            self,
+            model,
+            optimizer,
+            scheduler,
+            criterion,
+            remove_ambiguous_in_val_test,
+            lower_bound_ambiguous_label,
+            upper_bound_ambiguous_label,
+            thresholding_mode_representative,
+            thresholding_mode,
+            target_attr_total,
+            target_attr_to_train,
+            target_attr_downstream,
+            do_segmentation_task,
+            grad_clip_max_norm,
+            **kwargs,
     ) -> None:
-        self.repr_model_name = ModelName.CLASSIFIER
+        self.repr_model_name = ModelName.REPRESENTATIVE
         super().__init__(model, optimizer, scheduler, criterion, **kwargs)
         self.remove_ambiguous_in_val_test = remove_ambiguous_in_val_test
         self.lower_bound_ambiguous_label = lower_bound_ambiguous_label
@@ -103,6 +165,8 @@ class Trainer(comm_train.Trainer):
         self.target_attr_to_train = target_attr_to_train
         self.target_attr_downstream = target_attr_downstream
 
+        self.do_segmentation_task = do_segmentation_task
+
         self.grad_clip_max_norm = grad_clip_max_norm
 
         if self.fine_tune_info["enable"]:
@@ -111,7 +175,7 @@ class Trainer(comm_train.Trainer):
 
     @classmethod
     def instantiate_trainer(
-        cls, config: omegaconf.DictConfig, loaders, logging_tool, optuna_trial=None
+            cls, config: omegaconf.DictConfig, loaders, logging_tool, optuna_trial=None
     ) -> comm_train.Trainer:
         # Init model
         if isinstance(config.model, (omegaconf.DictConfig, dict)):
@@ -195,59 +259,68 @@ class Trainer(comm_train.Trainer):
 
         for i, data in enumerate(loader):
             global_step = epoch * len(loader) + i + 1
-            self.optimizer[ModelName.CLASSIFIER].zero_grad()
+            self.optimizer[ModelName.REPRESENTATIVE].zero_grad()
             dicom = data[INPUT_PATCH_KEY].to(self.device)
             _check_any_nan(dicom)
+
+            # annots
+            seg_annot = data[SEG_ANNOTATION_KEY].to(self.device) if self.do_segmentation_task else None
             annots = dict()
-            for key, value in data[ANNOTATION_KEY].items():
-                _annot = value.to(self.device).float()
+            for key, value in data[ATTR_ANNOTATION_KEY].items():
+                _annot = value.to(self.device).float()  # (B)
                 _check_any_nan(_annot)
-                annots[key] = torch.unsqueeze(_annot, dim=1)
+                annots[key] = torch.unsqueeze(_annot, dim=1)  # (B, 1)
 
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
-                output = self.model[ModelName.CLASSIFIER](dicom)
-                dict_loss = self.criterion(output, annots, mask=None, is_logit=True, is_logistic=True)
-                loss = dict_loss[LossKey.total]
+                output = self.model[ModelName.REPRESENTATIVE](dicom)
+                dict_loss = self.criterion(output, annots, seg_annot, attr_mask=None, is_logit=True, is_logistic=True)
+                loss_total = dict_loss[LossKey.total]
+
+                # attributes
                 loss_cls = dict_loss[LossKey.cls]
                 loss_cls_dict = dict_loss[LossKey.cls_dict]
-                train_losses.append(loss_cls.detach())
+
+                # segmentation
+                loss_seg = dict_loss.get(LossKey.seg, torch.tensor(0.0, device=self.device))
+
+                train_losses.append(loss_cls.detach() + loss_seg.detach())
 
             # set trace for checking nan values
-            if torch.any(torch.isnan(loss)):
+            if torch.any(torch.isnan(loss_total)):
                 import pdb
 
                 pdb.set_trace()
                 is_param_nan = torch.stack(
-                    [torch.isnan(p).any() for p in self.model[ModelName.CLASSIFIER].parameters()]
+                    [torch.isnan(p).any() for p in self.model[ModelName.REPRESENTATIVE].parameters()]
                 ).any()
                 continue
 
             # Copy model parameters before backward pass and optimization step
             if self.fast_dev_run:
                 param_before = {
-                    name: param.clone() for name, param in self.model[ModelName.CLASSIFIER].named_parameters()
+                    name: param.clone() for name, param in self.model[ModelName.REPRESENTATIVE].named_parameters()
                 }
 
             # Backpropagation
             if self.use_amp:
-                self.scaler.scale(loss).backward()
-                self.scaler.unscale_(self.optimizer[ModelName.CLASSIFIER])
+                self.scaler.scale(loss_total).backward()
+                self.scaler.unscale_(self.optimizer[ModelName.REPRESENTATIVE])
                 torch.nn.utils.clip_grad_norm_(
-                    self.model[ModelName.CLASSIFIER].parameters(), max_norm=self.grad_clip_max_norm
+                    self.model[ModelName.REPRESENTATIVE].parameters(), max_norm=self.grad_clip_max_norm
                 )
-                self.scaler.step(self.optimizer[ModelName.CLASSIFIER])
+                self.scaler.step(self.optimizer[ModelName.REPRESENTATIVE])
                 self.scaler.update()
             else:
-                loss.backward()
+                loss_total.backward()
                 torch.nn.utils.clip_grad_norm_(
-                    self.model[ModelName.CLASSIFIER].parameters(), max_norm=self.grad_clip_max_norm
+                    self.model[ModelName.REPRESENTATIVE].parameters(), max_norm=self.grad_clip_max_norm
                 )
-                self.optimizer[ModelName.CLASSIFIER].step()
+                self.optimizer[ModelName.REPRESENTATIVE].step()
 
             # Check if any parameter has changed
             if self.fast_dev_run:
-                for name, param in self.model[ModelName.CLASSIFIER].named_parameters():
+                for name, param in self.model[ModelName.REPRESENTATIVE].named_parameters():
                     if not torch.equal(param_before[name], param):
                         print(f"Parameter '{name}' has changed.")
                     else:
@@ -258,7 +331,11 @@ class Trainer(comm_train.Trainer):
                 self.log_metrics(
                     RunMode.TRAIN.value,
                     global_step,
-                    Metrics(loss_cls.detach(), loss_cls_dict, None),
+                    Metrics(
+                        loss_cls.detach() + loss_seg.detach(),  # total
+                        loss_cls.detach(), loss_cls_dict, {},  # cls
+                        loss_seg.detach(), {},  # seg
+                        {}),  # thresholds
                     log_prefix=f"[{epoch}/{self.max_epoch}] [{i}/{len(loader)}]",
                     mlflow_log_prefix="STEP",
                     duration=batch_time,
@@ -269,17 +346,17 @@ class Trainer(comm_train.Trainer):
                 # Runs 1 train batch and program ends if 'fast_dev_run' set to 'True'
                 # TODO: runs 'n(int)' train batches otherwise.
                 break
-            self.scheduler[ModelName.CLASSIFIER].step("step")
-        self.scheduler[ModelName.CLASSIFIER].step("epoch")
+            self.scheduler[ModelName.REPRESENTATIVE].step("step")
+        self.scheduler[ModelName.REPRESENTATIVE].step("epoch")
 
         train_loss = torch.stack(train_losses).sum().item()
         return Metrics(train_loss / len(loader))
 
     def optimizing_metric(self, metrics: Metrics):
-        return metrics.loss
+        return metrics.loss_cls
 
     def get_lr(self):
-        return self.optimizer[ModelName.CLASSIFIER].param_groups[0]["lr"]
+        return self.optimizer[ModelName.REPRESENTATIVE].param_groups[0]["lr"]
 
     def get_initial_model_metric(self):
         return Metrics()
@@ -292,7 +369,7 @@ class Trainer(comm_train.Trainer):
         if LOGISTIC_TASK_POSTFIX in target_attr_downstream:
             # samples where annotation label is not ambiguous, 0.5.
             index_to_be_validated = (dict_annots[target_attr_downstream][:, 0] < self.lower_bound_ambiguous_label) | (
-                dict_annots[target_attr_downstream][:, 0] > self.upper_bound_ambiguous_label
+                    dict_annots[target_attr_downstream][:, 0] > self.upper_bound_ambiguous_label
             )
             assert index_to_be_validated.sum() != 0, f"{target_attr_downstream} has no sample for validation"
             dict_logits[target_attr_downstream] = dict_logits[target_attr_downstream][index_to_be_validated]
@@ -302,9 +379,11 @@ class Trainer(comm_train.Trainer):
             pass
         return dict_logits, dict_probs, dict_annots
 
-    def set_threshold(self, dict_probs, dict_annots, mode=ThresholdMode.YOUDEN):
+    def set_threshold(self, dict_probs, dict_annots, seg_probs, seg_annots, mode=ThresholdMode.YOUDEN):
         assert mode == ThresholdMode.YOUDEN or mode == ThresholdMode.F1 or mode == ThresholdMode.ALL
         dict_threshold = dict()
+
+        # attributes
         for i_attr in self.target_attr_to_train:
             best_f1 = -1
 
@@ -333,12 +412,27 @@ class Trainer(comm_train.Trainer):
                         if f1 > best_f1:
                             best_f1 = f1
                             dict_threshold[f"threshold_{ThresholdMode.F1.value}_{i_attr}"] = threshold
+        # segmentation
+        if self.do_segmentation_task:
+            y_true = (seg_annots.detach().cpu().numpy() > 0.5).astype(np.uint8)
+            probs = seg_probs.detach().cpu().numpy()
+
+            best_dice = -1
+            for threshold in np.arange(0.0, 1.0, 0.01):
+                y_pred = (probs > threshold).astype(int)
+                dice = compute_dice(y_pred, y_true, squared=True)
+                if dice > best_dice:
+                    best_dice = dice
+                    dict_threshold[f"threshold_dice_seg"] = threshold
 
         self.dict_threshold = dict_threshold
 
-    def get_metrics(self, dict_logits, dict_probs, dict_annots):
-        outputs = self.criterion({LOGIT_KEY: dict_logits}, dict_annots, mask=None, is_logit=True, is_logistic=True)
-        losses = outputs[LossKey.cls]
+    def get_metrics(self, dict_logits, dict_probs, dict_annots, seg_logits, seg_annots):
+        # attributes
+
+        outputs = self.criterion({LOGIT_KEY: dict_logits, SEG_LOGIT_KEY: seg_logits}, dict_annots, seg_annots,
+                                 attr_mask=None, is_logit=True, is_logistic=True)
+        loss_cls = outputs[LossKey.cls]
         dict_losses = outputs[LossKey.cls_dict]
         result_dict = get_binary_classification_metrics(
             dict_logits,
@@ -347,15 +441,27 @@ class Trainer(comm_train.Trainer):
             self.dict_threshold,
             threshold_mode=self.thresholding_mode_representative,
         )
-        return losses.detach(), dict_losses, result_dict
+
+        # segmentation
+        loss_seg = outputs[LossKey.seg]
+
+        y_true = (seg_annots.detach().cpu().numpy() > 0.5).astype(np.uint8)
+        seg_probs = torch.sigmoid(seg_logits)
+        y_pred = (seg_probs.detach().cpu().numpy() > self.dict_threshold["threshold_dice_seg"]).astype(np.uint8)
+
+        dice_l1 = compute_dice(y_pred, y_true, squared=False)
+        dice_l2 = compute_dice(y_pred, y_true, squared=True)
+        result_dice = {"dice_l1": dice_l1, "dice_l2": dice_l2}
+
+        return loss_cls.detach(), dict_losses, result_dict, loss_seg.detach(), result_dice
 
     def save_best_metrics(self, val_metrics: Metrics, best_metrics: Metrics, epoch) -> (object, bool):
         found_better = False
-        if val_metrics.loss < best_metrics.loss:
+        if val_metrics.loss_cls < best_metrics.loss_cls:
             found_better = True
-            model_path = f"model.pth"
+            model_path = f"model_loss.pth"
             logger.info(
-                f"loss improved from {best_metrics.loss:4f} to {val_metrics.loss:4f}, " f"saving model to {model_path}."
+                f"loss improved from {best_metrics.loss_cls:4f} to {val_metrics.loss_cls:4f}, " f"saving model to {model_path}."
             )
 
             best_metrics = val_metrics
@@ -377,22 +483,29 @@ class Trainer(comm_train.Trainer):
     def _inference(self, loader):
         list_logits = []
         list_annots = []
+        list_seg_logits = []
+        list_seg_annots = []
 
         for data in tqdm.tqdm(loader):
             # prediction
             dicom = data[INPUT_PATCH_KEY].to(self.device)
             _check_any_nan(dicom)
-            output = self.model[ModelName.CLASSIFIER](dicom)
+            output = self.model[ModelName.REPRESENTATIVE](dicom)
             logits = output[LOGIT_KEY]
+            seg_logits = output[SEG_LOGIT_KEY]
 
             # annotation
+            seg_annot = data[SEG_ANNOTATION_KEY].to(self.device) if self.do_segmentation_task else None
             annots = dict()
             for key in self.target_attr_total:
-                value = data[ANNOTATION_KEY][key]
+                value = data[ATTR_ANNOTATION_KEY][key]
                 annots[key] = torch.unsqueeze(value.to(self.device).float(), dim=1)
 
             list_logits.append(logits)
             list_annots.append(annots)
+
+            list_seg_logits.append(seg_logits)
+            list_seg_annots.append(seg_annot)
 
             if self.fast_dev_run:
                 # Runs 1 train batch and program ends if 'fast_dev_run' set to 'True'
@@ -400,6 +513,7 @@ class Trainer(comm_train.Trainer):
                 # FIXME: progress bar does not update when 'fast_dev_run==True'
                 break
 
+        # attributes
         dict_logits = {
             key: torch.vstack([(i_logits[key]) for i_logits in list_logits]) for key in self.target_attr_to_train
         }
@@ -409,26 +523,48 @@ class Trainer(comm_train.Trainer):
         }
         dict_annots = {key: torch.vstack([i_annots[key] for i_annots in list_annots]) for key in self.target_attr_total}
 
+        # segmentation
+        seg_logits = torch.vstack(list_seg_logits)
+        seg_annots = torch.vstack(list_seg_annots)
+
         if self.remove_ambiguous_in_val_test:
             dict_logits, dict_probs, dict_annots = self.get_samples_to_validate(dict_logits, dict_probs, dict_annots)
 
-        return dict_logits, dict_probs, dict_annots
+        return dict_logits, dict_probs, dict_annots, seg_logits, seg_annots
 
     @torch.no_grad()
     def validate_epoch(self, epoch, val_loader) -> Metrics:
         super().validate_epoch(epoch, val_loader)
-        dict_logits, dict_probs, dict_annots = self._inference(val_loader)
-        self.set_threshold(dict_probs, dict_annots, mode=self.thresholding_mode)
-        loss, dict_loss, dict_metrics = self.get_metrics(dict_logits, dict_probs, dict_annots)
-        self.scheduler[ModelName.CLASSIFIER].step("epoch_val", loss)
+        dict_logits, dict_probs, dict_annots, seg_logits, seg_annots = self._inference(val_loader)
+        self.set_threshold(dict_probs, dict_annots,
+                           torch.sigmoid(seg_logits), seg_annots, mode=self.thresholding_mode)
 
-        return Metrics(loss, dict_loss, dict_metrics, self.dict_threshold)
+        # attributes, segmentation
+        loss_cls, dict_loss, dict_metrics, loss_seg, result_dice = self.get_metrics(dict_logits,
+                                                                                    dict_probs,
+                                                                                    dict_annots,
+                                                                                    seg_logits,
+                                                                                    seg_annots)
+
+        # update scheduler
+        self.scheduler[ModelName.REPRESENTATIVE].step("epoch_val", loss_cls)
+
+        return Metrics(loss_cls.detach() + loss_seg.detach(),  # total
+                       loss_cls.detach(), dict_loss, dict_metrics,  # cls
+                       loss_seg.detach(), result_dice,  # seg
+                       self.dict_threshold)  # thresholds
 
     @torch.no_grad()
     def test_epoch(self, epoch, loader, export_results=False) -> Metrics:
         super().test_epoch(epoch, loader)
-        dict_logits, dict_probs, dict_annots = self._inference(loader)
-        loss, dict_loss, dict_metrics = self.get_metrics(dict_logits, dict_probs, dict_annots)
+        dict_logits, dict_probs, dict_annots, seg_logits, seg_annots = self._inference(loader)
+
+        # attributes, segmentation
+        loss_cls, dict_loss, dict_metrics, loss_seg, result_dice = self.get_metrics(dict_logits,
+                                                                                    dict_probs,
+                                                                                    dict_annots,
+                                                                                    seg_logits,
+                                                                                    seg_annots)
 
         if export_results:
             # prepare results to save
@@ -444,4 +580,7 @@ class Trainer(comm_train.Trainer):
             with open(json_filename, "w") as f:
                 json.dump(results, f, indent=4)
 
-        return Metrics(loss, dict_loss, dict_metrics, self.dict_threshold)
+        return Metrics(loss_cls.detach() + loss_seg.detach(),  # total
+                       loss_cls.detach(), dict_loss, dict_metrics,  # cls
+                       loss_seg.detach(), result_dice,  # seg
+                       self.dict_threshold)  # thresholds
