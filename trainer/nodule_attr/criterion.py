@@ -4,11 +4,12 @@ from trainer.common.constants import GATE_KEY, LOGIT_KEY, MULTI_SCALE_LOGIT_KEY,
 
 
 class AttrLoss(nn.Module):
-    def __init__(self, cls_criterion, entropy_criterion, aux_criterion):
+    def __init__(self, cls_criterion, entropy_criterion, aux_criterion, seg_criterion):
         super(AttrLoss, self).__init__()
         self.cls_criterion = cls_criterion
         self.entropy_criterion = entropy_criterion
         self.aux_criterion = aux_criterion
+        self.seg_criterion = seg_criterion
 
     def forward(self, outputs, annot, mask=None, is_logit=True, is_logistic=True):
         losses = list()
