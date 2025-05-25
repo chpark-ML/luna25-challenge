@@ -22,3 +22,12 @@ aux_criterion:
   target_attr_total: ${trainer.target_attr_total}
   target_attr_to_train: ${trainer.target_attr_to_train}
   loss_weight: 0.0
+
+seg_criterion:
+  _target_: monai.losses.DiceFocalLoss
+  sigmoid: False
+  batch: True
+  squared_pred: True
+  focal_weight:
+  lambda_dice: 1.5
+  lambda_focal: 1.0
