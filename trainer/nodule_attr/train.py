@@ -278,13 +278,16 @@ class Trainer(comm_train.Trainer):
                 loss_total = dict_loss[LossKey.total]
 
                 # attributes
-                loss_cls = dict_loss[LossKey.cls]
+                loss_cls = dict_loss[LossKey.cls].detach()
                 loss_cls_dict = dict_loss[LossKey.cls_dict]
 
                 # segmentation
-                loss_seg = dict_loss.get(LossKey.seg, torch.tensor(0.0, device=self.device))
+                if self.do_segmentation_task:
+                    loss_seg = dict_loss[LossKey.seg].detach()
+                else:
+                    loss_seg = torch.tensor(0.0, device=self.device)
 
-                train_losses.append(loss_cls.detach() + loss_seg.detach())
+                train_losses.append(loss_cls + loss_seg)
 
             # set trace for checking nan values
             if torch.any(torch.isnan(loss_total)):
@@ -332,9 +335,9 @@ class Trainer(comm_train.Trainer):
                     RunMode.TRAIN.value,
                     global_step,
                     Metrics(
-                        loss_cls.detach() + loss_seg.detach(),  # total
-                        loss_cls.detach(), loss_cls_dict, {},  # cls
-                        loss_seg.detach(), {},  # seg
+                        loss_cls + loss_seg,  # total
+                        loss_cls, loss_cls_dict, {},  # cls
+                        loss_seg, {},  # seg
                         {}),  # thresholds
                     log_prefix=f"[{epoch}/{self.max_epoch}] [{i}/{len(loader)}]",
                     mlflow_log_prefix="STEP",
@@ -427,12 +430,14 @@ class Trainer(comm_train.Trainer):
 
         self.dict_threshold = dict_threshold
 
-    def get_metrics(self, dict_logits, dict_probs, dict_annots, seg_logits, seg_annots):
+    def get_metrics(self, dict_logits, dict_probs, dict_annots, seg_logits=None, seg_annots=None):
         # attributes
+        logits = {LOGIT_KEY: dict_logits}
+        if self.do_segmentation_task:
+            logits[SEG_LOGIT_KEY] = seg_logits
+        outputs = self.criterion(logits, dict_annots, seg_annots, attr_mask=None, is_logit=True, is_logistic=True)
 
-        outputs = self.criterion({LOGIT_KEY: dict_logits, SEG_LOGIT_KEY: seg_logits}, dict_annots, seg_annots,
-                                 attr_mask=None, is_logit=True, is_logistic=True)
-        loss_cls = outputs[LossKey.cls]
+        loss_cls = outputs[LossKey.cls].detach()
         dict_losses = outputs[LossKey.cls_dict]
         result_dict = get_binary_classification_metrics(
             dict_logits,
@@ -443,17 +448,21 @@ class Trainer(comm_train.Trainer):
         )
 
         # segmentation
-        loss_seg = outputs[LossKey.seg]
+        loss_seg = 0.0
+        result_dice = dict()
+        if self.do_segmentation_task:
+            loss_seg = outputs[LossKey.seg].detach()
 
-        y_true = (seg_annots.detach().cpu().numpy() > 0.5).astype(np.uint8)
-        seg_probs = torch.sigmoid(seg_logits)
-        y_pred = (seg_probs.detach().cpu().numpy() > self.dict_threshold["threshold_dice_seg"]).astype(np.uint8)
+            y_true = (seg_annots.detach().cpu().numpy() > 0.5).astype(np.uint8)
+            seg_probs = torch.sigmoid(seg_logits)
+            y_pred = (seg_probs.detach().cpu().numpy() > self.dict_threshold["threshold_dice_seg"]).astype(np.uint8)
 
-        dice_l1 = compute_dice(y_pred, y_true, squared=False)
-        dice_l2 = compute_dice(y_pred, y_true, squared=True)
-        result_dice = {"dice_l1": dice_l1, "dice_l2": dice_l2}
+            dice_l1 = compute_dice(y_pred, y_true, squared=False)
+            dice_l2 = compute_dice(y_pred, y_true, squared=True)
+            result_dice["dice_l1"] = dice_l1
+            result_dice["dice_l2"] = dice_l2
 
-        return loss_cls.detach(), dict_losses, result_dict, loss_seg.detach(), result_dice
+        return loss_cls, dict_losses, result_dict, loss_seg, result_dice
 
     def save_best_metrics(self, val_metrics: Metrics, best_metrics: Metrics, epoch) -> (object, bool):
         found_better = False
@@ -492,7 +501,9 @@ class Trainer(comm_train.Trainer):
             _check_any_nan(dicom)
             output = self.model[ModelName.REPRESENTATIVE](dicom)
             logits = output[LOGIT_KEY]
-            seg_logits = output[SEG_LOGIT_KEY]
+
+            if self.do_segmentation_task:
+                seg_logits = output[SEG_LOGIT_KEY]
 
             # annotation
             seg_annot = data[SEG_ANNOTATION_KEY].to(self.device) if self.do_segmentation_task else None
@@ -504,8 +515,9 @@ class Trainer(comm_train.Trainer):
             list_logits.append(logits)
             list_annots.append(annots)
 
-            list_seg_logits.append(seg_logits)
-            list_seg_annots.append(seg_annot)
+            if self.do_segmentation_task:
+                list_seg_logits.append(seg_logits)
+                list_seg_annots.append(seg_annot)
 
             if self.fast_dev_run:
                 # Runs 1 train batch and program ends if 'fast_dev_run' set to 'True'
@@ -524,8 +536,11 @@ class Trainer(comm_train.Trainer):
         dict_annots = {key: torch.vstack([i_annots[key] for i_annots in list_annots]) for key in self.target_attr_total}
 
         # segmentation
-        seg_logits = torch.vstack(list_seg_logits)
-        seg_annots = torch.vstack(list_seg_annots)
+        seg_logits = None
+        seg_annots = None
+        if self.do_segmentation_task:
+            seg_logits = torch.vstack(list_seg_logits)
+            seg_annots = torch.vstack(list_seg_annots)
 
         if self.remove_ambiguous_in_val_test:
             dict_logits, dict_probs, dict_annots = self.get_samples_to_validate(dict_logits, dict_probs, dict_annots)
@@ -536,8 +551,8 @@ class Trainer(comm_train.Trainer):
     def validate_epoch(self, epoch, val_loader) -> Metrics:
         super().validate_epoch(epoch, val_loader)
         dict_logits, dict_probs, dict_annots, seg_logits, seg_annots = self._inference(val_loader)
-        self.set_threshold(dict_probs, dict_annots,
-                           torch.sigmoid(seg_logits), seg_annots, mode=self.thresholding_mode)
+        seg_probs = torch.sigmoid(seg_logits) if self.do_segmentation_task else None
+        self.set_threshold(dict_probs, dict_annots, seg_probs, seg_annots, mode=self.thresholding_mode)
 
         # attributes, segmentation
         loss_cls, dict_loss, dict_metrics, loss_seg, result_dice = self.get_metrics(dict_logits,
@@ -549,9 +564,9 @@ class Trainer(comm_train.Trainer):
         # update scheduler
         self.scheduler[ModelName.REPRESENTATIVE].step("epoch_val", loss_cls)
 
-        return Metrics(loss_cls.detach() + loss_seg.detach(),  # total
-                       loss_cls.detach(), dict_loss, dict_metrics,  # cls
-                       loss_seg.detach(), result_dice,  # seg
+        return Metrics(loss_cls + loss_seg,  # total
+                       loss_cls, dict_loss, dict_metrics,  # cls
+                       loss_seg, result_dice,  # seg
                        self.dict_threshold)  # thresholds
 
     @torch.no_grad()
@@ -580,7 +595,7 @@ class Trainer(comm_train.Trainer):
             with open(json_filename, "w") as f:
                 json.dump(results, f, indent=4)
 
-        return Metrics(loss_cls.detach() + loss_seg.detach(),  # total
-                       loss_cls.detach(), dict_loss, dict_metrics,  # cls
-                       loss_seg.detach(), result_dice,  # seg
+        return Metrics(loss_cls + loss_seg,  # total
+                       loss_cls, dict_loss, dict_metrics,  # cls
+                       loss_seg, result_dice,  # seg
                        self.dict_threshold)  # thresholds
