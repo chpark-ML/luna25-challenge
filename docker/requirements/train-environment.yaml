@@ -76,6 +76,7 @@ dependencies: # Use conda packages if possible.
   - pip
   - pip:
       - mlflow
+      - monai==1.4.0
       - pydicom
       - pylidc
       - pyre-check
