@@ -56,7 +56,7 @@ class Trainer(comm_train.Trainer):
         grad_clip_max_norm,
         **kwargs,
     ) -> None:
-        self.repr_model_name = ModelName.CLASSIFIER
+        self.repr_model_name = ModelName.REPRESENTATIVE
         super().__init__(model, optimizer, scheduler, criterion, **kwargs)
         self.thresholding_mode_representative = ThresholdMode.get_mode(thresholding_mode_representative)
         self.thresholding_mode = ThresholdMode.get_mode(thresholding_mode)
@@ -134,14 +134,14 @@ class Trainer(comm_train.Trainer):
 
         for i, data in enumerate(loader):
             global_step = epoch * len(loader) + i + 1
-            self.optimizer[ModelName.CLASSIFIER].zero_grad()
+            self.optimizer[ModelName.REPRESENTATIVE].zero_grad()
             patch_image = data[DataLoaderKeys.IMAGE].to(self.device)
             _check_any_nan(patch_image)
             annot = data[DataLoaderKeys.LABEL].to(self.device).float()
 
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
-                logits = self.model[ModelName.CLASSIFIER](patch_image)
+                logits = self.model[ModelName.REPRESENTATIVE](patch_image)
                 logits = logits.view(-1, 1)  # considering the prediction tensor can be either (B,) or (B, 1)
                 loss = self.criterion(logits, annot)
                 train_losses.append(loss.detach())
@@ -152,35 +152,35 @@ class Trainer(comm_train.Trainer):
 
                 pdb.set_trace()
                 is_param_nan = torch.stack(
-                    [torch.isnan(p).any() for p in self.model[ModelName.CLASSIFIER].parameters()]
+                    [torch.isnan(p).any() for p in self.model[ModelName.REPRESENTATIVE].parameters()]
                 ).any()
                 continue
 
             # Copy model parameters before backward pass and optimization step
             if self.fast_dev_run:
                 param_before = {
-                    name: param.clone() for name, param in self.model[ModelName.CLASSIFIER].named_parameters()
+                    name: param.clone() for name, param in self.model[ModelName.REPRESENTATIVE].named_parameters()
                 }
 
             # Backpropagation
             if self.use_amp:
                 self.scaler.scale(loss).backward()
-                self.scaler.unscale_(self.optimizer[ModelName.CLASSIFIER])
+                self.scaler.unscale_(self.optimizer[ModelName.REPRESENTATIVE])
                 torch.nn.utils.clip_grad_norm_(
-                    self.model[ModelName.CLASSIFIER].parameters(), max_norm=self.grad_clip_max_norm
+                    self.model[ModelName.REPRESENTATIVE].parameters(), max_norm=self.grad_clip_max_norm
                 )
-                self.scaler.step(self.optimizer[ModelName.CLASSIFIER])
+                self.scaler.step(self.optimizer[ModelName.REPRESENTATIVE])
                 self.scaler.update()
             else:
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(
-                    self.model[ModelName.CLASSIFIER].parameters(), max_norm=self.grad_clip_max_norm
+                    self.model[ModelName.REPRESENTATIVE].parameters(), max_norm=self.grad_clip_max_norm
                 )
-                self.optimizer[ModelName.CLASSIFIER].step()
+                self.optimizer[ModelName.REPRESENTATIVE].step()
 
             # Check if any parameter has changed
             if self.fast_dev_run:
-                for name, param in self.model[ModelName.CLASSIFIER].named_parameters():
+                for name, param in self.model[ModelName.REPRESENTATIVE].named_parameters():
                     if not torch.equal(param_before[name], param):
                         print(f"Parameter '{name}' has changed.")
                     else:
@@ -201,8 +201,8 @@ class Trainer(comm_train.Trainer):
             if self.fast_dev_run:
                 # Runs 1 train batch and program ends if 'fast_dev_run' set to 'True'
                 break
-            self.scheduler[ModelName.CLASSIFIER].step("step")
-        self.scheduler[ModelName.CLASSIFIER].step("epoch")
+            self.scheduler[ModelName.REPRESENTATIVE].step("step")
+        self.scheduler[ModelName.REPRESENTATIVE].step("epoch")
 
         train_loss = torch.stack(train_losses).sum().item()
         return Metrics(train_loss / len(loader), {}, {})
@@ -211,7 +211,7 @@ class Trainer(comm_train.Trainer):
         return metrics.loss
 
     def get_lr(self):
-        return self.optimizer[ModelName.CLASSIFIER].param_groups[0]["lr"]
+        return self.optimizer[ModelName.REPRESENTATIVE].param_groups[0]["lr"]
 
     def get_initial_model_metric(self):
         return Metrics()
@@ -374,7 +374,7 @@ class Trainer(comm_train.Trainer):
             annot = data[DataLoaderKeys.LABEL].to(self.device).float()
 
             # inference
-            logits = self.model[ModelName.CLASSIFIER](patch_image)
+            logits = self.model[ModelName.REPRESENTATIVE](patch_image)
             logits = logits.view(-1, 1)  # considering the prediction tensor can be either (B,) or (B, 1)
 
             list_logits.append(logits)
@@ -399,7 +399,7 @@ class Trainer(comm_train.Trainer):
         self.set_threshold(probs, annots, mode=self.thresholding_mode)
         loss, dict_metrics = self.get_metrics(logits, probs, annots)
 
-        self.scheduler[ModelName.CLASSIFIER].step("epoch_val", loss)
+        self.scheduler[ModelName.REPRESENTATIVE].step("epoch_val", loss)
 
         return Metrics(loss, dict_metrics, self.dict_threshold)
 

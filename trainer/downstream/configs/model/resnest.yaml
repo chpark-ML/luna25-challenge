@@ -1,4 +1,4 @@
-model_C:
+model_repr:
   _target_: trainer.common.models.resnest.ResNest
   model_depth: 34
   in_planes: [48, 64, 96]

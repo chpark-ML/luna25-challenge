@@ -15,6 +15,6 @@ HYDRA_FULL_ERROR=1 python3 main.py \
   experiment_tool.run_group=baseline \
   experiment_tool.run_name=${run_name} \
   model=${model_name} \
-  model.model_C.pre_trained=${pretrained} \
+  model.model_repr.pre_trained=${pretrained} \
   loader.dataset.mode_model=${mode_model} \
   trainer.gpus=${gpu_num}

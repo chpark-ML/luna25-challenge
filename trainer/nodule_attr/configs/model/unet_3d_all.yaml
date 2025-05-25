@@ -1,17 +1,15 @@
-model_C:
-  _target_: trainer.common.models.unet_3d_all.Model
+model_repr:
+  _target_: trainer.common.models.unet_3d_all.UNet3D
   in_channels: 1
   out_channels: 1
-  final_sigmoid: True
-  is_segmentation: True
   f_maps: 8
   num_levels: 4
   num_groups: 4
   layer_order: gcr
   classifier:
     _target_: trainer.common.models.modules.classifier.MultiScaleAttnClassifier
-    f_maps: ${model.model_C.f_maps}
-    num_levels: ${model.model_C.num_levels}
+    f_maps: ${model.model_repr.f_maps}
+    num_levels: ${model.model_repr.num_levels}
     num_features: 3
     drop_prob: 0.05
     pyramid_channels: 128

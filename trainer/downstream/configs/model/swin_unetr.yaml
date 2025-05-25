@@ -1,4 +1,4 @@
-model_C:
+model_repr:
   _target_: trainer.common.models.swin_classifier.swin_classifier
   in_channels: 1
   num_classes: 1

@@ -9,13 +9,11 @@ class UNet3D(nn.Module):
         self,
         in_channels,
         out_channels,
-        final_sigmoid,
         basic_module=DoubleConv,
         f_maps=64,
         layer_order="gcr",
         num_groups=8,
         num_levels=4,
-        is_segmentation=True,
         conv_kernel_size=3,
         pool_kernel_size=2,
         conv_padding=1,
@@ -59,13 +57,6 @@ class UNet3D(nn.Module):
 
         # multi-label classifier
         self.classifier = classifier
-
-        # semantic segmentation problem
-        if is_segmentation:
-            self.final_activation = nn.Sigmoid() if final_sigmoid else nn.Softmax(dim=1)
-        else:
-            # regression problem
-            self.final_activation = None
 
     def forward(self, x):
         # encoder part
