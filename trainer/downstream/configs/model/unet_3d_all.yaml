@@ -1,0 +1,25 @@
+model_repr:
+  _target_: trainer.common.models.unet_3d_all.UNet3D
+  in_channels: 1
+  out_channels: 1
+  f_maps: 8
+  num_levels: 4
+  num_groups: 4
+  layer_order: gcr
+  classifier:
+    _target_: trainer.common.models.modules.classifier.MultiScaleAttnClassifier
+    f_maps: ${model.model_repr.f_maps}
+    num_levels: ${model.model_repr.num_levels}
+    num_features: 3
+    drop_prob: 0.05
+    pyramid_channels: 128
+    num_fpn_layers: 2
+    target_attr_total: [ 'c_subtlety_logistic', 'c_sphericity_logistic', 'c_lobulation_logistic', 'c_spiculation_logistic',
+                         'c_margin_logistic', 'c_texture_logistic',
+                         'c_calcification_logistic', 'c_internalStructure_logistic', 'c_malignancy_logistic' ]
+    target_attr_to_train: [ 'c_malignancy_logistic' ]
+    target_attr_downstream: 'c_malignancy_logistic'
+    use_gate: True
+    use_coord: True
+    use_fusion: True
+    return_logit: True

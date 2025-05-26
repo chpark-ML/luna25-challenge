@@ -79,21 +79,22 @@ class UNet3D(nn.Module):
         reversed_features = list(reversed(encoders_features))
         result = self.classifier(reversed_features)
 
-        # remove the last encoder's output from the list
-        # !!remember: it's the 1st in the list
-        encoders_features = encoders_features[1:]
+        if isinstance(result, dict):  # TODO: eliminate unnecessary dependency on classifier output
+            # remove the last encoder's output from the list
+            # !!remember: it's the 1st in the list
+            encoders_features = encoders_features[1:]
 
-        # decoder part
-        for decoder, encoder_features in zip(self.decoders, encoders_features):
-            # pass the output from the corresponding encoder and the output
-            # of the previous decoder
-            x = decoder(encoder_features, x)
+            # decoder part
+            for decoder, encoder_features in zip(self.decoders, encoders_features):
+                # pass the output from the corresponding encoder and the output
+                # of the previous decoder
+                x = decoder(encoder_features, x)
 
-        x = self.final_conv(x)
-        result[SEG_LOGIT_KEY] = x
+            x = self.final_conv(x)
+            result[SEG_LOGIT_KEY] = x
 
-        if self.return_named_tuple:
-            merged_dict = {**result[LOGIT_KEY], SEG_LOGIT_KEY: x}
-            return ModelOutput(**merged_dict)
+            if self.return_named_tuple:
+                merged_dict = {**result[LOGIT_KEY], SEG_LOGIT_KEY: x}
+                return ModelOutput(**merged_dict)
 
         return result
