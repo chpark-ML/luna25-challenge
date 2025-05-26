@@ -277,17 +277,16 @@ class Trainer(comm_train.Trainer):
                 dict_loss = self.criterion(output, annots, seg_annot, attr_mask=None, is_logit=True, is_logistic=True)
                 loss_total = dict_loss[LossKey.total]
 
-                # attributes
-                loss_cls = dict_loss[LossKey.cls].detach()
-                loss_cls_dict = dict_loss[LossKey.cls_dict]
+            # attributes
+            loss_cls = dict_loss[LossKey.cls].detach()
+            loss_cls_dict = dict_loss[LossKey.cls_dict]
 
-                # segmentation
-                if self.do_segmentation:
-                    loss_seg = dict_loss[LossKey.seg].detach()
-                else:
-                    loss_seg = torch.tensor(0.0, device=self.device)
-
+            # segmentation
+            if self.do_segmentation:
+                loss_seg = dict_loss[LossKey.seg].detach()
                 train_losses.append(loss_cls + loss_seg)
+            else:
+                train_losses.append(loss_cls)
 
             # set trace for checking nan values
             if torch.any(torch.isnan(loss_total)):
@@ -335,9 +334,9 @@ class Trainer(comm_train.Trainer):
                     RunMode.TRAIN.value,
                     global_step,
                     Metrics(
-                        loss_cls + loss_seg,  # total
+                        loss_cls + (loss_seg if self.do_segmentation else 0.0),  # total
                         loss_cls, loss_cls_dict, {},  # cls
-                        loss_seg, {},  # seg
+                        loss_seg if self.do_segmentation else None, {},  # seg
                         {}),  # thresholds
                     log_prefix=f"[{epoch}/{self.max_epoch}] [{i}/{len(loader)}]",
                     mlflow_log_prefix="STEP",
