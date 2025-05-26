@@ -38,6 +38,7 @@ class ModelName(Enum):
     For general classification or segmentation models, it is recommended to name them as 'model_repr'.
     For GANs, use 'model_repr' for the generative model and 'model_dis' for the discriminative model.
     """
+
     REPRESENTATIVE = "repr"
 
 

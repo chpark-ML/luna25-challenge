@@ -7,8 +7,8 @@ import hydra
 import omegaconf
 import torch
 
-from shared_lib.utils.utils import get_device, get_torch_model
 from shared_lib.model_output import ModelOutput
+from shared_lib.utils.utils import get_device, get_torch_model
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -102,26 +102,32 @@ def main() -> None:
                 if keys is not None:
                     mismatched_keys = []
                     for key in keys:
-                        orig_val = getattr(original_output, key) if not isinstance(original_output, dict) else \
-                        original_output[key]
-                        reload_val = getattr(reloaded_output, key) if not isinstance(reloaded_output, dict) else \
-                        reloaded_output[key]
+                        orig_val = (
+                            getattr(original_output, key)
+                            if not isinstance(original_output, dict)
+                            else original_output[key]
+                        )
+                        reload_val = (
+                            getattr(reloaded_output, key)
+                            if not isinstance(reloaded_output, dict)
+                            else reloaded_output[key]
+                        )
 
-                        if not torch.allclose(orig_val, reload_val, rtol=_RELATIVE_TOLERANCE,
-                                              atol=_ABSOLUTE_TOLERANCE):
+                        if not torch.allclose(orig_val, reload_val, rtol=_RELATIVE_TOLERANCE, atol=_ABSOLUTE_TOLERANCE):
                             logger.warning(f"[WARN] Mismatch in key: '{key}' for: {torchscript_path}")
                             logger.warning(
-                                f"Max abs diff for '{key}': {(orig_val - reload_val).abs().max().item():.5f}")
+                                f"Max abs diff for '{key}': {(orig_val - reload_val).abs().max().item():.5f}"
+                            )
                             mismatched_keys.append(key)
 
                     if not mismatched_keys:
                         logger.info(f"Output check passed for all keys in: {torchscript_path}")
                 else:
-                    if not torch.allclose(original_output, reloaded_output, rtol=_RELATIVE_TOLERANCE,
-                                          atol=_ABSOLUTE_TOLERANCE):
+                    if not torch.allclose(
+                        original_output, reloaded_output, rtol=_RELATIVE_TOLERANCE, atol=_ABSOLUTE_TOLERANCE
+                    ):
                         logger.warning(f"[WARN] Mismatch in outputs for: {torchscript_path}")
-                        logger.warning(
-                            f"Max abs diff: {(original_output - reloaded_output).abs().max().item():.5f}")
+                        logger.warning(f"Max abs diff: {(original_output - reloaded_output).abs().max().item():.5f}")
                     else:
                         logger.info(f"Output check passed for: {torchscript_path}")
 

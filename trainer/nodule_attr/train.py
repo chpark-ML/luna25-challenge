@@ -13,8 +13,14 @@ from sklearn import metrics
 import trainer.common.train as comm_train
 from data_lake.lidc.constants import LOGISTIC_TASK_POSTFIX, RESAMPLED_FEATURE_POSTFIX
 from shared_lib.enums import BaseBestModelStandard, RunMode
-from trainer.common.constants import ATTR_ANNOTATION_KEY, INPUT_PATCH_KEY, LOGIT_KEY, LossKey, SEG_ANNOTATION_KEY, \
-    SEG_LOGIT_KEY
+from trainer.common.constants import (
+    ATTR_ANNOTATION_KEY,
+    INPUT_PATCH_KEY,
+    LOGIT_KEY,
+    SEG_ANNOTATION_KEY,
+    SEG_LOGIT_KEY,
+    LossKey,
+)
 from trainer.common.enums import ModelName, ThresholdMode
 from trainer.common.utils import freeze_layers
 
@@ -56,7 +62,7 @@ def _check_any_nan(arr):
 
 
 def get_binary_classification_metrics(
-        logit: dict, prob: dict, annot: dict, threshold: dict, threshold_mode: ThresholdMode = ThresholdMode.YOUDEN
+    logit: dict, prob: dict, annot: dict, threshold: dict, threshold_mode: ThresholdMode = ThresholdMode.YOUDEN
 ):
     assert type(prob) == type(annot)
     result_dict = dict()
@@ -81,13 +87,13 @@ def get_binary_classification_metrics(
 
 
 def compute_dice(
-        input_array,
-        target_array,
-        epsilon=1e-6,
-        weight=None,
-        squared=True,
-        per_channel=False,
-        reduction="mean",  # "mean" or "none"
+    input_array,
+    target_array,
+    epsilon=1e-6,
+    weight=None,
+    squared=True,
+    per_channel=False,
+    reduction="mean",  # "mean" or "none"
 ):
     """
     Computes Dice coefficient between input and target NumPy arrays.
@@ -112,8 +118,8 @@ def compute_dice(
     intersect = np.sum(input_flat * target_flat, axis=-1)  # shape: (N, C)
 
     if squared:
-        input_sum = np.sum(input_flat ** 2, axis=-1)
-        target_sum = np.sum(target_flat ** 2, axis=-1)
+        input_sum = np.sum(input_flat**2, axis=-1)
+        target_sum = np.sum(target_flat**2, axis=-1)
     else:
         input_sum = np.sum(input_flat, axis=-1)
         target_sum = np.sum(target_flat, axis=-1)
@@ -140,22 +146,22 @@ class Trainer(comm_train.Trainer):
     """Trainer to train model"""
 
     def __init__(
-            self,
-            model,
-            optimizer,
-            scheduler,
-            criterion,
-            remove_ambiguous_in_val_test,
-            lower_bound_ambiguous_label,
-            upper_bound_ambiguous_label,
-            thresholding_mode_representative,
-            thresholding_mode,
-            target_attr_total,
-            target_attr_to_train,
-            target_attr_downstream,
-            do_segmentation,
-            grad_clip_max_norm,
-            **kwargs,
+        self,
+        model,
+        optimizer,
+        scheduler,
+        criterion,
+        remove_ambiguous_in_val_test,
+        lower_bound_ambiguous_label,
+        upper_bound_ambiguous_label,
+        thresholding_mode_representative,
+        thresholding_mode,
+        target_attr_total,
+        target_attr_to_train,
+        target_attr_downstream,
+        do_segmentation,
+        grad_clip_max_norm,
+        **kwargs,
     ) -> None:
         self.repr_model_name = ModelName.REPRESENTATIVE
         super().__init__(model, optimizer, scheduler, criterion, **kwargs)
@@ -179,7 +185,7 @@ class Trainer(comm_train.Trainer):
 
     @classmethod
     def instantiate_trainer(
-            cls, config: omegaconf.DictConfig, loaders, logging_tool, optuna_trial=None
+        cls, config: omegaconf.DictConfig, loaders, logging_tool, optuna_trial=None
     ) -> comm_train.Trainer:
         # Init model
         if isinstance(config.model, (omegaconf.DictConfig, dict)):
@@ -339,9 +345,13 @@ class Trainer(comm_train.Trainer):
                     global_step,
                     Metrics(
                         loss_cls + (loss_seg if self.do_segmentation else 0.0),  # total
-                        loss_cls, loss_cls_dict, {},  # cls
-                        loss_seg if self.do_segmentation else None, {},  # seg
-                        {}),  # thresholds
+                        loss_cls,
+                        loss_cls_dict,
+                        {},  # cls
+                        loss_seg if self.do_segmentation else None,
+                        {},  # seg
+                        {},
+                    ),  # thresholds
                     log_prefix=f"[{epoch}/{self.max_epoch}] [{i}/{len(loader)}]",
                     mlflow_log_prefix="STEP",
                     duration=batch_time,
@@ -375,7 +385,7 @@ class Trainer(comm_train.Trainer):
         if LOGISTIC_TASK_POSTFIX in target_attr_downstream:
             # samples where annotation label is not ambiguous, 0.5.
             index_to_be_validated = (dict_annots[target_attr_downstream][:, 0] < self.lower_bound_ambiguous_label) | (
-                    dict_annots[target_attr_downstream][:, 0] > self.upper_bound_ambiguous_label
+                dict_annots[target_attr_downstream][:, 0] > self.upper_bound_ambiguous_label
             )
             assert index_to_be_validated.sum() != 0, f"{target_attr_downstream} has no sample for validation"
             dict_logits[target_attr_downstream] = dict_logits[target_attr_downstream][index_to_be_validated]
@@ -473,7 +483,8 @@ class Trainer(comm_train.Trainer):
             found_better = True
             model_path = f"model_loss.pth"
             logger.info(
-                f"loss improved from {best_metrics.loss_cls:4f} to {val_metrics.loss_cls:4f}, " f"saving model to {model_path}."
+                f"loss improved from {best_metrics.loss_cls:4f} to {val_metrics.loss_cls:4f}, "
+                f"saving model to {model_path}."
             )
 
             best_metrics = val_metrics
@@ -558,19 +569,22 @@ class Trainer(comm_train.Trainer):
         self.set_threshold(dict_probs, dict_annots, seg_probs, seg_annots, mode=self.thresholding_mode)
 
         # attributes, segmentation
-        loss_cls, dict_loss, dict_metrics, loss_seg, result_dice = self.get_metrics(dict_logits,
-                                                                                    dict_probs,
-                                                                                    dict_annots,
-                                                                                    seg_logits,
-                                                                                    seg_annots)
+        loss_cls, dict_loss, dict_metrics, loss_seg, result_dice = self.get_metrics(
+            dict_logits, dict_probs, dict_annots, seg_logits, seg_annots
+        )
 
         # update scheduler
         self.scheduler[ModelName.REPRESENTATIVE].step("epoch_val", loss_cls)
 
-        return Metrics(loss_cls + loss_seg,  # total
-                       loss_cls, dict_loss, dict_metrics,  # cls
-                       loss_seg, result_dice,  # seg
-                       self.dict_threshold)  # thresholds
+        return Metrics(
+            loss_cls + loss_seg,  # total
+            loss_cls,
+            dict_loss,
+            dict_metrics,  # cls
+            loss_seg,
+            result_dice,  # seg
+            self.dict_threshold,
+        )  # thresholds
 
     @torch.no_grad()
     def test_epoch(self, epoch, loader, export_results=False) -> Metrics:
@@ -578,11 +592,9 @@ class Trainer(comm_train.Trainer):
         dict_logits, dict_probs, dict_annots, seg_logits, seg_annots = self._inference(loader)
 
         # attributes, segmentation
-        loss_cls, dict_loss, dict_metrics, loss_seg, result_dice = self.get_metrics(dict_logits,
-                                                                                    dict_probs,
-                                                                                    dict_annots,
-                                                                                    seg_logits,
-                                                                                    seg_annots)
+        loss_cls, dict_loss, dict_metrics, loss_seg, result_dice = self.get_metrics(
+            dict_logits, dict_probs, dict_annots, seg_logits, seg_annots
+        )
 
         if export_results:
             # prepare results to save
@@ -598,7 +610,12 @@ class Trainer(comm_train.Trainer):
             with open(json_filename, "w") as f:
                 json.dump(results, f, indent=4)
 
-        return Metrics(loss_cls + loss_seg,  # total
-                       loss_cls, dict_loss, dict_metrics,  # cls
-                       loss_seg, result_dice,  # seg
-                       self.dict_threshold)  # thresholds
+        return Metrics(
+            loss_cls + loss_seg,  # total
+            loss_cls,
+            dict_loss,
+            dict_metrics,  # cls
+            loss_seg,
+            result_dice,  # seg
+            self.dict_threshold,
+        )  # thresholds
