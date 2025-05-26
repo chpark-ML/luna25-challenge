@@ -166,11 +166,12 @@ class Dataset(LctDataset):
         if self.mode == RunMode.TRAIN:
             if self.do_segmentation:
                 img, mask = self.transform(img, mask)
-                mask = mask[None, ...]  # (1, 48, 72, 72)
             else:
                 img = self.transform(img)
 
         # Data preprocessing
+        if self.do_segmentation:
+            mask = mask[None, ...]  # (1, 48, 72, 72)
         img = [fn(img)[np.newaxis, ...] for fn in self.dicom_windowing]  # [(1, 48, 72, 72), ...]
         img = np.concatenate(img, axis=0)  # (n, 48, 72, 72)
 
