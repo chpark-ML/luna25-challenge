@@ -34,7 +34,7 @@ target_attr_to_train: [ 'c_subtlety_logistic', 'c_sphericity_logistic', 'c_lobul
 target_attr_downstream: 'c_malignancy_logistic'
 
 # segmentation
-do_segmentation: True
+do_segmentation: False
 
 # fine tune
 fine_tune_info:

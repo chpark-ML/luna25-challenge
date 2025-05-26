@@ -175,14 +175,17 @@ class Dataset(LctDataset):
         img = [fn(img)[np.newaxis, ...] for fn in self.dicom_windowing]  # [(1, 48, 72, 72), ...]
         img = np.concatenate(img, axis=0)  # (n, 48, 72, 72)
 
-        return {
+        output = {
             INPUT_PATCH_KEY: img,
-            SEG_ANNOTATION_KEY: mask if self.do_segmentation else None,
             ATTR_ANNOTATION_KEY: attributes,
             "file_path": img_path,
             "mask_path": mask_path,
             "index": index,
         }
+        if self.do_segmentation:
+            output[SEG_ANNOTATION_KEY] = mask
+
+        return output
 
     def random_balanced_sampling(self):
         if len(self.target_attr_to_train) == 1:
