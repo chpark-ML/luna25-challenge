@@ -72,20 +72,8 @@ def patch_extract_3d_pylidc(
     z_size: int = 72,
     center_shift_zyx: list = [0, 0, 0],
     fill: float = 0,
+    do_segmentation: bool = False,
 ) -> np.ndarray:
-    """
-    Extract a 3D patch from the given CT volume.
-    Args:
-        h5_path
-        r_coord
-        xy_size
-        z_size
-        fill (float): constant value for np.pad
-        mode
-        index : TODO: hotfix for validation image translation
-    Returns:
-        np.ndarray: A 3D cube-shaped patch extracted from the given volume.
-    """
     patchsize = (z_size, xy_size, xy_size)
     repr_center = [x + y for x, y in zip(r_coord, center_shift_zyx)]
 
@@ -94,24 +82,22 @@ def patch_extract_3d_pylidc(
         rlower, rupper, dlower, dupper = get_patch_extract_3d_meta(file_shape, repr_center, patchsize=patchsize)
 
         patch_image = hf_file["dicom_pixels_resampled"][rlower[0]:rupper[0], rlower[1]:rupper[1], rlower[2]:rupper[2]]
-        mask = hf_file["mask_annotation_resampled"][rlower[0]:rupper[0], rlower[1]:rupper[1], rlower[2]:rupper[2]]
+        if do_segmentation:
+            mask = hf_file["mask_annotation_resampled"][rlower[0]:rupper[0], rlower[1]:rupper[1], rlower[2]:rupper[2]]
 
     if patch_image.shape != patchsize:
         pad_width = [pair for pair in zip(dlower, dupper)]
         patch_image = np.pad(patch_image, pad_width=pad_width, mode="constant", constant_values=fill)
-        mask = np.pad(mask, pad_width=pad_width, mode="constant", constant_values=0.0)
 
-    assert patch_image.shape == (
-        z_size,
-        xy_size,
-        xy_size,
-    ), f"Sanity check failed: {patch_image.shape} == ({z_size}, {xy_size}, {xy_size})"
-    assert mask.shape == (
-        z_size,
-        xy_size,
-        xy_size,
-    ), f"Sanity check failed: {mask.shape} == ({z_size}, {xy_size}, {xy_size})"
-    return patch_image, mask
+        if do_segmentation:
+            mask = np.pad(mask, pad_width=pad_width, mode="constant", constant_values=0.0)
+
+    assert patch_image.shape == patchsize, f"Sanity check failed: {patch_image.shape} != {patchsize}"
+    if do_segmentation:
+        assert mask.shape == patchsize, f"Sanity check failed: {mask.shape} != {patchsize}"
+        return patch_image, mask
+    else:
+        return patch_image, None
 
 
 class Dataset(LctDataset):
@@ -124,6 +110,7 @@ class Dataset(LctDataset):
         augmentation,
         dataset_size_scale_factor=None,
         do_random_balanced_sampling=None,
+        do_segmentation=False,
         target_dataset=None,
         dataset_info=None,
         use_weighted_sampler=None,
@@ -140,6 +127,7 @@ class Dataset(LctDataset):
             dataset_info,
             use_weighted_sampler,
         )
+        self.do_segmentation = do_segmentation
         self.target_attr_total = dataset_info["pylidc"]["target_attr_total"]
         self.target_attr_to_train = dataset_info["pylidc"]["target_attr_to_train"]
 
@@ -164,6 +152,7 @@ class Dataset(LctDataset):
                 z_size=self.z_size + self.buffer,
                 center_shift_zyx=center_shift_zyx,
                 fill=-3024.0,
+                do_segmentation=self.do_segmentation,
             )
 
             attributes = dict()
@@ -175,16 +164,19 @@ class Dataset(LctDataset):
 
         # Data augmentation
         if self.mode == RunMode.TRAIN:
-            img, mask = self.transform(img, mask)
+            if self.do_segmentation:
+                img, mask = self.transform(img, mask)
+                mask = mask[None, ...]  # (1, 48, 72, 72)
+            else:
+                img = self.transform(img)
 
         # Data preprocessing
         img = [fn(img)[np.newaxis, ...] for fn in self.dicom_windowing]  # [(1, 48, 72, 72), ...]
         img = np.concatenate(img, axis=0)  # (n, 48, 72, 72)
-        mask = mask[None, ...]  # (1, 48, 72, 72)
 
         return {
             INPUT_PATCH_KEY: img,
-            SEG_ANNOTATION_KEY: mask,
+            SEG_ANNOTATION_KEY: mask if self.do_segmentation else None,
             ATTR_ANNOTATION_KEY: attributes,
             "file_path": img_path,
             "mask_path": mask_path,

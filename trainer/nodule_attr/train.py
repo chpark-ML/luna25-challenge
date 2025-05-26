@@ -149,7 +149,7 @@ class Trainer(comm_train.Trainer):
             target_attr_total,
             target_attr_to_train,
             target_attr_downstream,
-            do_segmentation_task,
+            do_segmentation,
             grad_clip_max_norm,
             **kwargs,
     ) -> None:
@@ -165,7 +165,7 @@ class Trainer(comm_train.Trainer):
         self.target_attr_to_train = target_attr_to_train
         self.target_attr_downstream = target_attr_downstream
 
-        self.do_segmentation_task = do_segmentation_task
+        self.do_segmentation = do_segmentation
 
         self.grad_clip_max_norm = grad_clip_max_norm
 
@@ -264,7 +264,7 @@ class Trainer(comm_train.Trainer):
             _check_any_nan(dicom)
 
             # annots
-            seg_annot = data[SEG_ANNOTATION_KEY].to(self.device) if self.do_segmentation_task else None
+            seg_annot = data[SEG_ANNOTATION_KEY].to(self.device) if self.do_segmentation else None
             annots = dict()
             for key, value in data[ATTR_ANNOTATION_KEY].items():
                 _annot = value.to(self.device).float()  # (B)
@@ -282,7 +282,7 @@ class Trainer(comm_train.Trainer):
                 loss_cls_dict = dict_loss[LossKey.cls_dict]
 
                 # segmentation
-                if self.do_segmentation_task:
+                if self.do_segmentation:
                     loss_seg = dict_loss[LossKey.seg].detach()
                 else:
                     loss_seg = torch.tensor(0.0, device=self.device)
@@ -416,7 +416,7 @@ class Trainer(comm_train.Trainer):
                             best_f1 = f1
                             dict_threshold[f"threshold_{ThresholdMode.F1.value}_{i_attr}"] = threshold
         # segmentation
-        if self.do_segmentation_task:
+        if self.do_segmentation:
             y_true = (seg_annots.detach().cpu().numpy() > 0.5).astype(np.uint8)
             probs = seg_probs.detach().cpu().numpy()
 
@@ -433,7 +433,7 @@ class Trainer(comm_train.Trainer):
     def get_metrics(self, dict_logits, dict_probs, dict_annots, seg_logits=None, seg_annots=None):
         # attributes
         logits = {LOGIT_KEY: dict_logits}
-        if self.do_segmentation_task:
+        if self.do_segmentation:
             logits[SEG_LOGIT_KEY] = seg_logits
         outputs = self.criterion(logits, dict_annots, seg_annots, attr_mask=None, is_logit=True, is_logistic=True)
 
@@ -450,7 +450,7 @@ class Trainer(comm_train.Trainer):
         # segmentation
         loss_seg = 0.0
         result_dice = dict()
-        if self.do_segmentation_task:
+        if self.do_segmentation:
             loss_seg = outputs[LossKey.seg].detach()
 
             y_true = (seg_annots.detach().cpu().numpy() > 0.5).astype(np.uint8)
@@ -502,11 +502,11 @@ class Trainer(comm_train.Trainer):
             output = self.model[ModelName.REPRESENTATIVE](dicom)
             logits = output[LOGIT_KEY]
 
-            if self.do_segmentation_task:
+            if self.do_segmentation:
                 seg_logits = output[SEG_LOGIT_KEY]
 
             # annotation
-            seg_annot = data[SEG_ANNOTATION_KEY].to(self.device) if self.do_segmentation_task else None
+            seg_annot = data[SEG_ANNOTATION_KEY].to(self.device) if self.do_segmentation else None
             annots = dict()
             for key in self.target_attr_total:
                 value = data[ATTR_ANNOTATION_KEY][key]
@@ -515,7 +515,7 @@ class Trainer(comm_train.Trainer):
             list_logits.append(logits)
             list_annots.append(annots)
 
-            if self.do_segmentation_task:
+            if self.do_segmentation:
                 list_seg_logits.append(seg_logits)
                 list_seg_annots.append(seg_annot)
 
@@ -538,7 +538,7 @@ class Trainer(comm_train.Trainer):
         # segmentation
         seg_logits = None
         seg_annots = None
-        if self.do_segmentation_task:
+        if self.do_segmentation:
             seg_logits = torch.vstack(list_seg_logits)
             seg_annots = torch.vstack(list_seg_annots)
 
@@ -551,7 +551,7 @@ class Trainer(comm_train.Trainer):
     def validate_epoch(self, epoch, val_loader) -> Metrics:
         super().validate_epoch(epoch, val_loader)
         dict_logits, dict_probs, dict_annots, seg_logits, seg_annots = self._inference(val_loader)
-        seg_probs = torch.sigmoid(seg_logits) if self.do_segmentation_task else None
+        seg_probs = torch.sigmoid(seg_logits) if self.do_segmentation else None
         self.set_threshold(dict_probs, dict_annots, seg_probs, seg_annots, mode=self.thresholding_mode)
 
         # attributes, segmentation
