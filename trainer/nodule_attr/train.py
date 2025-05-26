@@ -35,13 +35,17 @@ class Metrics(comm_train.Metrics):
     thresholds: dict = None
 
     def __str__(self):
-        return f"loss_cls_{self.loss_cls:.4f}_loss_seg_{self.loss_seg:.4f}"
+        loss_cls_str = f"{self.loss_cls:.4f}" if self.loss_cls is not None else "None"
+        loss_seg_str = f"{self.loss_seg:.4f}" if self.loss_seg is not None else "None"
+        return f"loss_cls_{loss_cls_str}_loss_seg_{loss_seg_str}"
 
     def get_representative_metric(self):
         """
         Returns: float type evaluation metric
         """
-        return self.loss_cls + self.loss_seg
+        loss_cls = self.loss_cls if self.loss_cls is not None else 0.0
+        loss_seg = self.loss_seg if self.loss_seg is not None else 0.0
+        return loss_cls + loss_seg
 
 
 def _check_any_nan(arr):
