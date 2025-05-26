@@ -11,7 +11,7 @@ dataset:
   dicom_window: [ "BASE" ]  # "PROPOSED", "LUNG", "MEDIASTINAL", "BONE"
 
   # preprocessing
-  buffer: 8
+  buffer: 4
   dataset_size_scale_factor: 1.0
   do_random_balanced_sampling: False  # only when length of target_attr_to_train is 1.
 
@@ -34,7 +34,7 @@ dataset:
     random_crop_3d:
       aug_prob: 1.0
     random_rotate_3d:
-      aug_prob: 1.0
+      aug_prob: 0.0
     coarse_dropout_3d:
       aug_prob: 1.0
       max_holes: 12
