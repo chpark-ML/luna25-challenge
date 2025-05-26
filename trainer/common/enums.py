@@ -24,16 +24,19 @@ class ThresholdMode(Enum):
 
 class ModelName(Enum):
     """
-    GAN 모델 학습과 같이 여러 모델을 활용한 학습파이프라인을 고려한 모델 이름 구분 클래스입니다.
-    GAN 학습에서는 생성 모델(generative model)과 판별 모델(discriminative model) 두 가지가 사용되며,
-    일반적으로 생성 모델만 저장되고, 학습 코드에서 두 모델을 구분하여 추론을 수행합니다.
-    이러한 학습 시나리오에서 두 모델을 명확히 구분하기 위해 이 클래스를 정의합니다.
+    This is a model name classification class designed for training pipelines that involve multiple models,
+    such as those used in GAN (Generative Adversarial Network) training.
 
-    아래 필드 값이 모델 설정(config)의 이름에 포함되면 해당 모델로 간주됩니다.
-    예를 들어, 'model_repr'은 'repr'을 포함하므로 REPRESENTATIVE로 인식됩니다.
+    In GAN training, both a generative model and a discriminative model are used.
+    Typically, only the generative model is saved, and
+    inference is performed by distinguishing between the two models in the training code.
+    This class is intended to explicitly differentiate between such models in these scenarios.
 
-    일반 분류, 분할 모델은 'model_repr'로 명명하고,
-    생성 모델은 'model_repr', 판별 모델은 'model_dis' 등으로 명명하는 것을 권장합니다.
+    If a field value below is included in a model configuration name, it is interpreted as the corresponding model.
+    For example, if the model name includes 'repr', it is considered a REPRESENTATIVE model.
+
+    For general classification or segmentation models, it is recommended to name them as 'model_repr'.
+    For GANs, use 'model_repr' for the generative model and 'model_dis' for the discriminative model.
     """
     REPRESENTATIVE = "repr"
 
