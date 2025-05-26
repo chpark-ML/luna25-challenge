@@ -13,12 +13,12 @@ from shared_lib.model_output import ModelOutput
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-_BEST_CHECKPOINT_NAME = "model"
+_LOSS_CHECKPOINT_POSTFIX = "loss"
 _FINAL_CHECKPOINT_POSTFIX = "final"
 _WEIGHT_STEM = "nodulex-v3.0.0"
 _WEIGHT_SUFFIX = ".pt.enc"
 _REPRESENTATIVE_MODEL_NAME = "model_repr"
-_WEIGHT_FILE_NAME_BEST = _WEIGHT_STEM + _WEIGHT_SUFFIX
+_WEIGHT_FILE_NAME_LOSS = _WEIGHT_STEM + "_" + _LOSS_CHECKPOINT_POSTFIX + _WEIGHT_SUFFIX
 _WEIGHT_FILE_NAME_FINAL = _WEIGHT_STEM + "_" + _FINAL_CHECKPOINT_POSTFIX + _WEIGHT_SUFFIX
 _ABSOLUTE_TOLERANCE = 1e-01
 _RELATIVE_TOLERANCE = 1e-05
@@ -68,8 +68,8 @@ def main() -> None:
                 model_device = model.to(device)
 
                 # Determine TorchScript file name
-                if ckpt_name == _BEST_CHECKPOINT_NAME:
-                    torchscript_name = f"{device.type}_model.ts"
+                if _LOSS_CHECKPOINT_POSTFIX in ckpt_name:
+                    torchscript_name = f"{device.type}_model_loss.ts"
                 elif _FINAL_CHECKPOINT_POSTFIX in ckpt_name:
                     torchscript_name = f"{device.type}_model_final.ts"
                 else:
