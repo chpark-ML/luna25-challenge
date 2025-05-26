@@ -1,6 +1,7 @@
 import torch.nn as nn
 
-from trainer.common.constants import SEG_LOGIT_KEY
+from shared_lib.model_output import ModelOutput
+from trainer.common.constants import LOGIT_KEY, SEG_LOGIT_KEY
 from trainer.common.models.modules.unet_modules import DoubleConv, create_decoders, create_encoders
 
 
@@ -18,6 +19,7 @@ class UNet3D(nn.Module):
         pool_kernel_size=2,
         conv_padding=1,
         classifier=None,
+        return_named_tuple=False,
         **kwargs,
     ):
         super(UNet3D, self).__init__()
@@ -58,6 +60,8 @@ class UNet3D(nn.Module):
         # multi-label classifier
         self.classifier = classifier
 
+        self.return_named_tuple = return_named_tuple
+
     def forward(self, x):
         # encoder part
         encoders_features = []
@@ -75,17 +79,22 @@ class UNet3D(nn.Module):
         reversed_features = list(reversed(encoders_features))
         result = self.classifier(reversed_features)
 
-        # remove the last encoder's output from the list
-        # !!remember: it's the 1st in the list
-        encoders_features = encoders_features[1:]
+        if isinstance(result, dict):  # TODO: eliminate unnecessary dependency on classifier output
+            # remove the last encoder's output from the list
+            # !!remember: it's the 1st in the list
+            encoders_features = encoders_features[1:]
 
-        # decoder part
-        for decoder, encoder_features in zip(self.decoders, encoders_features):
-            # pass the output from the corresponding encoder and the output
-            # of the previous decoder
-            x = decoder(encoder_features, x)
+            # decoder part
+            for decoder, encoder_features in zip(self.decoders, encoders_features):
+                # pass the output from the corresponding encoder and the output
+                # of the previous decoder
+                x = decoder(encoder_features, x)
 
-        x = self.final_conv(x)
-        result[SEG_LOGIT_KEY] = x
+            x = self.final_conv(x)
+            result[SEG_LOGIT_KEY] = x
+
+            if self.return_named_tuple:
+                merged_dict = {**result[LOGIT_KEY], SEG_LOGIT_KEY: x}
+                return ModelOutput(**merged_dict)
 
         return result

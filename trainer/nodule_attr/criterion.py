@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from trainer.common.constants import GATE_KEY, LOGIT_KEY, SEG_LOGIT_KEY, MULTI_SCALE_LOGIT_KEY, LossKey
+from trainer.common.constants import GATE_KEY, LOGIT_KEY, MULTI_SCALE_LOGIT_KEY, SEG_LOGIT_KEY, LossKey
 
 
 class AttrLoss(nn.Module):

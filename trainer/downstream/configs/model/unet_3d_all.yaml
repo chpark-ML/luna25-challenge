@@ -6,7 +6,6 @@ model_repr:
   num_levels: 4
   num_groups: 4
   layer_order: gcr
-  return_named_tuple: False
   classifier:
     _target_: trainer.common.models.modules.classifier.MultiScaleAttnClassifier
     f_maps: ${model.model_repr.f_maps}
@@ -15,10 +14,12 @@ model_repr:
     drop_prob: 0.05
     pyramid_channels: 128
     num_fpn_layers: 2
-    target_attr_total: ${trainer.target_attr_total}
-    target_attr_to_train: ${trainer.target_attr_to_train}
-    target_attr_downstream: ${trainer.target_attr_downstream}
+    target_attr_total: [ 'c_subtlety_logistic', 'c_sphericity_logistic', 'c_lobulation_logistic', 'c_spiculation_logistic',
+                         'c_margin_logistic', 'c_texture_logistic',
+                         'c_calcification_logistic', 'c_internalStructure_logistic', 'c_malignancy_logistic' ]
+    target_attr_to_train: [ 'c_malignancy_logistic' ]
+    target_attr_downstream: 'c_malignancy_logistic'
     use_gate: True
     use_coord: True
     use_fusion: True
-    return_logit: False
+    return_logit: True

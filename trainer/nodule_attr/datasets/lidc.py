@@ -81,9 +81,13 @@ def patch_extract_3d_pylidc(
         file_shape = hf_file["dicom_pixels_resampled"].shape
         rlower, rupper, dlower, dupper = get_patch_extract_3d_meta(file_shape, repr_center, patchsize=patchsize)
 
-        patch_image = hf_file["dicom_pixels_resampled"][rlower[0]:rupper[0], rlower[1]:rupper[1], rlower[2]:rupper[2]]
+        patch_image = hf_file["dicom_pixels_resampled"][
+            rlower[0] : rupper[0], rlower[1] : rupper[1], rlower[2] : rupper[2]
+        ]
         if do_segmentation:
-            mask = hf_file["mask_annotation_resampled"][rlower[0]:rupper[0], rlower[1]:rupper[1], rlower[2]:rupper[2]]
+            mask = hf_file["mask_annotation_resampled"][
+                rlower[0] : rupper[0], rlower[1] : rupper[1], rlower[2] : rupper[2]
+            ]
 
     if patch_image.shape != patchsize:
         pad_width = [pair for pair in zip(dlower, dupper)]
