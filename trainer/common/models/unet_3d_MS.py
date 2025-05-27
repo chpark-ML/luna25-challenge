@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from shared_lib.model_output import ModelOutput
+from shared_lib.model_output import ModelOutputCls
 from trainer.common.constants import LOGIT_KEY
 from trainer.common.models.modules.unet_modules import DoubleConv, create_encoders
 
@@ -61,6 +61,6 @@ class Model(nn.Module):
 
         if self.return_named_tuple:
             merged_dict = {**result[LOGIT_KEY]}
-            return ModelOutput(**merged_dict)
+            return ModelOutputCls(**merged_dict)
         else:
             return result
