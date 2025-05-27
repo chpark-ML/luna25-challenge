@@ -10,6 +10,8 @@ model_repr:
   dropout_path_rate: 0.0
   normalize: True
   spatial_dims: 3
+  return_downstream_logit: True
+  return_named_tuple: False
   classifier: #swin transformer [16,32,64,128,256]
     _target_: trainer.common.models.modules.classifier.Classifier
     in_planes: 128  # 실제 입력 특징 맵의 채널 수
@@ -20,5 +22,3 @@ model_repr:
                          'c_calcification_logistic', 'c_internalStructure_logistic', 'c_malignancy_logistic' ]
     target_attr_to_train: [ 'c_malignancy_logistic' ]
     target_attr_downstream: 'c_malignancy_logistic'
-    return_logit: True
-    
