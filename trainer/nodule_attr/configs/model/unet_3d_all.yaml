@@ -6,6 +6,7 @@ model_repr:
   num_levels: 4
   num_groups: 4
   layer_order: gcr
+  return_downstream_logit: False
   return_named_tuple: False
   classifier:
     _target_: trainer.common.models.modules.classifier.MultiScaleAttnClassifier
@@ -21,4 +22,3 @@ model_repr:
     use_gate: True
     use_coord: True
     use_fusion: True
-    return_logit: False

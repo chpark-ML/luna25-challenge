@@ -43,15 +43,13 @@ def main() -> None:
             # Load model config
             cfg = omegaconf.OmegaConf.load(prefix + "/.hydra/config.yaml")
             cfg_model = cfg.model[_REPRESENTATIVE_MODEL_NAME]
-            if hasattr(cfg_model.classifier, "return_logit"):
-                # If the model has a return_logit attribute, set it to True
-                cfg_model.classifier.return_logit = True
 
             # Dummy input for tracing
             sample = torch.rand((1, 1, 48, 72, 72), dtype=torch.float32)
 
             # Load model and weights
             model = hydra.utils.instantiate(cfg_model, _recursive_=True)
+
             model = get_torch_model(model, path_to_load_weight)
             model.eval()
 
