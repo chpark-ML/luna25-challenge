@@ -100,8 +100,20 @@ class swin_classifier(nn.Module):
 
     def forward(self, x_in):
         hidden_states_out = self.swinViT(x_in, self.normalize)
-        result = self.classifier(hidden_states_out)
-        return result
+        if self.classifier is not None:
+            result = self.classifier(hidden_states_out)
+            if self.return_logit:
+                return result[LOGIT_KEY]["c_malignancy_logistic"]
+            return result
+        else:
+            x = hidden_states_out[-1]
+            if self.spatial_dims == 3:
+                x = self.avg_pool(x)
+            else:
+                x = self.avg_pool(x)
+                
+            x = torch.flatten(x, 1)
+            return x
 
     def load_from(self, weights):
         with torch.no_grad():

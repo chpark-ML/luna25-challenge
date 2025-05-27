@@ -13,6 +13,7 @@ from sklearn import metrics
 
 import trainer.common.train as comm_train
 from shared_lib.enums import BaseBestModelStandard, RunMode
+from trainer.common.constants import LOGIT_KEY
 from trainer.common.enums import ModelName, ThresholdMode
 from trainer.downstream.datasets.luna25 import DataLoaderKeys
 
