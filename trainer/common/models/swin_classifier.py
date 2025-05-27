@@ -34,21 +34,23 @@ class swin_classifier(nn.Module):
     """
 
     def __init__(
-        self,
-        img_size: tuple = (32, 224, 224),  # D, H, W
-        in_channels: int = 3,
-        num_classes: int = 1,
-        feature_size: int = 48,
-        depths: tuple = (2, 2, 2, 2),
-        num_heads: tuple = (3, 6, 12, 24),
-        norm_name: str = "instance",
-        drop_rate: float = 0.0,
-        attn_drop_rate: float = 0.0,
-        dropout_path_rate: float = 0.0,
-        normalize: bool = True,
-        use_checkpoint: bool = False,
-        spatial_dims: int = 3,
-        classifier: nn.Module = None,
+            self,
+            img_size: tuple = (32, 224, 224),  # D, H, W
+            in_channels: int = 3,
+            num_classes: int = 1,
+            feature_size: int = 48,
+            depths: tuple = (2, 2, 2, 2),
+            num_heads: tuple = (3, 6, 12, 24),
+            norm_name: str = "instance",
+            drop_rate: float = 0.0,
+            attn_drop_rate: float = 0.0,
+            dropout_path_rate: float = 0.0,
+            normalize: bool = True,
+            use_checkpoint: bool = False,
+            spatial_dims: int = 3,
+            classifier: nn.Module = None,
+            return_downstream_logit: bool = False,
+            return_named_tuple: bool = False
     ) -> None:
         super().__init__()
 
@@ -97,13 +99,15 @@ class swin_classifier(nn.Module):
         self.avg_pool = nn.AdaptiveAvgPool3d(1) if spatial_dims == 3 else nn.AdaptiveAvgPool2d(1)
 
         self.classifier = classifier
+        self.return_downstream_logit = return_downstream_logit
+        self.return_named_tuple = return_named_tuple
 
     def forward(self, x_in):
         hidden_states_out = self.swinViT(x_in, self.normalize)
         if self.classifier is not None:
             result = self.classifier(hidden_states_out)
-            if self.return_logit:
-                return result[LOGIT_KEY]["c_malignancy_logistic"]
+            if self.return_downstream_logit:
+                return result[LOGIT_KEY][self.classifier.target_attr_downstream]
             return result
         else:
             x = hidden_states_out[-1]
@@ -111,7 +115,7 @@ class swin_classifier(nn.Module):
                 x = self.avg_pool(x)
             else:
                 x = self.avg_pool(x)
-                
+
             x = torch.flatten(x, 1)
             return x
 
