@@ -1,5 +1,7 @@
 import torch.nn as nn
 
+from shared_lib.model_output import ModelOutput
+from trainer.common.constants import LOGIT_KEY
 from trainer.common.models.modules.unet_modules import DoubleConv, create_encoders
 
 
@@ -16,6 +18,8 @@ class Model(nn.Module):
         pool_kernel_size=2,
         conv_padding=1,
         classifier=None,
+        return_downstream_logit=False,
+        return_named_tuple=False,
     ):
         super(Model, self).__init__()
 
@@ -38,6 +42,9 @@ class Model(nn.Module):
         )
         self.classifier = classifier
 
+        self.return_downstream_logit = return_downstream_logit
+        self.return_named_tuple = return_named_tuple
+
     def forward(self, x):
         # encoder part
         encoders_features = []
@@ -49,4 +56,11 @@ class Model(nn.Module):
 
         result = self.classifier(encoders_features)
 
-        return result
+        if self.return_downstream_logit:
+            return result[LOGIT_KEY][self.classifier.target_attr_downstream]
+
+        if self.return_named_tuple:
+            merged_dict = {**result[LOGIT_KEY]}
+            return ModelOutput(**merged_dict)
+        else:
+            return result

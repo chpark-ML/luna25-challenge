@@ -63,7 +63,6 @@ class MultiScaleAttnClassifier(nn.Module):
         use_gate,
         use_coord,
         use_fusion,
-        return_logit,
     ):
         super(MultiScaleAttnClassifier, self).__init__()
 
@@ -77,7 +76,6 @@ class MultiScaleAttnClassifier(nn.Module):
         self.use_gate = use_gate
         self.use_coord = use_coord
         self.use_fusion = use_fusion
-        self.return_logit = return_logit
 
         # f1, f2, f3 > g1, g2, g3_attr
         self.gate_block = (
@@ -156,9 +154,6 @@ class MultiScaleAttnClassifier(nn.Module):
 
             # aggregate probs provided from multi-scale
             logits[i_attr] = torch.cat(_logits, dim=1).sum(1, keepdim=True) / gates_total
-
-        if self.return_logit:
-            return logits[self.target_attr_downstream]
 
         return {
             LOGIT_KEY: logits,
