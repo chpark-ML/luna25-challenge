@@ -1,4 +1,4 @@
-result_csv_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v2.0.3rc1/result_2_0_3.csv
+result_csv_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v2.0.3rc2/result_2_0_3rc2.csv  # result_{run_name}.csv
 sort_criterion: prob_ensemble
 
 hydra:
