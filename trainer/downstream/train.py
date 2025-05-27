@@ -142,11 +142,7 @@ class Trainer(comm_train.Trainer):
 
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
-                output = self.model[ModelName.REPRESENTATIVE](patch_image)
-                if isinstance(output, dict):  # swin_classifier의 경우
-                    logits = output[LOGIT_KEY]["c_malignancy_logistic"]
-                else:  # 다른 모델의 경우
-                    logits = output
+                logits = self.model[ModelName.REPRESENTATIVE](patch_image)
                 logits = logits.view(-1, 1)  # considering the prediction tensor can be either (B,) or (B, 1)
                 loss = self.criterion(logits, annot)
                 train_losses.append(loss.detach())
@@ -379,11 +375,7 @@ class Trainer(comm_train.Trainer):
             annot = data[DataLoaderKeys.LABEL].to(self.device).float()
 
             # inference
-            output = self.model[ModelName.REPRESENTATIVE](patch_image)
-            if isinstance(output, dict):  # swin_classifier의 경우
-                logits = output[LOGIT_KEY]["c_malignancy_logistic"]
-            else:  # 다른 모델의 경우
-                logits = output
+            logits = self.model[ModelName.REPRESENTATIVE](patch_image)
             logits = logits.view(-1, 1)  # considering the prediction tensor can be either (B,) or (B, 1)
 
             list_logits.append(logits)
