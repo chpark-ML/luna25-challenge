@@ -20,5 +20,5 @@ model_repr:
                          'c_calcification_logistic', 'c_internalStructure_logistic', 'c_malignancy_logistic' ]
     target_attr_to_train: [ 'c_malignancy_logistic' ]
     target_attr_downstream: 'c_malignancy_logistic'
-    return_logit: false
+    return_logit: True
     
