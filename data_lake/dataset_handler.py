@@ -106,36 +106,36 @@ class DatasetHandler:
             # get dataframe
             docs = self.fetch_documents(collection=collection_name, query=query)
             df = pd.DataFrame(docs)
+            if len(df) != 0:
+                # dataset & collection name
+                df[DatasetInfoKey.DATASET] = dataset
+                if DatasetInfoKey.COLLECTION_NAME in dataset_info.keys():
+                    df[DataLakeKey.COLLECTION] = dataset_info[DatasetInfoKey.COLLECTION_NAME]
 
-            # dataset & collection name
-            df[DatasetInfoKey.DATASET] = dataset
-            if DatasetInfoKey.COLLECTION_NAME in dataset_info.keys():
-                df[DataLakeKey.COLLECTION] = dataset_info[DatasetInfoKey.COLLECTION_NAME]
+                # constant_mapper
+                if self.constant_mapper in dataset_info.keys():
+                    for key, value in dataset_info[self.constant_mapper].items():
+                        if key in df:
+                            raise ValueError(f"The new feature name '{key}' has already been given.")
+                        df[key] = value if value else None
 
-            # constant_mapper
-            if self.constant_mapper in dataset_info.keys():
-                for key, value in dataset_info[self.constant_mapper].items():
-                    if key in df:
-                        raise ValueError(f"The new feature name '{key}' has already been given.")
-                    df[key] = value if value else None
+                # field_name_mapper
+                # e.g., r_coord_zyx_label: r_coord (dataset A)
+                #       r_coord_zyx_label: r_coord_zyx (dataset B)
+                if self.field_name_mapper in dataset_info.keys():
+                    for key, value in dataset_info[self.field_name_mapper].items():
+                        if key in df and key not in _OVERWRITE_ALLOWED:
+                            raise ValueError(f"The new feature name '{key}' has already been given.")
+                        if isinstance(value, omegaconf.dictconfig.DictConfig):
+                            source = value.source
+                            field = value.field
+                            df[key] = df[source].apply(lambda x: x[field])
+                        else:
+                            df[key] = df[value] if value else None
 
-            # field_name_mapper
-            # e.g., r_coord_zyx_label: r_coord (dataset A)
-            #       r_coord_zyx_label: r_coord_zyx (dataset B)
-            if self.field_name_mapper in dataset_info.keys():
-                for key, value in dataset_info[self.field_name_mapper].items():
-                    if key in df and key not in _OVERWRITE_ALLOWED:
-                        raise ValueError(f"The new feature name '{key}' has already been given.")
-                    if isinstance(value, omegaconf.dictconfig.DictConfig):
-                        source = value.source
-                        field = value.field
-                        df[key] = df[source].apply(lambda x: x[field])
-                    else:
-                        df[key] = df[value] if value else None
+                dfs.append(df)
 
-            dfs.append(df)
-
-        return pd.concat(dfs, ignore_index=True)
+        return pd.concat(dfs, ignore_index=True) if len(dfs) != 0 else pd.DataFrame()
 
     @staticmethod
     def update_existing_docs(
