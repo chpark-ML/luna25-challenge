@@ -7,7 +7,7 @@ import hydra
 import omegaconf
 import torch
 
-from shared_lib.model_output import ModelOutput
+from shared_lib.model_output import ModelOutputCls
 from shared_lib.utils.utils import get_device, get_torch_model
 
 logging.basicConfig(level=logging.INFO)
@@ -89,7 +89,7 @@ def main() -> None:
                     loaded_model.eval()
                     reloaded_output = loaded_model(sample_device)
                     if isinstance(reloaded_output, tuple) and not hasattr(reloaded_output, "_fields"):
-                        reloaded_output = ModelOutput(*reloaded_output)
+                        reloaded_output = ModelOutputCls(*reloaded_output)
 
                 # Compare original and reloaded outputs
                 if isinstance(original_output, dict) and isinstance(reloaded_output, dict):
