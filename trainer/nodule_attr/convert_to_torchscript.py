@@ -26,7 +26,7 @@ _THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 def main() -> None:
     logger.info("Encrypt weight file and export TorchScript.")
 
-    list_prefix = [_THIS_DIR + f"/outputs/baseline/cls_all_model_5_val_fold{fold_index}_segFalse" for fold_index in range(6)]
+    list_prefix = [_THIS_DIR + f"/outputs/baseline/cls_all_model_5_val_fold{fold_index}_segTrue" for fold_index in range(6)]
     print(list_prefix)
 
     for prefix in list_prefix:
