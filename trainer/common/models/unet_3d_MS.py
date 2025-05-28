@@ -1,6 +1,10 @@
 import torch.nn as nn
 
+<<<<<<< HEAD
 from shared_lib.model_output import ModelOutputCls
+=======
+from shared_lib.model_output import ModelOutput
+>>>>>>> 5b6be8d (refactoring return flag)
 from trainer.common.constants import LOGIT_KEY
 from trainer.common.models.modules.unet_modules import DoubleConv, create_encoders
 
