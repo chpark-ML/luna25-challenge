@@ -27,9 +27,16 @@ _THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 def main() -> None:
     logger.info("Encrypt weight file and export TorchScript.")
 
-    list_prefix = [_THIS_DIR + f"/outputs/default/cv_fine_val_fold{fold_index}" for fold_index in range(6)]
-    print(list_prefix)
+    base_dir = os.path.join(_THIS_DIR, "outputs/default")
+    prefix = "cv_fine_val_fold"
+    suffix = "_segFalse"
 
+    list_prefix = [
+        os.path.join(base_dir, name)
+        for name in os.listdir(base_dir)
+        if name.startswith(prefix) and name.endswith(suffix)
+    ]
+    print(list_prefix)
     for prefix in list_prefix:
         path_to_load_weights = glob(prefix + "/*.pth")
 
