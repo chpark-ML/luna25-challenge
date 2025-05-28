@@ -10,7 +10,7 @@ run_name=cv_fine_val_fold${val_fold}
 
 model_num=5
 nodule_attr_model_name=cls_all_model_${model_num}_val_fold${val_fold}
-model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr/${nodule_attr_model_name}/model.pth
+model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr/${nodule_attr_model_name}/model_loss.pth
 
 LR=1e-3
 epoch=30
