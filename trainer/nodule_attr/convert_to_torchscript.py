@@ -7,7 +7,7 @@ import hydra
 import omegaconf
 import torch
 
-from shared_lib.model_output import ModelOutputCls
+from shared_lib.model_output import ModelOutputCls, ModelOutputClsSeg
 from shared_lib.utils.utils import get_device, get_torch_model
 
 logging.basicConfig(level=logging.INFO)
@@ -26,7 +26,7 @@ _THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 def main() -> None:
     logger.info("Encrypt weight file and export TorchScript.")
 
-    list_prefix = [_THIS_DIR + f"/outputs/baseline/cls_all_model_5_val_fold{fold_index}_segFalse" for fold_index in range(6)]
+    list_prefix = [_THIS_DIR + f"/outputs/baseline/cls_all_model_5_val_fold{fold_index}_segTrue" for fold_index in range(6)]
     print(list_prefix)
 
     for prefix in list_prefix:
@@ -89,7 +89,10 @@ def main() -> None:
                     loaded_model.eval()
                     reloaded_output = loaded_model(sample_device)
                     if isinstance(reloaded_output, tuple) and not hasattr(reloaded_output, "_fields"):
-                        reloaded_output = ModelOutputCls(*reloaded_output)
+                        if len(reloaded_output) == 9:
+                            reloaded_output = ModelOutputCls(*reloaded_output)
+                        else:
+                            reloaded_output = ModelOutputClsSeg(*reloaded_output)
 
                 # Compare original and reloaded outputs
                 if isinstance(original_output, dict) and isinstance(reloaded_output, dict):
