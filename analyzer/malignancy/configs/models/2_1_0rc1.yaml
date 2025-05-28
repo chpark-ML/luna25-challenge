@@ -1,0 +1,41 @@
+model_0:
+  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  root_path: /opt/challenge/trainer/downstream/outputs/default
+  exp_name: cv_swin_unetr_val_fold0
+  file_name: cuda_model_final.ts
+  device: cuda # e.g., "cpu" or "cuda"
+
+model_1:
+  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  root_path: /opt/challenge/trainer/downstream/outputs/default
+  exp_name: cv_swin_unetr_val_fold1
+  file_name: cuda_model_final.ts
+  device: cuda # e.g., "cpu" or "cuda"
+
+model_2:
+  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  root_path: /opt/challenge/trainer/downstream/outputs/default
+  exp_name: cv_swin_unetr_val_fold2
+  file_name: cuda_model_final.ts
+  device: cuda # e.g., "cpu" or "cuda"
+
+model_3:
+  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  root_path: /opt/challenge/trainer/downstream/outputs/default
+  exp_name: cv_swin_unetr_val_fold3
+  file_name: cuda_model_final.ts
+  device: cuda # e.g., "cpu" or "cuda"
+
+model_4:
+  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  root_path: /opt/challenge/trainer/downstream/outputs/default
+  exp_name: cv_swin_unetr_val_fold4
+  file_name: cuda_model_final.ts
+  device: cuda # e.g., "cpu" or "cuda"
+
+model_5:
+  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  root_path: /opt/challenge/trainer/downstream/outputs/default
+  exp_name: cv_swin_unetr_val_fold5
+  file_name: cuda_model_final.ts
+  device: cuda # e.g., "cpu" or "cuda"
