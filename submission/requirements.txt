@@ -5,6 +5,7 @@ torchvision==0.19.1
 numpy==2.2.4
 scipy==1.15.2
 pandas==2.2.3
+pyradiomics==3.0.1
 SimpleITK==2.4.1
 hydra-core
 omegaconf

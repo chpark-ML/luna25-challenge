@@ -3,6 +3,13 @@ FROM --platform=linux/amd64 pytorch/pytorch AS example-algorithm-amd64
 # Ensures that Python output to stdout/stderr is not buffered
 ENV PYTHONUNBUFFERED=1
 
+# Install system dependencies
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Create a non-root user
 RUN groupadd -r user && useradd -m --no-log-init -r -g user user
 USER user
