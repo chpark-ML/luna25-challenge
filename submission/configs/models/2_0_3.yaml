@@ -1,47 +1,47 @@
 model_0:
-  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /opt/app/resources
   exp_name: cv_fine_val_fold0_segFalse
   file_name: cuda_model_auroc.ts
   device: 0
 
 model_1:
-  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /opt/app/resources
   exp_name: cv_fine_val_fold1_segFalse
   file_name: cuda_model_auroc.ts
   device: 0
 
 model_2:
-  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /opt/app/resources
   exp_name: cv_fine_val_fold2_segFalse
   file_name: cuda_model_auroc.ts
   device: 0
 
 model_3:
-  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /opt/app/resources
   exp_name: cv_fine_val_fold3_segFalse
   file_name: cuda_model_auroc.ts
   device: 0
 
 model_4:
-  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /opt/app/resources
   exp_name: cv_fine_val_fold4_segFalse
   file_name: cuda_model_auroc.ts
   device: 0
 
 model_5:
-  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /opt/app/resources
   exp_name: cv_fine_val_fold5_segFalse
   file_name: cuda_model_auroc.ts
   device: 0
 
 model_6:
-  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /opt/app/resources
   exp_name: cv_fine_val_fold6_segFalse
   file_name: cuda_model_auroc.ts
