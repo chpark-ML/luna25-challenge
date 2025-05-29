@@ -4,12 +4,19 @@ cd /opt/challenge/trainer/downstream/scripts/ablation_study_patch_size || exit 1
 
 # tmux_window gpu_num scale_factor
 paired_values=(
-  "1 1 0.5"    # 25mm, size_px_xy=36, size_px_z=24
+  "1 1 0.5"    # 25mm, size_px_xy=40, size_px_z=24
   "2 2 1.0"    # 50mm, size_px_xy=72, size_px_z=48 (original)
   "3 3 2.0"    # 100mm, size_px_xy=144, size_px_z=96
   "4 4 4.0"    # 200mm, size_px_xy=288, size_px_z=192
   "5 5 8.0"    # 400mm, size_px_xy=576, size_px_z=384
 )
+
+# Ensure input sizes are divisible by 8 for proper feature map sizes
+# Original feature map sizes:
+# (B, 24, 48, 72, 72) -> (B, 24, 6, 9, 9)
+# (B, 48, 24, 36, 36) -> (B, 48, 3, 4.5, 4.5)
+# (B, 96, 12, 18, 18) -> (B, 96, 1.5, 2.25, 2.25)
+# (B, 192, 6, 9, 9) -> (B, 192, 0.75, 1.125, 1.125)
 
 my_session=1
 tmux new-session -d -s ${my_session}  # 새로운 tmux 세션 생성
