@@ -3,3 +3,4 @@ models:
 mode: 3D
 device: 0
 suppress_logs: False
+do_segmentation: True
