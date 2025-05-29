@@ -79,5 +79,6 @@ dependencies: # Use conda packages if possible.
       - monai==1.4.0
       - pydicom
       - pylidc
+      - pyradiomics
       - pyre-check
       - redis
