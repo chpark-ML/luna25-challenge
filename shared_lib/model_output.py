@@ -25,4 +25,4 @@ class ModelOutputClsSeg(NamedTuple):
     c_calcification_logistic: torch.Tensor
     c_internalStructure_logistic: torch.Tensor
     c_malignancy_logistic: torch.Tensor
-    logit_seg: torch.Tensor
+    c_segmentation_logistic: torch.Tensor
