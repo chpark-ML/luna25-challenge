@@ -2,9 +2,9 @@
 defaults:
   - loader: default
   - processor: default
-  - models: 2_0_3.yaml
+  - models: nodule_attr_seg.yaml
 
-run_name: "2_0_3"
+run_name: "nodule_attr_seg"
 run_modes:
   - val
   - test
