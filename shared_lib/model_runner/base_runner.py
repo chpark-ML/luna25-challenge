@@ -1,4 +1,4 @@
-from pathlib import Path
+from abc import ABC, abstractmethod
 from typing import Union
 
 import torch
@@ -6,7 +6,7 @@ import torch
 from shared_lib.utils.utils import get_device
 
 
-class ModelBaseTorchscript:
+class ModelBaseTorchscript(ABC):
     """
     Base abstract class for all the models that use Torchscript
     """
@@ -40,14 +40,10 @@ class ModelBaseTorchscript:
         else:
             assert False, "Device setup is not supported."
 
-    @torch.no_grad()
+    @abstractmethod
     def get_prediction(self, input_tensor):
-        results = self.model(input_tensor)
-
-        return results
-
-
-class MalignancyRunner(ModelBaseTorchscript):
-    def __init__(self, root_path, exp_name, file_name, device: Union[str, torch.device] = None):
-        checkpoint_path = Path(root_path) / exp_name / file_name
-        super().__init__(checkpoint_path=checkpoint_path, device=device)
+        """
+        Abstract method for getting predictions.
+        Must be implemented in subclasses.
+        """
+        pass

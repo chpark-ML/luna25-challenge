@@ -1,13 +1,13 @@
 import logging
+from abc import ABC, abstractmethod
 
 import numpy as np
 import torch
-from tqdm import tqdm
 
 from shared_lib.tools.image_parser import clip_and_scale, extract_patch
 
 
-class MalignancyProcessor:
+class BaseProcessor(ABC):
     """
     Loads a chest CT scan, and predicts the malignancy around a nodule
     """
@@ -76,52 +76,24 @@ class MalignancyProcessor:
 
         return mean_probs
 
-    def inference(self, loader, mode, sanity_check=False):
-        list_probs = list()
-        dict_probs = {model_name: [] for model_name in self.models.keys()}
-        list_annots = list()
-        list_annot_ids = list()
+    @abstractmethod
+    def inference(self, loader, mode: str, sanity_check: bool = False):
+        """
+        Perform inference using the provided data loader in either 2D or 3D mode.
 
-        for data in tqdm(loader):
-            # prediction
-            patch_image = data["image"].to(self.device)
+        This method is designed for use in analysis pipelines, where model predictions
+        are required for a given dataset. It supports both 2D and 3D inference modes,
+        and can optionally perform a quick sanity check run.
 
-            # annotation
-            annot = data["label"].to(self.device).float()
-            annot_ids = data["ID"]
+        Args:
+            loader: A PyTorch DataLoader that provides the input data.
+            mode (str): Inference mode. Must be one of:
+                - '2D': for slice-wise or image-wise inference. (currently, not implemented)
+                - '3D': for volumetric or sequential inference.
+            sanity_check (bool, optional): If True, performs a minimal run to verify
+                that the pipeline works correctly (e.g., a few samples). Defaults to False.
 
-            # inference (model-wise)
-            batch_probs = list()
-            for model_name, model in self.models.items():
-                logits = model.get_prediction(patch_image)  # (B, 1)
-                prob = torch.sigmoid(logits)  # (B, 1)
-
-                # Save per-model probabilities
-                dict_probs[model_name].append(prob)
-
-                # Aggregate for overall averaging
-                batch_probs.append(prob)
-
-            # Mean across models
-            batch_probs = torch.stack(batch_probs)  # (num_models, B, 1)
-            mean_probs = torch.mean(batch_probs, dim=0)  # (B, 1)
-
-            list_probs.append(mean_probs)
-            list_annots.append(annot)
-            list_annot_ids.extend(annot_ids)
-            # sanity check
-            if sanity_check:
-                break
-
-        # Combine batches
-        probs = torch.vstack(list_probs)
-        annots = torch.vstack(list_annots)
-
-        # Convert to numpy
-        overall_probs = probs.squeeze().cpu().numpy()
-        overall_annots = annots.squeeze().cpu().numpy()
-
-        # Convert dict_probs to numpy
-        dict_probs = {k: torch.vstack(v).squeeze().cpu().numpy() for k, v in dict_probs.items()}
-
-        return overall_probs, overall_annots, list_annot_ids, dict_probs
+        Returns:
+            The inference results, in a format defined by the subclass implementation.
+        """
+        pass

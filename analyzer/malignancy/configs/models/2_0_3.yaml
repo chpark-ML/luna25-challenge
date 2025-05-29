@@ -1,47 +1,47 @@
 model_0:
-  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v2.0.3
   exp_name: cv_fine_val_fold0_segFalse
   file_name: cuda_model_auroc.ts
   device: cuda # e.g., "cpu" or "cuda"
 
 model_1:
-  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v2.0.3
   exp_name: cv_fine_val_fold1_segFalse
   file_name: cuda_model_auroc.ts
   device: cuda # e.g., "cpu" or "cuda"
 
 model_2:
-  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v2.0.3
   exp_name: cv_fine_val_fold2_segFalse
   file_name: cuda_model_auroc.ts
   device: cuda # e.g., "cpu" or "cuda"
 
 model_3:
-  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v2.0.3
   exp_name: cv_fine_val_fold3_segFalse
   file_name: cuda_model_auroc.ts
   device: cuda # e.g., "cpu" or "cuda"
 
 model_4:
-  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v2.0.3
   exp_name: cv_fine_val_fold4_segFalse
   file_name: cuda_model_auroc.ts
   device: cuda # e.g., "cpu" or "cuda"
 
 model_5:
-  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v2.0.3
   exp_name: cv_fine_val_fold5_segFalse
   file_name: cuda_model_auroc.ts
   device: cuda # e.g., "cpu" or "cuda"
 
 model_6:
-  _target_: shared_lib.malignancy_runner.MalignancyRunner
+  _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v2.0.3
   exp_name: cv_fine_val_fold6_segFalse
   file_name: cuda_model_auroc.ts
