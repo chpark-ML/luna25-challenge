@@ -6,9 +6,9 @@ cd /opt/challenge/trainer/downstream/scripts/ablation_study_patch_size || exit 1
 paired_values=(
   "1 1 0.5"    # 25mm, size_px_xy=40, size_px_z=24
   "2 2 1.0"    # 50mm, size_px_xy=72, size_px_z=48 (original)
-  "3 3 2.0"    # 100mm, size_px_xy=144, size_px_z=96
-  "4 4 4.0"    # 200mm, size_px_xy=288, size_px_z=192
-  "5 5 8.0"    # 400mm, size_px_xy=576, size_px_z=384
+  "3 3 1.1"    # 100mm, size_px_xy=144, size_px_z=96
+  "4 4 1.2"    # 200mm, size_px_xy=288, size_px_z=192
+  "5 5 1.5"    # 400mm, size_px_xy=576, size_px_z=384
 )
 
 # Ensure input sizes are divisible by 8 for proper feature map sizes
