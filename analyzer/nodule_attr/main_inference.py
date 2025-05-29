@@ -76,8 +76,6 @@ def main(config: DictConfig):
     combined_df.to_csv(df_path, index=False)
     print(f"Results saved to: {df_path}")
 
-    return 0
-
 
 if __name__ == "__main__":
     main()
