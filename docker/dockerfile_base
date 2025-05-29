@@ -342,12 +342,9 @@ ARG PYTHONDONTWRITEBYTECODE=1
 ARG PYTHONUNBUFFERED=1
 
 # set timezone
-ENV TZ="Asia/Seoul"
-RUN apt-get update && DEBIAN_FRONTEND=noninterative apt-get install tzdata
-RUN ln -fs /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-RUN dpkg-reconfigure --frontend noninteractive tzdata
+ENV TZ=Asia/Seoul
+ARG DEBIAN_FRONTEND=noninteractive
 
-ARG TZ
 ARG DEB_OLD
 ARG DEB_NEW
 
