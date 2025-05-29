@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from tqdm import tqdm
 
@@ -11,6 +12,23 @@ class MalignancyProcessor(BaseProcessor):
 
     def __init__(self, models=None, mode="3D", device=torch.device("cuda:0"), suppress_logs=False):
         super().__init__(models=models, mode=mode, device=device, suppress_logs=suppress_logs)
+
+    def predict(self, numpy_image, header, coord):
+        """
+        Perform model inference on the given input image and coordinate.
+        """
+        patch = self.prepare_patch(numpy_image, header, coord, self.mode)
+
+        probs = list()
+        for model_name, model in self.models.items():
+            logits = model.get_prediction(patch)
+            logits = logits.data.cpu().numpy()
+            probs.append(torch.sigmoid(torch.from_numpy(logits)).numpy())
+
+        probs = np.stack(probs, axis=0)  # shape: (num_models, ...)
+        mean_probs = np.mean(probs, axis=0)
+
+        return mean_probs
 
     def inference(self, loader, mode, sanity_check=False):
         list_probs = list()

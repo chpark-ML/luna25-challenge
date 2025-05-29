@@ -25,7 +25,7 @@ def main(config: DictConfig):
     models = dict()
     for model_indicator, config_model in config.models.items():
         models[model_indicator] = hydra.utils.instantiate(config_model)
-    malignancy_processor = hydra.utils.instantiate(config.processor, models=models)
+    processor = hydra.utils.instantiate(config.processor, models=models)
 
     # run modes
     run_modes = [RunMode(m) for m in config.run_modes] if "run_modes" in config else [x for x in RunMode]
@@ -47,7 +47,7 @@ def main(config: DictConfig):
     # get inference results
     for mode in run_modes:
         print(f"Mode: {mode}")
-        probs, annots, annot_ids, dict_probs = malignancy_processor.inference(
+        probs, annots, annot_ids, dict_probs = processor.inference(
             loaders[mode], mode=mode, sanity_check=config.sanity_check
         )
 

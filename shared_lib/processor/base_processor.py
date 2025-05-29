@@ -51,7 +51,7 @@ class BaseProcessor(ABC):
         patch = clip_and_scale(patch)
         return patch  # (1, w, h, d)
 
-    def _prepare_patch(self, image, header, coord, mode="3D") -> torch.Tensor:
+    def prepare_patch(self, image, header, coord, mode="3D") -> torch.Tensor:
         if not self.suppress_logs:
             logging.info("Processing in " + mode)
 
@@ -62,19 +62,12 @@ class BaseProcessor(ABC):
 
         return patch.unsqueeze(0)  # 1, 1, w, h, d
 
+    @abstractmethod
     def predict(self, numpy_image, header, coord):
-        patch = self._prepare_patch(numpy_image, header, coord, self.mode)
-
-        probs = list()
-        for model_name, model in self.models.items():
-            logits = model.get_prediction(patch)
-            logits = logits.data.cpu().numpy()
-            probs.append(torch.sigmoid(torch.from_numpy(logits)).numpy())
-
-        probs = np.stack(probs, axis=0)  # shape: (num_models, ...)
-        mean_probs = np.mean(probs, axis=0)
-
-        return mean_probs
+        """
+        Perform model inference on the given input image and coordinate.
+        """
+        pass
 
     @abstractmethod
     def inference(self, loader, mode: str, sanity_check: bool = False):
