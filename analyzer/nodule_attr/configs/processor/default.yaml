@@ -1,4 +1,4 @@
-_target_: shared_lib.processor.malignancy_processor.MalignancyProcessor
+_target_: shared_lib.processor.nodule_attr_processor.NoduleAttrProcessor
 models:
 mode: 3D
 device: 0
