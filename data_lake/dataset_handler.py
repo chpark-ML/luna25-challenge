@@ -168,6 +168,11 @@ class DatasetHandler:
         db : str, optional
             Target database name at DBMS, by default c.TARGET_DB
         """
+
+        required_columns = [doc_id_key, collection_key]
+        for col in required_columns:
+            assert col in df.columns, f"Missing required column '{col}' in input DataFrame."
+
         # Run database client.
         with pymongo.MongoClient(dbms_uri) as client:
             # Upload each row(i.e., document)
