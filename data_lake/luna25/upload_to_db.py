@@ -12,7 +12,7 @@ from tqdm import tqdm
 from data_lake.constants import (
     DB_ADDRESS,
     DEFAULT_RESAMPLED_SPACING,
-    TARGET_COLLECTION,
+    TARGET_COLLECTION_FEATURE,
     TARGET_DB,
     DBKey,
     H5DataKey,
@@ -120,7 +120,7 @@ def split_fold(df: pd.DataFrame) -> pd.DataFrame:
 
 def insert_to_db(df: pd.DataFrame):
     client = pymongo.MongoClient(DB_ADDRESS)
-    collection = client[TARGET_DB][TARGET_COLLECTION]
+    collection = client[TARGET_DB][TARGET_COLLECTION_FEATURE]
 
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Inserting to DB"):
         try:
@@ -204,7 +204,7 @@ def main():
     # 3. insert to DB
     if args.clean_documents:
         client = pymongo.MongoClient(DB_ADDRESS)
-        client[TARGET_DB][TARGET_COLLECTION].delete_many({})
+        client[TARGET_DB][TARGET_COLLECTION_FEATURE].delete_many({})
         print("Deleted existing documents.")
     insert_to_db_parallel(df, num_jobs=args.chunk_size)
     print("Insertion completed successfully.")
