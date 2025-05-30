@@ -1,3 +1,3 @@
 # Docker image tag
 DOCKER_BASE_IMAGE_TAG="nodulex-base:latest"
-DOCKER_IMAGE_TAG="nodulex-v2.0.3"
+DOCKER_IMAGE_TAG="nodulex-v2.0.4"
