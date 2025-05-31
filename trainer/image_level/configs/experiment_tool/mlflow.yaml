@@ -1,0 +1,5 @@
+name: mlflow
+enable: True
+experiment_name: lct-malignancy
+run_group: image_level
+run_name: unet_3d_MS_dual_scale
