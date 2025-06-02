@@ -1,11 +1,12 @@
 import torch
 import torch.nn as nn
+from trainer.common.enums import ModelName
 
 class DualScaleClassifier(nn.Module):
     def __init__(self, patch_model, image_model, feature_dim=128, hidden_dim=256):
         super().__init__()
         self.patch_model = patch_model
-        self.image_model = image_model
+        self.repr_model = image_model
         
         # Normalization layers
         self.patch_norm = nn.BatchNorm1d(feature_dim)
@@ -27,7 +28,7 @@ class DualScaleClassifier(nn.Module):
     def forward(self, patch_input, image_input):
         # Get features from both models
         patch_features = self.patch_model(patch_input)
-        image_features = self.image_model(image_input)
+        image_features = self.repr_model(image_input)
         
         # Normalize features
         patch_features = self.patch_norm(patch_features)
