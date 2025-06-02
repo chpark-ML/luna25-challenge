@@ -1,4 +1,4 @@
-_target_: trainer.downstream.train.Trainer
+_target_: trainer.image_level.train.Trainer
 
 # hyper params
 max_epoch: 30
