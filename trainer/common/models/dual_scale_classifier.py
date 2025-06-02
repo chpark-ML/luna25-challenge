@@ -6,13 +6,19 @@ class DualScaleClassifier(nn.Module):
         super().__init__()
         self.patch_model = patch_model
         self.image_model = image_model
+        
+        # Normalization layers
+        self.patch_norm = nn.BatchNorm1d(feature_dim)
+        self.image_norm = nn.BatchNorm1d(feature_dim)
             
         # Feature fusion layers
         self.fusion = nn.Sequential(
             nn.Linear(feature_dim * 2, hidden_dim),
+            nn.BatchNorm1d(hidden_dim),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.BatchNorm1d(hidden_dim // 2),
             nn.ReLU(),
             nn.Dropout(0.2),
             nn.Linear(hidden_dim // 2, 1)
@@ -25,6 +31,10 @@ class DualScaleClassifier(nn.Module):
             
         # Get features from trainable image model
         image_features = self.image_model(image_input)
+        
+        # Normalize features
+        patch_features = self.patch_norm(patch_features)
+        image_features = self.image_norm(image_features)
         
         # Concatenate features
         combined_features = torch.cat([patch_features, image_features], dim=1)
