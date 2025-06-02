@@ -15,7 +15,7 @@ run_modes:
   - test
 
 # Add path to pretrained patch-level model that will be frozen
-path_patch_model: /home/juho.jung/luna25-challenge/trainer/downstream/outputs/scale_ablation/ablation_unet_3d_MS_scale_1.0_val_fold5/model_auroc.pth  # Please replace with actual path
+path_patch_model: /opt/challenge/trainer/downstream/outputs/scale_ablation/ablation_unet_3d_MS_scale_1.0_val_fold5/model_auroc.pth  # Please replace with actual path
 
 hydra:
   run:
