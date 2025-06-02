@@ -6,10 +6,6 @@ class DualScaleClassifier(nn.Module):
         super().__init__()
         self.patch_model = patch_model
         self.image_model = image_model
-        
-        # Freeze patch model parameters
-        for param in self.patch_model.parameters():
-            param.requires_grad = False
             
         # Feature fusion layers
         self.fusion = nn.Sequential(
