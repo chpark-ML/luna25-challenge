@@ -57,6 +57,8 @@ class Trainer(comm_train.Trainer):
         **kwargs,
     ) -> None:
         self.repr_model_name = ModelName.REPRESENTATIVE
+        self.patch_level_model_name = ModelName.PATCH_LEVEL
+        self.dual_scale_model_name = ModelName.DUAL_SCALE
         super().__init__(model, optimizer, scheduler, criterion, **kwargs)
         self.thresholding_mode_representative = ThresholdMode.get_mode(thresholding_mode_representative)
         self.thresholding_mode = ThresholdMode.get_mode(thresholding_mode)
@@ -77,18 +79,18 @@ class Trainer(comm_train.Trainer):
         else:
             raise NotImplementedError
 
-        # Load pretrained model if specified
-        if hasattr(config, 'path_best_model') and config.path_best_model is not None:
-            logger.info(f"Loading pretrained model from: {config.path_best_model}")
-            checkpoint = torch.load(config.path_best_model)
+        # Load and freeze patch level model
+        if hasattr(config, 'path_patch_model') and config.path_patch_model is not None:
+            logger.info(f"Loading patch level model from: {config.path_patch_model}")
+            checkpoint = torch.load(config.path_patch_model)
             if 'model_state_dict' in checkpoint:
-                models[ModelName.REPRESENTATIVE].load_state_dict(checkpoint['model_state_dict'])
-                logger.info("Successfully loaded pretrained model state dict")
+                models[ModelName.PATCH_LEVEL].load_state_dict(checkpoint['model_state_dict'])
+                logger.info("Successfully loaded patch level model state dict")
             else:
-                models[ModelName.REPRESENTATIVE].load_state_dict(checkpoint)
-                logger.info("Successfully loaded pretrained model")
-            logger.info("Freezing pretrained model parameters")
-            for param in models[ModelName.REPRESENTATIVE].parameters():
+                models[ModelName.PATCH_LEVEL].load_state_dict(checkpoint)
+                logger.info("Successfully loaded patch level model")
+            logger.info("Freezing patch level model parameters")
+            for param in models[ModelName.PATCH_LEVEL].parameters():
                 param.requires_grad = False
 
         optimizers = None
@@ -107,18 +109,16 @@ class Trainer(comm_train.Trainer):
                 optimizers = dict()
                 schedulers = dict()
                 for optim_indicator, config_optim in config.optim.items():
-                    for model_name in ModelName:
-                        if model_name.value in optim_indicator:
-                            optimizers[model_name] = hydra.utils.instantiate(
-                                config_optim, models[model_name].parameters()
-                            )
+                    if ModelName.REPRESENTATIVE.value in optim_indicator:
+                        optimizers[ModelName.REPRESENTATIVE] = hydra.utils.instantiate(
+                            config_optim, models[ModelName.REPRESENTATIVE].parameters()
+                        )
 
                 for scheduler_indicator, config_scheduler in config.scheduler.items():
-                    for model_name in ModelName:
-                        if model_name.value in scheduler_indicator:
-                            schedulers[model_name] = hydra.utils.instantiate(
-                                config_scheduler, optimizer=optimizers[model_name]
-                            )
+                    if ModelName.REPRESENTATIVE.value in scheduler_indicator:
+                        schedulers[ModelName.REPRESENTATIVE] = hydra.utils.instantiate(
+                            config_scheduler, optimizer=optimizers[ModelName.REPRESENTATIVE]
+                        )
             else:
                 raise NotImplementedError
 
@@ -160,8 +160,15 @@ class Trainer(comm_train.Trainer):
 
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
-                logits = self.model[ModelName.REPRESENTATIVE](patch_image, patch_image_large)
-                logits = logits.view(-1, 1)  # considering the prediction tensor can be either (B,) or (B, 1)
+                # Get features from both models
+                with torch.no_grad():
+                    patch_features = self.model[ModelName.PATCH_LEVEL](patch_image)
+                image_features = self.model[ModelName.REPRESENTATIVE](patch_image_large)
+                
+                # Fuse features and get prediction
+                dual_scale_model = self.model[ModelName.DUAL_SCALE]
+                logits = dual_scale_model(patch_features, image_features)
+                logits = logits.view(-1, 1)
                 loss = self.criterion(logits, annot)
                 train_losses.append(loss.detach())
 
@@ -392,7 +399,10 @@ class Trainer(comm_train.Trainer):
             annot = data[DataLoaderKeys.LABEL].to(self.device).float()
 
             # inference
-            logits = self.model[ModelName.REPRESENTATIVE](patch_image, patch_image_large)
+            with torch.no_grad():
+                patch_features = self.model[ModelName.PATCH_LEVEL](patch_image)
+            image_features = self.model[ModelName.REPRESENTATIVE](patch_image_large)
+            logits = self.model[ModelName.DUAL_SCALE](patch_features, image_features)
             logits = logits.view(-1, 1)
 
             list_logits.append(logits)
