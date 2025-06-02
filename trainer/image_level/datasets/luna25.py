@@ -140,11 +140,17 @@ class CTCaseDataset(data.Dataset):
         self.use_weighted_sampler = use_weighted_sampler
         self.scale_factor = scale_factor
 
-        # Calculate larger patch sizes
-        self.size_xy_large = int(size_xy * scale_factor)
-        self.size_z_large = int(size_z * scale_factor)
-        self.size_px_xy_large = int(size_px_xy * scale_factor)
-        self.size_px_z_large = int(size_px_z * scale_factor)
+        # Calculate raw sizes first (same as in main.sh)
+        raw_size_xy_large = int(size_xy * scale_factor + 0.5)  # Adding 0.5 for proper rounding
+        raw_size_z_large = int(size_z * scale_factor + 0.5)
+        raw_size_px_xy_large = int(size_px_xy * scale_factor + 0.5)
+        raw_size_px_z_large = int(size_px_z * scale_factor + 0.5)
+
+        # Adjust to nearest multiple of 8 (same as in main.sh)
+        self.size_xy_large = ((raw_size_xy_large + 7) // 8) * 8
+        self.size_z_large = ((raw_size_z_large + 7) // 8) * 8
+        self.size_px_xy_large = ((raw_size_px_xy_large + 7) // 8) * 8
+        self.size_px_z_large = ((raw_size_px_z_large + 7) // 8) * 8
 
         # load dataset
         if self.mode == RunMode.TRAIN:
