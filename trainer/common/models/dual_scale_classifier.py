@@ -25,11 +25,8 @@ class DualScaleClassifier(nn.Module):
         )
         
     def forward(self, patch_input, image_input):
-        # Get features from frozen patch model
-        with torch.no_grad():
-            patch_features = self.patch_model(patch_input)
-            
-        # Get features from trainable image model
+        # Get features from both models
+        patch_features = self.patch_model(patch_input)
         image_features = self.image_model(image_input)
         
         # Normalize features
