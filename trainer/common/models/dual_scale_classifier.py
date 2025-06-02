@@ -43,3 +43,4 @@ class DualScaleClassifier(nn.Module):
         output = self.fusion(combined_features)
         
         return output 
+    
