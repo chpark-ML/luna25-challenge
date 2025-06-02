@@ -11,8 +11,9 @@ logger = logging.getLogger(__name__)
 def main(config: omegaconf.DictConfig) -> object:
     from trainer.common.train import train
 
-    logger.info("Training Model for Downstream Task.")
-
+    logger.info("Training Model for Image-Level Representation Learning")
+    logger.info("Using dual-scale approach: frozen patch-level features + trainable image-level model")
+    
     return train(config)
 
 
