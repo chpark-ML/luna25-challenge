@@ -83,12 +83,22 @@ class Trainer(comm_train.Trainer):
         if hasattr(config, 'path_patch_model') and config.path_patch_model is not None:
             logger.info(f"Loading patch level model from: {config.path_patch_model}")
             checkpoint = torch.load(config.path_patch_model)
-            if 'model_state_dict' in checkpoint:
-                models[ModelName.PATCH_LEVEL].load_state_dict(checkpoint['model_state_dict'])
-                logger.info("Successfully loaded patch level model state dict")
+            
+            # Get model state dict, handling different checkpoint formats
+            if isinstance(checkpoint, dict):
+                if 'model_state_dict' in checkpoint:
+                    state_dict = checkpoint['model_state_dict']
+                elif 'model' in checkpoint:
+                    state_dict = checkpoint['model']
+                else:
+                    state_dict = checkpoint
             else:
-                models[ModelName.PATCH_LEVEL].load_state_dict(checkpoint)
-                logger.info("Successfully loaded patch level model")
+                state_dict = checkpoint
+                
+            logger.info("Loading pretrained weights for patch-level model")
+            models[ModelName.PATCH_LEVEL].load_state_dict(state_dict, strict=False)
+            logger.info("Successfully loaded patch level model")
+            
             logger.info("Freezing patch level model parameters")
             for param in models[ModelName.PATCH_LEVEL].parameters():
                 param.requires_grad = False
@@ -160,16 +170,31 @@ class Trainer(comm_train.Trainer):
 
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
-                # Get features from both models
                 with torch.no_grad():
-                    patch_features = self.model[ModelName.PATCH_LEVEL](patch_image)
-                image_features = self.model[ModelName.REPRESENTATIVE](patch_image_large)
+                    # Get encoder features before classifier
+                    encoders_features_patch = []
+                    x = patch_image
+                    for encoder in self.model[ModelName.PATCH_LEVEL].encoders:
+                        x = encoder(x)
+                        encoders_features_patch.append(x)
+                    patch_features = encoders_features_patch[-1]  # Get the last encoder feature
+                
+                # Get encoder features for image model
+                encoders_features_image = []
+                x = patch_image_large
+                for encoder in self.model[ModelName.REPRESENTATIVE].encoders:
+                    x = encoder(x)
+                    encoders_features_image.append(x)
+                image_features = encoders_features_image[-1]  # Get the last encoder feature
+                
+                # Global average pooling to get channel-wise features
+                patch_features = patch_features.mean(dim=[2,3,4])  # (B, C)
+                image_features = image_features.mean(dim=[2,3,4])  # (B, C)
                 
                 # Fuse features and get prediction
                 dual_scale_model = self.model[ModelName.DUAL_SCALE]
-                logits = dual_scale_model(patch_features, image_features)
-                logits = logits.view(-1, 1)
-                loss = self.criterion(logits, annot)
+                logits = dual_scale_model(patch_features, image_features)  # (B, 1)
+                loss = self.criterion(logits, annot, is_logistic=True)  # Specify is_logistic=True for FocalLoss
                 train_losses.append(loss.detach())
 
             # set trace for checking nan values
@@ -400,10 +425,38 @@ class Trainer(comm_train.Trainer):
 
             # inference
             with torch.no_grad():
-                patch_features = self.model[ModelName.PATCH_LEVEL](patch_image)
-            image_features = self.model[ModelName.REPRESENTATIVE](patch_image_large)
-            logits = self.model[ModelName.DUAL_SCALE](patch_features, image_features)
-            logits = logits.view(-1, 1)
+                with torch.no_grad():
+                    # Get encoder features before classifier
+                    encoders_features_patch = []
+                    x = patch_image
+                    for encoder in self.model[ModelName.PATCH_LEVEL].encoders:
+                        x = encoder(x)
+                        encoders_features_patch.append(x)
+                    patch_features = encoders_features_patch[-1]  # Get the last encoder feature
+                
+                # Get encoder features for image model
+                encoders_features_image = []
+                x = patch_image_large
+                for encoder in self.model[ModelName.REPRESENTATIVE].encoders:
+                    x = encoder(x)
+                    encoders_features_image.append(x)
+                image_features = encoders_features_image[-1]  # Get the last encoder feature
+                
+                # Print shapes for debugging
+                logger.debug(f"patch_features shape: {patch_features.shape}")
+                logger.debug(f"image_features shape: {image_features.shape}")
+                
+                # Global average pooling to get channel-wise features
+                patch_features = patch_features.mean(dim=[2,3,4])  # (B, C)
+                image_features = image_features.mean(dim=[2,3,4])  # (B, C)
+                
+                print(f"After pooling - patch_features shape: {patch_features.shape}")
+                print(f"After pooling - image_features shape: {image_features.shape}")
+                
+                # Fuse features and get prediction
+                dual_scale_model = self.model[ModelName.DUAL_SCALE]
+                logits = dual_scale_model(patch_features, image_features)
+                logits = logits.squeeze(-1).squeeze(-1).squeeze(-1)  # Remove spatial dimensions if they exist
 
             list_logits.append(logits)
             list_annots.append(annot)
