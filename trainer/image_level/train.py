@@ -291,7 +291,7 @@ class Trainer(comm_train.Trainer):
         self.dict_threshold = dict_threshold
 
     def get_metrics(self, logits, probs, annots):
-        losses = self.criterion(logits, annots)
+        losses = self.criterion(logits, annots, is_logistic=True)
         result_dict = self.get_binary_classification_metrics(
             probs,
             annots,
@@ -418,21 +418,17 @@ class Trainer(comm_train.Trainer):
             # Get both scale patches
             patch_image = data[DataLoaderKeys.IMAGE].to(self.device)
             patch_image_large = data[DataLoaderKeys.IMAGE_LARGE].to(self.device)
-            _check_any_nan(patch_image)
-            _check_any_nan(patch_image_large)
-            
             annot = data[DataLoaderKeys.LABEL].to(self.device).float()
 
             # inference
             with torch.no_grad():
-                with torch.no_grad():
-                    # Get encoder features before classifier
-                    encoders_features_patch = []
-                    x = patch_image
-                    for encoder in self.model[ModelName.PATCH_LEVEL].encoders:
-                        x = encoder(x)
-                        encoders_features_patch.append(x)
-                    patch_features = encoders_features_patch[-1]  # Get the last encoder feature
+                # Get encoder features before classifier
+                encoders_features_patch = []
+                x = patch_image
+                for encoder in self.model[ModelName.PATCH_LEVEL].encoders:
+                    x = encoder(x)
+                    encoders_features_patch.append(x)
+                patch_features = encoders_features_patch[-1]  # Get the last encoder feature
                 
                 # Get encoder features for image model
                 encoders_features_image = []
@@ -442,21 +438,13 @@ class Trainer(comm_train.Trainer):
                     encoders_features_image.append(x)
                 image_features = encoders_features_image[-1]  # Get the last encoder feature
                 
-                # Print shapes for debugging
-                logger.debug(f"patch_features shape: {patch_features.shape}")
-                logger.debug(f"image_features shape: {image_features.shape}")
-                
                 # Global average pooling to get channel-wise features
                 patch_features = patch_features.mean(dim=[2,3,4])  # (B, C)
                 image_features = image_features.mean(dim=[2,3,4])  # (B, C)
                 
-                print(f"After pooling - patch_features shape: {patch_features.shape}")
-                print(f"After pooling - image_features shape: {image_features.shape}")
-                
                 # Fuse features and get prediction
                 dual_scale_model = self.model[ModelName.DUAL_SCALE]
                 logits = dual_scale_model(patch_features, image_features)
-                logits = logits.squeeze(-1).squeeze(-1).squeeze(-1)  # Remove spatial dimensions if they exist
 
             list_logits.append(logits)
             list_annots.append(annot)
