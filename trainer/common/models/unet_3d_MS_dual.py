@@ -1,10 +1,8 @@
-import torch
 import torch.nn as nn
 
 from shared_lib.model_output import ModelOutputCls
 from trainer.common.constants import LOGIT_KEY
 from trainer.common.models.modules.unet_modules import DoubleConv, create_encoders
-from trainer.common.models.dual_scale_classifier import DualScaleClassifier
 
 
 class DualScaleModel(nn.Module):
