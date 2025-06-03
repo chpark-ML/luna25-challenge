@@ -58,11 +58,25 @@ class Trainer(comm_train.Trainer):
     ) -> None:
         self.repr_model_name = ModelName.REPRESENTATIVE
         self.patch_level_model_name = ModelName.PATCH_LEVEL
-        self.dual_scale_model_name = ModelName.DUAL_SCALE
         super().__init__(model, optimizer, scheduler, criterion, **kwargs)
         self.thresholding_mode_representative = ThresholdMode.get_mode(thresholding_mode_representative)
         self.thresholding_mode = ThresholdMode.get_mode(thresholding_mode)
         self.grad_clip_max_norm = grad_clip_max_norm
+
+    def _extract_patch_features(self, patch_image):
+        """Extract features from frozen patch-level model"""
+        with torch.no_grad():
+            # Get encoder features from patch-level model
+            encoders_features = []
+            x = patch_image
+            for encoder in self.model[ModelName.PATCH_LEVEL].encoders:
+                x = encoder(x)
+                encoders_features.append(x)
+            
+            # Get patch features with global average pooling
+            patch_features = encoders_features[-1].mean(dim=[2,3,4])  # (B, C)
+            
+        return patch_features
 
     @classmethod
     def instantiate_trainer(
@@ -170,31 +184,13 @@ class Trainer(comm_train.Trainer):
 
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
-                with torch.no_grad():
-                    # Get encoder features before classifier
-                    encoders_features_patch = []
-                    x = patch_image
-                    for encoder in self.model[ModelName.PATCH_LEVEL].encoders:
-                        x = encoder(x)
-                        encoders_features_patch.append(x)
-                    patch_features = encoders_features_patch[-1]  # Get the last encoder feature
+                # Extract features from frozen patch-level model
+                patch_features = self._extract_patch_features(patch_image)
                 
-                # Get encoder features for image model
-                encoders_features_image = []
-                x = patch_image_large
-                for encoder in self.model[ModelName.REPRESENTATIVE].encoders:
-                    x = encoder(x)
-                    encoders_features_image.append(x)
-                image_features = encoders_features_image[-1]  # Get the last encoder feature
-                
-                # Global average pooling to get channel-wise features
-                patch_features = patch_features.mean(dim=[2,3,4])  # (B, C)
-                image_features = image_features.mean(dim=[2,3,4])  # (B, C)
-                
-                # Fuse features and get prediction
-                dual_scale_model = self.model[ModelName.DUAL_SCALE]
-                logits = dual_scale_model(patch_features, image_features)  # (B, 1)
-                loss = self.criterion(logits, annot, is_logistic=True)  # Specify is_logistic=True for FocalLoss
+                # Get prediction using dual scale model
+                logits = self.model[ModelName.REPRESENTATIVE](patch_image_large, patch_features)
+                logits = logits.view(-1, 1)
+                loss = self.criterion(logits, annot)
                 train_losses.append(loss.detach())
 
             # set trace for checking nan values
@@ -422,29 +418,12 @@ class Trainer(comm_train.Trainer):
 
             # inference
             with torch.no_grad():
-                # Get encoder features before classifier
-                encoders_features_patch = []
-                x = patch_image
-                for encoder in self.model[ModelName.PATCH_LEVEL].encoders:
-                    x = encoder(x)
-                    encoders_features_patch.append(x)
-                patch_features = encoders_features_patch[-1]  # Get the last encoder feature
+                # Extract features from frozen patch-level model
+                patch_features = self._extract_patch_features(patch_image)
                 
-                # Get encoder features for image model
-                encoders_features_image = []
-                x = patch_image_large
-                for encoder in self.model[ModelName.REPRESENTATIVE].encoders:
-                    x = encoder(x)
-                    encoders_features_image.append(x)
-                image_features = encoders_features_image[-1]  # Get the last encoder feature
-                
-                # Global average pooling to get channel-wise features
-                patch_features = patch_features.mean(dim=[2,3,4])  # (B, C)
-                image_features = image_features.mean(dim=[2,3,4])  # (B, C)
-                
-                # Fuse features and get prediction
-                dual_scale_model = self.model[ModelName.DUAL_SCALE]
-                logits = dual_scale_model(patch_features, image_features)
+                # Get prediction using dual scale model
+                logits = self.model[ModelName.REPRESENTATIVE](patch_image_large, patch_features)
+                logits = logits.view(-1, 1)
 
             list_logits.append(logits)
             list_annots.append(annot)
