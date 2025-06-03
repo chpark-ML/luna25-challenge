@@ -1,6 +1,0 @@
-model_repr:
-  _target_: trainer.common.models.convnext.ConvNeXt3D
-  in_channels: 1
-  num_classes: 1
-  depths: [3, 3, 9, 3]
-  dims: [96, 192, 384, 768]
