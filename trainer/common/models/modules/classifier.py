@@ -48,6 +48,60 @@ class Classifier(nn.Module):
         return {LOGIT_KEY: logits}
 
 
+class DualScaleClassifier(nn.Module):
+    def __init__(
+        self,
+        feature_dim,
+        hidden_dim,
+        drop_prob,
+        target_attr_total,
+        target_attr_to_train,
+        target_attr_downstream,
+    ):
+        super().__init__()
+        
+        self.target_attr_total = target_attr_total
+        self.target_attr_to_train = target_attr_to_train
+        self.target_attr_downstream = target_attr_downstream
+        
+        # Layer normalization for each feature stream
+        self.patch_norm = nn.BatchNorm1d(feature_dim)
+        self.image_norm = nn.BatchNorm1d(feature_dim)
+        
+        # Feature fusion layers for each attribute
+        self.fusion_layers = nn.ModuleDict(
+            {
+                i_attr: nn.Sequential(
+                    nn.Linear(feature_dim * 2, hidden_dim),
+                    nn.BatchNorm1d(hidden_dim),
+                    nn.ReLU(),
+                    nn.Dropout(drop_prob),
+                    nn.Linear(hidden_dim, hidden_dim // 2),
+                    nn.BatchNorm1d(hidden_dim // 2),
+                    nn.ReLU(),
+                    nn.Dropout(drop_prob),
+                    nn.Linear(hidden_dim // 2, 1)
+                )
+                for i_attr in target_attr_total
+            }
+        )
+        
+    def forward(self, patch_features, image_features):
+        # Normalize each feature stream
+        patch_features = self.patch_norm(patch_features)  # (B, C)
+        image_features = self.image_norm(image_features)  # (B, C)
+        
+        # Concatenate features along feature dimension
+        combined_features = torch.cat([patch_features, image_features], dim=1)  # (B, 2C)
+        
+        # Get predictions for each attribute
+        logits = dict()
+        for i_attr in self.target_attr_to_train:
+            logits[i_attr] = self.fusion_layers[i_attr](combined_features)
+            
+        return {LOGIT_KEY: logits}
+
+
 class MultiScaleAttnClassifier(nn.Module):
     def __init__(
         self,
