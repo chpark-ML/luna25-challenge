@@ -341,7 +341,7 @@ class Trainer(comm_train.Trainer):
             found_better = True
             model_path = f"model_auroc.pth"
             logger.info(
-                f"loss improved from {best_metrics.eval_metrics['auroc']:4f} to {val_metrics.eval_metrics['auroc']:4f}, "
+                f"AUROC improved from {best_metrics.eval_metrics['auroc']:4f} to {val_metrics.eval_metrics['auroc']:4f}, "
                 f"saving model to {model_path}."
             )
 
