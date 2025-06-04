@@ -40,8 +40,8 @@ class FocalLoss(nn.Module):
         # get probability
         if is_logistic:
             pt = torch.sigmoid(input) if is_logit else input
-            pt = torch.cat([1 - pt, pt], dim=1) + self.eps  # (B * N, 2)
-
+            pt = torch.cat([1 - pt, pt], dim=1)  # (B * N, 2)
+            pt = pt.clamp(min=self.eps, max=1.0 - self.eps)
         else:
             pt = torch.softmax(input, dim=1) if is_logit else input  # (B * N, C)
 
