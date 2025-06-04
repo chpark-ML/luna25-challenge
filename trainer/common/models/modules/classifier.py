@@ -86,11 +86,7 @@ class DualScaleClassifier(nn.Module):
             }
         )
         
-    def forward(self, patch_features, image_features):
-        # Normalize each feature stream
-        patch_features = self.patch_norm(patch_features)  # (B, C)
-        image_features = self.image_norm(image_features)  # (B, C)
-        
+    def forward(self, patch_features, image_features):   
         # Concatenate features along feature dimension
         combined_features = torch.cat([patch_features, image_features], dim=1)  # (B, 2C)
         
