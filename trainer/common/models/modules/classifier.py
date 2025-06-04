@@ -63,11 +63,7 @@ class DualScaleClassifier(nn.Module):
         self.target_attr_total = target_attr_total
         self.target_attr_to_train = target_attr_to_train
         self.target_attr_downstream = target_attr_downstream
-        
-        # Layer normalization for each feature stream
-        self.patch_norm = nn.BatchNorm1d(feature_dim)
-        self.image_norm = nn.BatchNorm1d(feature_dim)
-        
+
         # Feature fusion layers for each attribute
         self.fusion_layers = nn.ModuleDict(
             {
