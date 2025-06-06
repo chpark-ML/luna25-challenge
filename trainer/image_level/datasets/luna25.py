@@ -305,7 +305,7 @@ class CTCaseDataset(data.Dataset):
                 patch = np.squeeze(patch, axis=0)
                 patch = self.transform(patch)
                 patch = np.expand_dims(patch, axis=0)
-                
+
                 patch_large = np.squeeze(patch_large, axis=0)
                 patch_large = self.transform(patch_large)
                 patch_large = np.expand_dims(patch_large, axis=0)
@@ -313,7 +313,7 @@ class CTCaseDataset(data.Dataset):
         # Data preprocessing for both patches
         patch = [fn(patch) for fn in self.dicom_windowing]
         patch = np.concatenate(patch, axis=0)
-        
+
         patch_large = [fn(patch_large) for fn in self.dicom_windowing]
         patch_large = np.concatenate(patch_large, axis=0)
 

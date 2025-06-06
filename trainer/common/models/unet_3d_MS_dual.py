@@ -40,7 +40,7 @@ class DualScaleModel(nn.Module):
             num_groups,
             pool_kernel_size,
         )
-        
+
         # Classifier
         self.classifier = classifier
         self.return_downstream_logit = return_downstream_logit
@@ -53,17 +53,17 @@ class DualScaleModel(nn.Module):
         for encoder in self.encoders:
             x_l = encoder(x_l)
             encoders_features_large.append(x_l)
-        
+
         # Get image features
-        image_features = encoders_features_large[-1].mean(dim=[2,3,4])  # (B, C)
-        
+        image_features = encoders_features_large[-1].mean(dim=[2, 3, 4])  # (B, C)
+
         # Get prediction using dual scale classifier
         result = self.classifier(patch_features, image_features)
-        
+
         if self.return_downstream_logit:
             return result[LOGIT_KEY][self.classifier.target_attr_downstream]
-        
+
         if self.return_named_tuple:
             return ModelOutputCls(**result[LOGIT_KEY])
         else:
-            return result 
+            return result
