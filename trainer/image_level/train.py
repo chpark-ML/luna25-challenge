@@ -39,6 +39,7 @@ class Metrics(comm_train.Metrics):
 def _check_any_nan(arr):
     if torch.any(torch.isnan(arr)):
         import pdb
+
         pdb.set_trace()
 
 
@@ -72,10 +73,10 @@ class Trainer(comm_train.Trainer):
             for encoder in self.model[ModelName.PATCH_LEVEL].encoders:
                 x = encoder(x)
                 encoders_features.append(x)
-            
+
             # Get patch features with global average pooling
-            patch_features = encoders_features[-1].mean(dim=[2,3,4])  # (B, C)
-            
+            patch_features = encoders_features[-1].mean(dim=[2, 3, 4])  # (B, C)
+
         return patch_features
 
     @classmethod
@@ -94,25 +95,25 @@ class Trainer(comm_train.Trainer):
             raise NotImplementedError
 
         # Load and freeze patch level model
-        if hasattr(config, 'path_patch_model') and config.path_patch_model is not None:
+        if hasattr(config, "path_patch_model") and config.path_patch_model is not None:
             logger.info(f"Loading patch level model from: {config.path_patch_model}")
             checkpoint = torch.load(config.path_patch_model)
-            
+
             # Get model state dict, handling different checkpoint formats
             if isinstance(checkpoint, dict):
-                if 'model_state_dict' in checkpoint:
-                    state_dict = checkpoint['model_state_dict']
-                elif 'model' in checkpoint:
-                    state_dict = checkpoint['model']
+                if "model_state_dict" in checkpoint:
+                    state_dict = checkpoint["model_state_dict"]
+                elif "model" in checkpoint:
+                    state_dict = checkpoint["model"]
                 else:
                     state_dict = checkpoint
             else:
                 state_dict = checkpoint
-                
+
             logger.info("Loading pretrained weights for patch-level model")
             models[ModelName.PATCH_LEVEL].load_state_dict(state_dict, strict=False)
             logger.info("Successfully loaded patch level model")
-            
+
             logger.info("Freezing patch level model parameters")
             for param in models[ModelName.PATCH_LEVEL].parameters():
                 param.requires_grad = False
@@ -173,20 +174,20 @@ class Trainer(comm_train.Trainer):
         for i, data in enumerate(loader):
             global_step = epoch * len(loader) + i + 1
             self.optimizer[ModelName.REPRESENTATIVE].zero_grad()
-            
+
             # Get both scale patches
             patch_image = data[DataLoaderKeys.IMAGE].to(self.device)
             patch_image_large = data[DataLoaderKeys.IMAGE_LARGE].to(self.device)
             _check_any_nan(patch_image)
             _check_any_nan(patch_image_large)
-            
+
             annot = data[DataLoaderKeys.LABEL].to(self.device).float()
 
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
                 # Extract features from frozen patch-level model
                 patch_features = self._extract_patch_features(patch_image)
-                
+
                 # Get prediction using dual scale model
                 logits = self.model[ModelName.REPRESENTATIVE](patch_image_large, patch_features)
                 logits = logits.view(-1, 1)
@@ -196,6 +197,7 @@ class Trainer(comm_train.Trainer):
             # set trace for checking nan values
             if torch.any(torch.isnan(loss)):
                 import pdb
+
                 pdb.set_trace()
                 is_param_nan = torch.stack(
                     [torch.isnan(p).any() for p in self.model[ModelName.REPRESENTATIVE].parameters()]
@@ -420,7 +422,7 @@ class Trainer(comm_train.Trainer):
             with torch.no_grad():
                 # Extract features from frozen patch-level model
                 patch_features = self._extract_patch_features(patch_image)
-                
+
                 # Get prediction using dual scale model
                 logits = self.model[ModelName.REPRESENTATIVE](patch_image_large, patch_features)
                 logits = logits.view(-1, 1)

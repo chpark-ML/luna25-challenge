@@ -13,7 +13,7 @@ def main(config: omegaconf.DictConfig) -> object:
 
     logger.info("Training Model for Image-Level Representation Learning")
     logger.info("Using dual-scale approach: frozen patch-level features + trainable image-level model")
-    
+
     return train(config)
 
 
