@@ -57,10 +57,8 @@ def run(config):
 
     # Validate access to GPU
     _show_torch_cuda_info()
-    print("test")
     # Run your algorithm here
     processor = ImageProcessor(config=config)
-    print("test")
     malignancy_risks = processor.process(input_chest_ct, input_nodule_locations, input_clinical_information)
 
     # Save your output
