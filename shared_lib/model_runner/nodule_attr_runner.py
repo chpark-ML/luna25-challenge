@@ -3,6 +3,7 @@ from typing import Union
 
 import torch
 
+from shared_lib.model_output import ModelOutputCls, ModelOutputClsSeg
 from shared_lib.model_runner.base_runner import ModelBaseTorchscript
 
 
@@ -12,7 +13,7 @@ class NoduleAttrRunner(ModelBaseTorchscript):
         super().__init__(checkpoint_path=checkpoint_path, device=device)
 
     @torch.no_grad()
-    def get_prediction(self, input_tensor) -> torch.Tensor:
+    def get_prediction(self, input_tensor) -> Union[ModelOutputCls, ModelOutputClsSeg]:
         """
         Perform inference with no gradient tracking.
         Args:

@@ -40,6 +40,12 @@ def main(config: DictConfig):
     }
 
     # inference and save nodule attributes and radiomic features
+    for mode in run_modes:
+        print(f"Mode: {mode}")
+        dict_probs = processor.inference(
+            loaders[mode], mode=mode, sanity_check=config.sanity_check
+        )
+        breakpoint()
 
 
 if __name__ == "__main__":
