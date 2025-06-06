@@ -6,9 +6,9 @@ defaults:
 
 run_name: "nodule_attr_seg"
 run_modes:
-  - val
   - test
-sanity_check: False
+
+sanity_check: True
 
 hydra:
   run:
