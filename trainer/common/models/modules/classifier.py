@@ -59,7 +59,7 @@ class DualScaleClassifier(nn.Module):
         target_attr_downstream,
     ):
         super().__init__()
-        
+
         self.target_attr_total = target_attr_total
         self.target_attr_to_train = target_attr_to_train
         self.target_attr_downstream = target_attr_downstream
@@ -76,21 +76,21 @@ class DualScaleClassifier(nn.Module):
                     nn.BatchNorm1d(hidden_dim // 2),
                     nn.ReLU(),
                     nn.Dropout(drop_prob),
-                    nn.Linear(hidden_dim // 2, 1)
+                    nn.Linear(hidden_dim // 2, 1),
                 )
                 for i_attr in target_attr_total
             }
         )
-        
-    def forward(self, patch_features, image_features):   
+
+    def forward(self, patch_features, image_features):
         # Concatenate features along feature dimension
         combined_features = torch.cat([patch_features, image_features], dim=1)  # (B, 2C)
-        
+
         # Get predictions for each attribute
         logits = dict()
         for i_attr in self.target_attr_to_train:
             logits[i_attr] = self.fusion_layers[i_attr](combined_features)
-            
+
         return {LOGIT_KEY: logits}
 
 
