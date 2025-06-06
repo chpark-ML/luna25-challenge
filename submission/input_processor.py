@@ -134,7 +134,6 @@ class ImageProcessor:
         """
         # prepare image and coords
         image, coords, annotation_ids = self._load_inputs(ct_image_file, nodule_locations)
-        print("test")
         # get malignancy risk score
         output = self._predict(image, coords, clinical_information)
 
