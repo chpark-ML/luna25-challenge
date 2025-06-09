@@ -274,7 +274,7 @@ class CTCaseDataset(data.Dataset):
         target = torch.ones((1,)) * label
 
         sample = {
-            DataLoaderKeys.IMAGE: torch.from_numpy(patch),
+            DataLoaderKeys.IMAGE: torch.from_numpy(patch).float(),
             DataLoaderKeys.LABEL: target.long(),
             DataLoaderKeys.ID: annotation_id,
         }
