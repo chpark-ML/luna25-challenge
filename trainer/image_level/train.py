@@ -90,6 +90,7 @@ class Trainer(comm_train.Trainer):
                 for model_name in ModelName:
                     if model_name.value in model_indicator:
                         models[model_name] = hydra.utils.instantiate(config_model)
+                        models[model_name] = models[model_name].float()
         else:
             raise NotImplementedError
 
@@ -175,8 +176,8 @@ class Trainer(comm_train.Trainer):
             self.optimizer[ModelName.REPRESENTATIVE].zero_grad()
             
             # Get both scale patches
-            patch_image = data[DataLoaderKeys.IMAGE].to(self.device)
-            patch_image_large = data[DataLoaderKeys.IMAGE_LARGE].to(self.device)
+            patch_image = data[DataLoaderKeys.IMAGE].to(self.device).float()
+            patch_image_large = data[DataLoaderKeys.IMAGE_LARGE].to(self.device).float()
             _check_any_nan(patch_image)
             _check_any_nan(patch_image_large)
             
@@ -412,8 +413,8 @@ class Trainer(comm_train.Trainer):
 
         for data in tqdm.tqdm(loader):
             # Get both scale patches
-            patch_image = data[DataLoaderKeys.IMAGE].to(self.device)
-            patch_image_large = data[DataLoaderKeys.IMAGE_LARGE].to(self.device)
+            patch_image = data[DataLoaderKeys.IMAGE].to(self.device).float()
+            patch_image_large = data[DataLoaderKeys.IMAGE_LARGE].to(self.device).float()
             annot = data[DataLoaderKeys.LABEL].to(self.device).float()
 
             # inference
