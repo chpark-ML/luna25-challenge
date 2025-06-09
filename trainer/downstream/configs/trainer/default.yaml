@@ -18,7 +18,7 @@ resume_from_checkpoint: null
 benchmark: True
 deterministic: False
 fast_dev_run: False
-use_amp: True
+use_amp: False
 
 # pretrained model
 fine_tune_info:
