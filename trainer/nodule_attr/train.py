@@ -195,6 +195,7 @@ class Trainer(comm_train.Trainer):
                 for model_name in ModelName:
                     if model_name.value in model_indicator:
                         models[model_name] = hydra.utils.instantiate(config_model)
+                        models[model_name] = models[model_name].float()  # 모델을 float32로 변환
         else:
             raise NotImplementedError
 
@@ -270,14 +271,14 @@ class Trainer(comm_train.Trainer):
         for i, data in enumerate(loader):
             global_step = epoch * len(loader) + i + 1
             self.optimizer[ModelName.REPRESENTATIVE].zero_grad()
-            dicom = data[INPUT_PATCH_KEY].to(self.device)
+            dicom = data[INPUT_PATCH_KEY].to(self.device).float()  # 입력을 float32로 변환
             _check_any_nan(dicom)
 
             # annots
             seg_annot = data[SEG_ANNOTATION_KEY].to(self.device) if self.do_segmentation else None
             annots = dict()
             for key, value in data[ATTR_ANNOTATION_KEY].items():
-                _annot = value.to(self.device).float()  # (B)
+                _annot = value.to(self.device).float()  # annotation도 float32로 변환
                 _check_any_nan(_annot)
                 annots[key] = torch.unsqueeze(_annot, dim=1)  # (B, 1)
 
@@ -511,7 +512,7 @@ class Trainer(comm_train.Trainer):
 
         for data in tqdm.tqdm(loader):
             # prediction
-            dicom = data[INPUT_PATCH_KEY].to(self.device)
+            dicom = data[INPUT_PATCH_KEY].to(self.device).float()  # 입력을 float32로 변환
             _check_any_nan(dicom)
             output = self.model[ModelName.REPRESENTATIVE](dicom)
             logits = output[LOGIT_KEY]
@@ -524,7 +525,7 @@ class Trainer(comm_train.Trainer):
             annots = dict()
             for key in self.target_attr_total:
                 value = data[ATTR_ANNOTATION_KEY][key]
-                annots[key] = torch.unsqueeze(value.to(self.device).float(), dim=1)
+                annots[key] = torch.unsqueeze(value.to(self.device).float(), dim=1)  # annotation도 float32로 변환
 
             list_logits.append(logits)
             list_annots.append(annots)
