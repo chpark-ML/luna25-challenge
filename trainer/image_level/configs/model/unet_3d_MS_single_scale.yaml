@@ -1,0 +1,38 @@
+model_patch_level:
+  _target_: trainer.common.models.unet_3d_MS.Model
+  in_channels: 1
+  f_maps: 24
+  num_levels: 4
+  num_groups: 4
+  layer_order: gcr
+  return_downstream_logit: True
+  return_named_tuple: False
+  classifier:
+    _target_: trainer.common.models.modules.classifier.Classifier
+    in_planes: 192
+    out_planes: 1
+    drop_prob: 0.05
+    target_attr_total: [ 'c_subtlety_logistic', 'c_sphericity_logistic', 'c_lobulation_logistic', 'c_spiculation_logistic',
+                         'c_margin_logistic', 'c_texture_logistic',
+                         'c_calcification_logistic', 'c_internalStructure_logistic', 'c_malignancy_logistic' ]
+    target_attr_to_train: [ 'c_malignancy_logistic' ]
+    target_attr_downstream: 'c_malignancy_logistic'
+    return_logit: False
+
+model_repr:
+  _target_: trainer.common.models.unet_3d_MS_dual.DualScaleModel
+  in_channels: 1
+  f_maps: 24
+  num_levels: 4
+  num_groups: 4
+  layer_order: gcr
+  return_downstream_logit: True
+  return_named_tuple: False
+  classifier:
+    _target_: trainer.common.models.modules.classifier.DualScaleClassifier
+    feature_dim: 192
+    hidden_dim: 256
+    drop_prob: 0.2
+    target_attr_total: [ 'c_malignancy_logistic' ]
+    target_attr_to_train: [ 'c_malignancy_logistic' ]
+    target_attr_downstream: 'c_malignancy_logistic' 
