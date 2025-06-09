@@ -75,6 +75,7 @@ class Trainer(comm_train.Trainer):
                 for model_name in ModelName:
                     if model_name.value in model_indicator:
                         models[model_name] = hydra.utils.instantiate(config_model)
+                        models[model_name] = models[model_name].float()
         else:
             raise NotImplementedError
 
@@ -136,7 +137,7 @@ class Trainer(comm_train.Trainer):
         for i, data in enumerate(loader):
             global_step = epoch * len(loader) + i + 1
             self.optimizer[ModelName.REPRESENTATIVE].zero_grad()
-            patch_image = data[DataLoaderKeys.IMAGE].to(self.device)
+            patch_image = data[DataLoaderKeys.IMAGE].to(self.device).float()
             _check_any_nan(patch_image)
             annot = data[DataLoaderKeys.LABEL].to(self.device).float()
 
@@ -368,7 +369,7 @@ class Trainer(comm_train.Trainer):
 
         for data in tqdm.tqdm(loader):
             # prediction
-            patch_image = data[DataLoaderKeys.IMAGE].to(self.device)
+            patch_image = data[DataLoaderKeys.IMAGE].to(self.device).float()
             _check_any_nan(patch_image)
 
             # annotation
