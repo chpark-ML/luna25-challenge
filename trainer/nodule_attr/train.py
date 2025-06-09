@@ -525,7 +525,7 @@ class Trainer(comm_train.Trainer):
             annots = dict()
             for key in self.target_attr_total:
                 value = data[ATTR_ANNOTATION_KEY][key]
-                annots[key] = torch.unsqueeze(value.to(self.device).float(), dim=1)  # annotation도 float32로 변환
+                annots[key] = torch.unsqueeze(value.to(self.device).float(), dim=1)  # Convert annotation to float32
 
             list_logits.append(logits)
             list_annots.append(annots)
