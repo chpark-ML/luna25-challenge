@@ -10,7 +10,7 @@ class FocalLoss(nn.Module):
         self.alpha = alpha  # can be considered to either the positive annotation ratio or the weight for negatives
         self.smoothing = smoothing
         self.target_threshold_gte = target_threshold_gte
-        self.eps = torch.finfo(torch.float32).eps
+        self.eps = torch.finfo(torch.float16).eps
         if isinstance(alpha, omegaconf.listconfig.ListConfig):
             alpha = omegaconf.OmegaConf.to_container(alpha, resolve=True)
             self.alpha = torch.Tensor(alpha)
