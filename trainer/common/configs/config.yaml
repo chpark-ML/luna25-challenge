@@ -1,3 +1,10 @@
+# Trainer
+trainer:
+  benchmark: True
+  deterministic: False
+  use_amp: True
+  fast_dev_run: False
+
 # MLflow
 experiment_tool:
   name: mlflow
