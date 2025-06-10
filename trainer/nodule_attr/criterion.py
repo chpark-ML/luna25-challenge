@@ -47,7 +47,7 @@ class AttrLoss(nn.Module):
                 losses.append(aux_loss)
 
         # segmentation
-        if SEG_LOGIT_KEY in outputs:
+        if (SEG_LOGIT_KEY in outputs) and (seg_annot is not None):
             seg_heatmap = outputs[SEG_LOGIT_KEY]  # dict
             seg_loss = self.seg_criterion(seg_heatmap, seg_annot)
             losses.append(seg_loss)
