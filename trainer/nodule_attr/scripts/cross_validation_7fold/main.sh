@@ -8,11 +8,8 @@ val_fold=${2:-0}
 model_num=5
 source /opt/challenge/trainer/common/model_config.sh ${model_num} ${val_fold}
 
-model_cfg=unet_3d_MS
-do_segmentation=False
-
-#model_cfg=unet_3d_all
-#do_segmentation=True
+model_cfg=unet_3d_all
+do_segmentation=True
 
 model_name=cls_all_model_${model_num}_val_fold${val_fold}_seg${do_segmentation}
 
