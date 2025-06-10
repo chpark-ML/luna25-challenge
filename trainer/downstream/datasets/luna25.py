@@ -55,12 +55,12 @@ def _get_3d_patch(image_shape=None, center=None, patchsize=None):
 
 
 def extract_patch_dicom_space(
-    h5_path,
-    coord,
-    xy_size: int = 128,
-    z_size: int = 64,
-    center_shift_zyx: list = [0, 0, 0],
-    fill: float = -3024.0,
+        h5_path,
+        coord,
+        xy_size: int = 128,
+        z_size: int = 64,
+        center_shift_zyx: list = [0, 0, 0],
+        fill: float = -3024.0,
 ) -> np.ndarray:
     # Load cached data
     hf_file = File(h5_path, "r")
@@ -71,7 +71,7 @@ def extract_patch_dicom_space(
     rlower, rupper, dlower, dupper = _get_3d_patch(file_shape, repr_center, patchsize=patchsize)
 
     # Load ROI only
-    file = hf_file[H5DataKey.image][rlower[0] : rupper[0], rlower[1] : rupper[1], rlower[2] : rupper[2]]
+    file = hf_file[H5DataKey.image][rlower[0]: rupper[0], rlower[1]: rupper[1], rlower[2]: rupper[2]]
 
     if file.shape != patchsize:
         pad_width = [pair for pair in zip(dlower, dupper)]
@@ -90,13 +90,13 @@ def extract_patch_dicom_space(
 
 
 def _get_normalized_tensor(
-    mode: RunMode,
-    hu_range,
-    min_width_scale,
-    max_width_scale,
-    min_level_shift,
-    max_level_shift,
-    p,
+        mode: RunMode,
+        hu_range,
+        min_width_scale,
+        max_width_scale,
+        min_level_shift,
+        max_level_shift,
+        p,
 ):
     if mode == RunMode.TRAIN:
         return RandomDicomWindowing(
@@ -113,25 +113,25 @@ def _get_normalized_tensor(
 
 class CTCaseDataset(data.Dataset):
     def __init__(
-        self,
-        mode: Union[str, RunMode],
-        mode_model: str = "2D",
-        data_dir: str = None,
-        fetch_from_patch: bool = True,
-        dicom_window: list = None,
-        translations: bool = None,
-        rotations: tuple = None,
-        size_xy: int = 128,
-        size_z: int = 64,
-        size_px_xy: int = 72,
-        size_px_z: int = 48,
-        size_mm: int = 50,
-        interpolate_order: int = 1,
-        dataset_infos=None,
-        target_dataset_train=None,
-        target_dataset_val_test=None,
-        augmentation=None,
-        use_weighted_sampler=None,
+            self,
+            mode: Union[str, RunMode],
+            mode_model: str = "2D",
+            data_dir: str = None,
+            fetch_from_patch: bool = True,
+            dicom_window: list = None,
+            translations: bool = None,
+            rotations: tuple = None,
+            size_xy: int = 128,
+            size_z: int = 64,
+            size_px_xy: int = 72,
+            size_px_z: int = 48,
+            size_mm: int = 50,
+            interpolate_order: int = 1,
+            dataset_infos=None,
+            target_dataset_train=None,
+            target_dataset_val_test=None,
+            augmentation=None,
+            use_weighted_sampler=None,
     ):
         self.mode: RunMode = RunMode(mode) if isinstance(mode, str) else mode
         self.mode_model = mode_model
@@ -274,7 +274,7 @@ class CTCaseDataset(data.Dataset):
         target = torch.ones((1,)) * label
 
         sample = {
-            DataLoaderKeys.IMAGE: torch.from_numpy(patch).float(),
+            DataLoaderKeys.IMAGE: torch.from_numpy(patch).float(),  # float32
             DataLoaderKeys.LABEL: target.long(),
             DataLoaderKeys.ID: annotation_id,
         }
