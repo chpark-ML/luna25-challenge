@@ -15,6 +15,7 @@ run_modes:
   - test
 
 # Add path to pretrained patch-level model that will be frozen
+# TODO: Unable to access the specified path. Please ensure it is correctly set to the model path on the NFS
 path_patch_model: /opt/challenge/trainer/downstream/outputs/scale_ablation/ablation_unet_3d_MS_scale_1.0_val_fold5/model_auroc.pth  # Please replace with actual path
 
 hydra:
