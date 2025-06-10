@@ -15,10 +15,8 @@ gpus: auto
 log_every_n_steps: 50
 test_epoch_start: ${trainer.max_epoch}
 resume_from_checkpoint: null
-benchmark: True
-deterministic: False
+
 fast_dev_run: False
-use_amp: False
 
 # pretrained model
 fine_tune_info:
