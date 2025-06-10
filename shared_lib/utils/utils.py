@@ -105,6 +105,7 @@ def set_config(config: OmegaConf) -> OmegaConf:
     default_config_path = PROJECT_ROOT / "trainer" / "common" / "configs" / "config.yaml"
 
     if default_config_path:
+        # Values from 'config' will override those from 'default_config_path' if keys overlap.
         config = OmegaConf.merge(OmegaConf.load(default_config_path), config)
 
     # Enable adding new keys to config
