@@ -2,6 +2,7 @@ from typing import Optional, Sequence, Union
 
 import numpy as np
 import pandas as pd
+import torch
 from h5py import File
 from sklearn.utils import resample
 
@@ -180,7 +181,7 @@ class Dataset(LctDataset):
         img = np.concatenate(img, axis=0)  # (n, 48, 72, 72)
 
         output = {
-            INPUT_PATCH_KEY: img,
+            INPUT_PATCH_KEY: torch.from_numpy(img).float(),  # float32
             ATTR_ANNOTATION_KEY: attributes,
             "file_path": img_path,
             "mask_path": mask_path,
