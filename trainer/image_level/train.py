@@ -1,6 +1,4 @@
-import json
 import logging
-import random
 import time
 from dataclasses import dataclass
 
@@ -13,7 +11,6 @@ from sklearn import metrics
 
 import trainer.common.train as comm_train
 from shared_lib.enums import BaseBestModelStandard, RunMode
-from trainer.common.constants import LOGIT_KEY
 from trainer.common.enums import ModelName, ThresholdMode
 from trainer.image_level.datasets.luna25 import DataLoaderKeys
 
@@ -91,7 +88,7 @@ class Trainer(comm_train.Trainer):
                 for model_name in ModelName:
                     if model_name.value in model_indicator:
                         models[model_name] = hydra.utils.instantiate(config_model)
-                        models[model_name] = models[model_name].float()
+                        models[model_name] = models[model_name].float()  # change model to float32
         else:
             raise NotImplementedError
 
