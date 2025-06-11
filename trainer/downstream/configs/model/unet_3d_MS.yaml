@@ -1,7 +1,7 @@
 model_repr:
   _target_: trainer.common.models.unet_3d_MS.Model
   in_channels: 1
-  f_maps: 48
+  f_maps: 8
   num_levels: 4
   num_groups: 4
   layer_order: gcr
