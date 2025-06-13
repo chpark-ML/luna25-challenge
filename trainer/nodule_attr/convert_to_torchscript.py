@@ -28,7 +28,7 @@ def main() -> None:
 
     base_dir = os.path.join(_THIS_DIR, "outputs/baseline")
     prefix = "cls_all_model_5_val_fold"
-    suffix = "_segFalse"
+    suffix = ""
 
     list_prefix = [
         os.path.join(base_dir, name)
