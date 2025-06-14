@@ -6,7 +6,7 @@ val_fold=$2
 
 cd /opt/challenge/trainer/downstream
 
-run_name=cv_fine_val_fold${val_fold}_fmaps48_7CV
+run_name=cv_fine_val_fold${val_fold}_fmaps24_7CV
 
 nodule_attr_model_name=cls_all_model_5_val_fold${val_fold}_7CV
 model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_fmaps24_7CV/${nodule_attr_model_name}/model_loss.pth
