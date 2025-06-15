@@ -8,6 +8,26 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+class ZeroConv2d(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False):
+        super().__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, bias=bias)
+        self.conv.weight.data.zero_()
+        self.conv.bias.data.zero_()
+        
+    def forward(self, x):
+        return self.conv(x)
+    
+class ZeroConv3d(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False):
+        super().__init__()
+        self.conv = nn.Conv3d(in_channels, out_channels, kernel_size, stride, padding, bias=bias)
+        self.conv.weight.data.zero_()
+        self.conv.bias.data.zero_()
+        
+    def forward(self, x):
+        return self.conv(x)
+    
 class WeightedFusionModel(nn.Module):
     def __init__(
         self,
@@ -65,6 +85,8 @@ class WeightedFusionModel(nn.Module):
             
         # Fusion layer to combine features
         self.fusion_conv = nn.Conv3d(fusion_channels, fusion_channels, kernel_size=1)
+        self.zero_conv = ZeroConv3d(fusion_channels, fusion_channels)
+        
 
     def forward(self, patch_image, image_large):
         # Extract features from both models' encoders
@@ -88,7 +110,8 @@ class WeightedFusionModel(nn.Module):
         image_features = image_features.expand(b, c, d, h, w)  # Tile to match patch feature dimensions
         
         # Fuse features
-        fused_features = patch_features + self.fusion_conv(image_features)
+        # fused_features = patch_features + self.fusion_conv(image_features)
+        fused_features = patch_features + self.zero_conv(image_features)
         
         # Use patch model's classifier for final prediction
         logits = self.model_patch.classifier([fused_features])
