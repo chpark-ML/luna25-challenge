@@ -97,30 +97,6 @@ class Trainer(comm_train.Trainer):
         else:
             raise NotImplementedError
 
-        # Load and freeze patch level model
-        if hasattr(config, "path_patch_model") and config.path_patch_model is not None:
-            logger.info(f"Loading patch level model from: {config.path_patch_model}")
-            checkpoint = torch.load(config.path_patch_model)
-
-            # Get model state dict, handling different checkpoint formats
-            if isinstance(checkpoint, dict):
-                if "model_state_dict" in checkpoint:
-                    state_dict = checkpoint["model_state_dict"]
-                elif "model" in checkpoint:
-                    state_dict = checkpoint["model"]
-                else:
-                    state_dict = checkpoint
-            else:
-                state_dict = checkpoint
-
-            logger.info("Loading pretrained weights for patch-level model")
-            models[ModelName.REPRESENTATIVE].load_state_dict(state_dict, strict=False)
-            logger.info("Successfully loaded patch level model")
-
-            logger.info("Freezing patch level model parameters")
-            for param in models[ModelName.REPRESENTATIVE].parameters():
-                param.requires_grad = False
-
         optimizers = None
         schedulers = None
         if RunMode.TRAIN in loaders:
@@ -188,19 +164,9 @@ class Trainer(comm_train.Trainer):
 
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
-                # Handle different model types
-                if isinstance(self.model[ModelName.REPRESENTATIVE], WeightedFusionModel):
-                    # Weighted fusion model - no training needed
-                    logits = self.model[ModelName.REPRESENTATIVE](patch_image, patch_image_large)
-                    logits = logits.view(-1, 1)
-                    loss = torch.tensor(0.0, device=self.device)  # Set loss to 0 for WeightedFusionModel
-                else:
-                    # Original dual scale model
-                    patch_features = self._extract_patch_features(patch_image)
-                    logits = self.model[ModelName.REPRESENTATIVE](patch_image_large, patch_features)
-                    logits = logits.view(-1, 1)
-                    loss = self.criterion(logits, annot)
-                
+                logits = self.model[ModelName.REPRESENTATIVE](patch_image, patch_image_large)
+                logits = logits.view(-1, 1)
+                loss = self.criterion(logits, annot)
                 train_losses.append(loss.detach())
 
             # set trace for checking nan values
@@ -218,22 +184,21 @@ class Trainer(comm_train.Trainer):
                     name: param.clone() for name, param in self.model[ModelName.REPRESENTATIVE].named_parameters()
                 }
 
-            # Backpropagation - skip for WeightedFusionModel
-            if not isinstance(self.model[ModelName.REPRESENTATIVE], WeightedFusionModel):
-                if self.use_amp:
-                    self.scaler.scale(loss).backward()
-                    self.scaler.unscale_(self.optimizer[ModelName.REPRESENTATIVE])
-                    torch.nn.utils.clip_grad_norm_(
-                        self.model[ModelName.REPRESENTATIVE].parameters(), max_norm=self.grad_clip_max_norm
-                    )
-                    self.scaler.step(self.optimizer[ModelName.REPRESENTATIVE])
-                    self.scaler.update()
-                else:
-                    loss.backward()
-                    torch.nn.utils.clip_grad_norm_(
-                        self.model[ModelName.REPRESENTATIVE].parameters(), max_norm=self.grad_clip_max_norm
-                    )
-                    self.optimizer[ModelName.REPRESENTATIVE].step()
+            # Backpropagation
+            if self.use_amp:
+                self.scaler.scale(loss).backward()
+                self.scaler.unscale_(self.optimizer[ModelName.REPRESENTATIVE])
+                torch.nn.utils.clip_grad_norm_(
+                    self.model[ModelName.REPRESENTATIVE].parameters(), max_norm=self.grad_clip_max_norm
+                )
+                self.scaler.step(self.optimizer[ModelName.REPRESENTATIVE])
+                self.scaler.update()
+            else:
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(
+                    self.model[ModelName.REPRESENTATIVE].parameters(), max_norm=self.grad_clip_max_norm
+                )
+                self.optimizer[ModelName.REPRESENTATIVE].step()
 
             # Check if any parameter has changed
             if self.fast_dev_run:
@@ -245,38 +210,20 @@ class Trainer(comm_train.Trainer):
 
             if global_step % self.log_every_n_steps == 0:
                 batch_time = time.time() - start
-                # For WeightedFusionModel, only log metrics without loss
-                if isinstance(self.model[ModelName.REPRESENTATIVE], WeightedFusionModel):
-                    self.log_metrics(
-                        RunMode.TRAIN.value,
-                        global_step,
-                        Metrics(0.0, {}, {}),  # Set loss to 0
-                        log_prefix=f"[{epoch}/{self.max_epoch}] [{i}/{len(loader)}]",
-                        mlflow_log_prefix="STEP",
-                        duration=batch_time,
-                    )
-                else:
-                    self.log_metrics(
-                        RunMode.TRAIN.value,
-                        global_step,
-                        Metrics(loss.detach(), {}, {}),
-                        log_prefix=f"[{epoch}/{self.max_epoch}] [{i}/{len(loader)}]",
-                        mlflow_log_prefix="STEP",
-                        duration=batch_time,
-                    )
+                self.log_metrics(
+                    RunMode.TRAIN.value,
+                    global_step,
+                    Metrics(loss.detach(), {}, {}),
+                    log_prefix=f"[{epoch}/{self.max_epoch}] [{i}/{len(loader)}]",
+                    mlflow_log_prefix="STEP",
+                    duration=batch_time,
+                )
                 start = time.time()
 
             if self.fast_dev_run:
                 break
-            if not isinstance(self.model[ModelName.REPRESENTATIVE], WeightedFusionModel):
-                self.scheduler[ModelName.REPRESENTATIVE].step("step")
-        if not isinstance(self.model[ModelName.REPRESENTATIVE], WeightedFusionModel):
-            self.scheduler[ModelName.REPRESENTATIVE].step("epoch")
-
-        # Increment fusion weight after each epoch if using weighted fusion model
-        if isinstance(self.model[ModelName.REPRESENTATIVE], WeightedFusionModel):
-            current_weight = self.model[ModelName.REPRESENTATIVE].increment_fusion_weight()
-            logger.info(f"Current fusion weight: {current_weight:.3f}")
+            self.scheduler[ModelName.REPRESENTATIVE].step("step")
+        self.scheduler[ModelName.REPRESENTATIVE].step("epoch")
 
         train_loss = torch.stack(train_losses).sum().item()
         return Metrics(train_loss / len(loader), {}, {})
@@ -447,15 +394,7 @@ class Trainer(comm_train.Trainer):
 
             # inference
             with torch.no_grad():
-                # Handle different model types
-                if isinstance(self.model[ModelName.REPRESENTATIVE], WeightedFusionModel):
-                    # Weighted fusion model
-                    logits = self.model[ModelName.REPRESENTATIVE](patch_image, patch_image_large)
-                else:
-                    # Original dual scale model
-                    patch_features = self._extract_patch_features(patch_image)
-                    logits = self.model[ModelName.REPRESENTATIVE](patch_image_large, patch_features)
-                
+                logits = self.model[ModelName.REPRESENTATIVE](patch_image, patch_image_large)
                 logits = logits.view(-1, 1)
 
             list_logits.append(logits)
