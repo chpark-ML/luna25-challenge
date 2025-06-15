@@ -22,8 +22,9 @@ class ZeroConv3d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False):
         super().__init__()
         self.conv = nn.Conv3d(in_channels, out_channels, kernel_size, stride, padding, bias=bias)
-        self.conv.weight.data.zero_()
-        self.conv.bias.data.zero_()
+        torch.nn.init.constant_(self.conv.weight, 0)
+        if self.conv.bias is not None:
+            torch.nn.init.constant_(self.conv.bias, 0)
         
     def forward(self, x):
         return self.conv(x)
