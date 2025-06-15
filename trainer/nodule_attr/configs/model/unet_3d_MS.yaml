@@ -12,7 +12,7 @@ model_repr:
     f_maps: ${model.model_repr.f_maps}
     num_levels: ${model.model_repr.num_levels}
     num_features: 3
-    drop_prob: 0.05
+    drop_prob: 0.2
     pyramid_channels: 128
     num_fpn_layers: 2
     target_attr_total: ${trainer.target_attr_total}

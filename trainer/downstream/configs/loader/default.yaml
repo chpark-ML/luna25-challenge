@@ -35,11 +35,11 @@ dataset:
       aug_prob: 0.2
       max_holes: 12
     rescale_image_3d:
-      aug_prob: 0.0
+      aug_prob: 0.2
       is_same_across_axes: True
       scale_factor:
-        min: 0.5
-        max: 2.0
+        min: 0.8
+        max: 1.2
 
   # target_dataset list should be selected between ['luna16_neg', 'luna16_pos', 'segmed', 'asan', 'adeno']
   target_dataset_train: [ 'luna25' ]
