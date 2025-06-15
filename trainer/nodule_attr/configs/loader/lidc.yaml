@@ -68,9 +68,9 @@ dataset:
       target_attr_to_train: ${trainer.target_attr_to_train}
       query:
         dicom_series_info.slice_thickness:
-          "$lte": 4
+          "$lte": 3.5
         num_mask:
-          "$gte": 1
+          "$gte": 2
         c_malignancy_logistic:
           "$ne": 0.5
 
