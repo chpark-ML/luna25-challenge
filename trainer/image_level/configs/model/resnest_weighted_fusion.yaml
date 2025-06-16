@@ -32,4 +32,3 @@ model_repr:
       radix: 2
   fusion_channels: 96  # ResNest의 마지막 채널 수와 동일
   path_patch_model: /opt/challenge/trainer/downstream/outputs/single_scale/cv_fine_single_scale_val_fold5_fmaps_24/model_auroc.pth  # Path to pretrained patch-level model
-  path_image_model: /opt/challenge/trainer/downstream/outputs/single_scale/cv_fine_single_scale_val_fold5_fmaps_24/model_auroc.pth  # Path to pretrained image-level model 
