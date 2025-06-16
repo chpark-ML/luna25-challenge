@@ -41,5 +41,6 @@ model_repr:
       target_attr_downstream: 'c_malignancy_logistic'
       return_logit: False
   fusion_channels: 192  # This should match the output channels of the encoder
+  image_drop_prob: 0.1  # Dropout probability for image-level features
   path_patch_model: /opt/challenge/trainer/downstream/outputs/single_scale/cv_fine_single_scale_val_fold5_fmaps_24/model_auroc.pth  # Path to pretrained patch-level model
   path_image_model: /opt/challenge/trainer/downstream/outputs/single_scale/cv_fine_single_scale_val_fold5_fmaps_24/model_auroc.pth  # Path to pretrained image-level model
