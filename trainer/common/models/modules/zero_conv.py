@@ -23,4 +23,5 @@ class ZeroConv3d(nn.Module):
             torch.nn.init.constant_(self.conv.bias, 0)
 
     def forward(self, x):
-        return self.conv(x) 
+        return self.conv(x)
+    
