@@ -94,4 +94,3 @@ class WeightedFusionModel(nn.Module):
             return ModelOutputCls(**logits[LOGIT_KEY])
         else:
             return logits
-        
