@@ -1,0 +1,25 @@
+model_repr:
+  _target_: trainer.common.models.resnest_weighted_fusion.WeightedFusionModel
+  model_patch:
+    _target_: trainer.common.models.resnest.ResNest
+    model_depth: 34
+    in_planes: [48, 64, 96]
+    widen_factor: 1.0
+    block_cfg:
+      cardinality: 1
+      avd: True
+      avd_first: False
+      radix: 2
+  model_image:
+    _target_: trainer.common.models.resnest.ResNest
+    model_depth: 34
+    in_planes: [48, 64, 96]
+    widen_factor: 1.0
+    block_cfg:
+      cardinality: 1
+      avd: True
+      avd_first: False
+      radix: 2
+  fusion_channels: 96  # ResNest의 마지막 채널 수와 동일
+  path_patch_model: /opt/challenge/trainer/downstream/outputs/single_scale/cv_fine_single_scale_val_fold5_fmaps_24/model_auroc.pth  # Path to pretrained patch-level model
+  path_image_model: /opt/challenge/trainer/downstream/outputs/single_scale/cv_fine_single_scale_val_fold5_fmaps_24/model_auroc.pth  # Path to pretrained image-level model 
