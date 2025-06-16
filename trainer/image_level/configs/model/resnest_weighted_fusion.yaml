@@ -1,15 +1,25 @@
 model_repr:
   _target_: trainer.common.models.resnest_weighted_fusion.WeightedFusionModel
   model_patch:
-    _target_: trainer.common.models.resnest.ResNest
-    model_depth: 34
-    in_planes: [48, 64, 96]
-    widen_factor: 1.0
-    block_cfg:
-      cardinality: 1
-      avd: True
-      avd_first: False
-      radix: 2
+    _target_: trainer.common.models.unet_3d_MS.Model
+    in_channels: 1
+    f_maps: 24
+    num_levels: 4
+    num_groups: 4
+    layer_order: gcr
+    return_downstream_logit: True
+    return_named_tuple: False
+    classifier:
+      _target_: trainer.common.models.modules.classifier.Classifier
+      in_planes: 192
+      out_planes: 1
+      drop_prob: 0.05
+      target_attr_total: [ 'c_subtlety_logistic', 'c_sphericity_logistic', 'c_lobulation_logistic', 'c_spiculation_logistic',
+                         'c_margin_logistic', 'c_texture_logistic',
+                         'c_calcification_logistic', 'c_internalStructure_logistic', 'c_malignancy_logistic' ]
+      target_attr_to_train: [ 'c_malignancy_logistic' ]
+      target_attr_downstream: 'c_malignancy_logistic'
+      return_logit: False
   model_image:
     _target_: trainer.common.models.resnest.ResNest
     model_depth: 34
