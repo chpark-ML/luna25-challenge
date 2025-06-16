@@ -17,9 +17,10 @@ class WeightedFusionModel(nn.Module):
         model_image,
         in_channels=1,
         out_channels=1,
-        fusion_channels=64,
-        path_patch_model=None,
-        path_image_model=None,
+        fusion_channels=192,  # This should match the output channels of the encoder
+        path_patch_model=None,  # Path to pretrained patch-level model
+        path_image_model=None,  # Path to pretrained image-level model
+        image_drop_prob=0.1,  # Dropout probability for image-level features
     ):
         super().__init__()
         self.model_patch = model_patch
@@ -65,6 +66,9 @@ class WeightedFusionModel(nn.Module):
         for param in self.model_image.classifier.parameters():
             param.requires_grad = False
 
+        # Dropout for image-level features
+        self.image_dropout = nn.Dropout3d(p=image_drop_prob)
+
         # Fusion layer to combine features
         self.fusion_conv = nn.Conv3d(fusion_channels, fusion_channels, kernel_size=1)
         self.zero_conv = ZeroConv3d(fusion_channels, fusion_channels)
@@ -89,6 +93,9 @@ class WeightedFusionModel(nn.Module):
         b, c, d, h, w = patch_features.shape
         image_features = image_features.mean(dim=[2, 3, 4], keepdim=True)  # Global average pooling
         image_features = image_features.expand(b, c, d, h, w)  # Tile to match patch feature dimensions
+
+        # Apply dropout to image features
+        image_features = self.image_dropout(image_features)
 
         # Fuse features
         # fused_features = patch_features + self.fusion_conv(image_features)
