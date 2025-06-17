@@ -23,4 +23,4 @@ do
 
   tmux new-window -t "${my_session}:" -n "${my_window}"  # 새로운 윈도우 생성
   tmux send-keys -t "${my_session}:${my_window}" "bash cross_validation_base.sh ${gpu_num} ${val_fold}" Enter  # 해당 윈도우로 명령어 전달
-done 
+done
