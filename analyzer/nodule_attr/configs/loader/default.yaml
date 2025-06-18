@@ -51,7 +51,7 @@ dataset:
       total_fold: [ 0, 1, 2, 3, 4, 5, 6 ]
       val_fold: [ ]
       test_fold: [ 0, 1, 2, 3, 4, 5, 6 ]
-      collection_name: LUNA25-Malignancy
+      collection_name: LUNA25-Malignancy-Feature
       query:
 
 batch_size: 32

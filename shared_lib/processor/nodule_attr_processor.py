@@ -1,8 +1,11 @@
+from typing import Dict
+
+import numpy as np
 import torch
 from tqdm import tqdm
 
-from shared_lib.processor.base_processor import BaseProcessor
 from shared_lib.model_output import ModelOutputCls, ModelOutputClsSeg
+from shared_lib.processor.base_processor import BaseProcessor
 
 
 class NoduleAttrProcessor(BaseProcessor):
@@ -13,7 +16,8 @@ class NoduleAttrProcessor(BaseProcessor):
     def __init__(self, models=None, mode="3D", device=torch.device("cuda:0"), suppress_logs=False,
                  do_segmentation=True):
         super().__init__(models=models, mode=mode, device=device, suppress_logs=suppress_logs)
-        self.do_segmentation = do_segmentation
+        self.do_segmentation = do_segmentation  # whether model predict segmentation mask
+        self.return_segmentation_mask = True  # whether processor return segmentation mask if available
 
     def predict(self, numpy_image, header, coord):
         """
@@ -23,7 +27,7 @@ class NoduleAttrProcessor(BaseProcessor):
         """
         pass
 
-    def predict_given_patch(self, patch_image: torch.Tensor) -> dict:
+    def predict_ensemble_result(self, patch_image: torch.Tensor) -> dict:
         """
         1. Perform inference using multiple models (nodule attr, segmentation)
         2. Apply sigmoid and average outputs across models
@@ -32,7 +36,7 @@ class NoduleAttrProcessor(BaseProcessor):
         """
         patch_image = patch_image.to(self.device)  # (B, 1, w, h ,d)
 
-        if self.do_segmentation:
+        if self.do_segmentation and self.return_segmentation_mask:
             keys = ModelOutputClsSeg._fields
         else:
             keys = ModelOutputCls._fields
@@ -62,9 +66,9 @@ class NoduleAttrProcessor(BaseProcessor):
             for key in keys
         }
 
-        return ensemble_output
+        return ensemble_output  # (B, 1) or (B, 1, w, h, d)
 
-    def inference(self, loader, mode, sanity_check=False):
+    def inference(self, loader, mode, sanity_check=False) -> Dict[str, np.ndarray]:
         list_results = list()
         list_annot_ids = list()
 
@@ -76,7 +80,7 @@ class NoduleAttrProcessor(BaseProcessor):
             annot_ids = data["ID"]
 
             # inference
-            result = self.predict_given_patch(patch_image)
+            result = self.predict_ensemble_result(patch_image)  # (B, 1) or (B, 1, w, h, d)
 
             list_results.append(result)
             list_annot_ids.extend(annot_ids)
@@ -85,19 +89,14 @@ class NoduleAttrProcessor(BaseProcessor):
                 break
 
         # Combine batches
-        if self.do_segmentation:
+        if self.do_segmentation and self.return_segmentation_mask:
             keys = ModelOutputClsSeg._fields
         else:
             keys = ModelOutputCls._fields
 
         stacked_probs = {
-            key: torch.stack([dict_prob[key] for dict_prob in list_results], dim=0)
-            for key in (keys if keys else list(list_results[0].keys()))
+            key: torch.vstack([result[key] for result in list_results]).detach().cpu().numpy()
+            for key in keys
         }
 
-        stacked_probs_np = {
-            key: tensor.detach().cpu().numpy()
-            for key, tensor in stacked_probs.items()
-        }
-
-        return stacked_probs_np
+        return stacked_probs  # dict[str, np.ndarray] of shape (N, 1) or (N, 1, w, h, d)
