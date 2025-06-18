@@ -10,7 +10,7 @@ import torch.utils.data as data
 from h5py import File
 from omegaconf import OmegaConf
 
-from data_lake.constants import DBKey, H5DataKey
+from data_lake.constants import DBKey, H5DataKey, DataLakeKey
 from data_lake.dataset_handler import DatasetHandler
 from shared_lib.enums import RunMode
 from shared_lib.tools.image_parser import extract_patch
@@ -26,6 +26,8 @@ _VUNO_LUNG_DB = DB_ADDRESS
 
 
 class DataLoaderKeys:
+    COLLECTION_ID = "collection_id"
+    DOC_ID = "doc_id"
     IMAGE = "image"
     LABEL = "label"
     ID = "ID"
@@ -206,6 +208,9 @@ class CTCaseDataset(data.Dataset):
 
     def __getitem__(self, idx):  # caseid, z, y, x, label, radius
         elem = self.dataset.iloc[idx]
+
+        doc_id = elem[DataLakeKey.DOC_ID]
+        collection_id = elem[DataLakeKey.COLLECTION]
         label = elem[DBKey.LABEL]
         annotation_id = elem[DBKey.ANNOTATION_ID]
         origin = np.array(elem[DBKey.ORIGIN])
@@ -274,6 +279,8 @@ class CTCaseDataset(data.Dataset):
         target = torch.ones((1,)) * label
 
         sample = {
+            DataLoaderKeys.COLLECTION_ID: collection_id,
+            DataLoaderKeys.DOC_ID: str(doc_id),
             DataLoaderKeys.IMAGE: torch.from_numpy(patch).float(),  # float32
             DataLoaderKeys.LABEL: target.long(),
             DataLoaderKeys.ID: annotation_id,

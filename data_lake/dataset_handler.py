@@ -70,9 +70,9 @@ class DatasetHandler:
 
             # Set projection.
             if projection:
-                projection[DataLakeKey.DOC_ID] = 0
+                projection[DataLakeKey.DOC_ID] = 1
             else:
-                projection = {DataLakeKey.DOC_ID: 0}
+                projection = {}
 
             # Load documents.
             docs = [
@@ -180,7 +180,7 @@ class DatasetHandler:
                 # Document field is named as dataframe column name with prefix.
                 doc = dict()
                 for col in updated_cols:
-                    field = f"{field_prefix}_{col}"
+                    field = f"{field_prefix}_{col}" if field_prefix else col
                     doc[field] = row[col]
 
                 # Prepare arguments for MongoDB update_one()
