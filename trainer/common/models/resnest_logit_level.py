@@ -18,6 +18,7 @@ class LogitLevelFusionModel(nn.Module):
         model_image,
         fusion_channels=192,
         path_patch_model=None,
+        use_zero_conv_classifier=False,
     ):
         super().__init__()
         self.model_patch = model_patch
@@ -40,15 +41,20 @@ class LogitLevelFusionModel(nn.Module):
             logger.info("Successfully loaded patch level model")
         
         # Initialize image classifier
-        self.image_classifier = Classifier(
-            in_planes=fusion_channels,
-            out_planes=1,
-            drop_prob=0.05,
-            target_attr_total=self.model_patch.classifier.target_attr_total,
-            target_attr_to_train=self.model_patch.classifier.target_attr_to_train,
-            target_attr_downstream=self.model_patch.classifier.target_attr_downstream,
-            return_logit=False
-        )
+        if use_zero_conv_classifier:
+            self.image_classifier = ZeroConv3d(fusion_channels, 1)  # (f, 1) zero conv
+            self.use_zero_conv = True
+        else:
+            self.image_classifier = Classifier(
+                in_planes=fusion_channels,
+                out_planes=1,
+                drop_prob=0.05,
+                target_attr_total=self.model_patch.classifier.target_attr_total,
+                target_attr_to_train=self.model_patch.classifier.target_attr_to_train,
+                target_attr_downstream=self.model_patch.classifier.target_attr_downstream,
+                return_logit=False
+            )
+            self.use_zero_conv = False
         
         # Zero conv for logit-level fusion
         self.zero_conv = ZeroConv3d(1, 1)  # 1 channel for binary classification
@@ -65,10 +71,17 @@ class LogitLevelFusionModel(nn.Module):
         
         # Image model forward
         image_x1, image_x2, image_x3 = self.model_image.backbone(image_large)
-        image_x3 = image_x3.mean(dim=[2, 3, 4], keepdim=True)  # Global average pooling 
-        image_logits = self.image_classifier([image_x3])
-        image_logit = image_logits[LOGIT_KEY][self.model_patch.classifier.target_attr_downstream]
-        image_logit = image_logit.unsqueeze(2).unsqueeze(3).unsqueeze(4)
+        image_x3 = image_x3.mean(dim=[2, 3, 4], keepdim=True)  # Global average pooling
+        
+        if self.use_zero_conv:
+            # Direct zero conv classification
+            image_logit = self.image_classifier(image_x3)
+            image_logit = image_logit.squeeze(-1).squeeze(-1).squeeze(-1)
+        else:
+            # Use Classifier
+            image_logits = self.image_classifier([image_x3])
+            image_logit = image_logits[LOGIT_KEY][self.model_patch.classifier.target_attr_downstream]
+            image_logit = image_logit.unsqueeze(2).unsqueeze(3).unsqueeze(4)
         
         # Logit-level fusion with zero conv
         adjusted_image_logits = self.zero_conv(image_logit)
