@@ -74,18 +74,25 @@ class LogitLevelFusionModel(nn.Module):
         image_x3 = image_x3.mean(dim=[2, 3, 4], keepdim=True)  # Global average pooling
         
         if self.use_zero_conv:
-            # Direct zero conv classification
-            image_logit = self.image_classifier(image_x3)
-            image_logit = image_logit.squeeze(-1).squeeze(-1).squeeze(-1)
+            print(f"image_x3.shape: {image_x3.shape}")
+            # image_x3: [B, C, 1, 1, 1]가 아니면 강제로 맞추기
+            if image_x3.dim() == 2:
+                image_x3 = image_x3.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
+            elif image_x3.dim() == 3:
+                image_x3 = image_x3.unsqueeze(-1).unsqueeze(-1)
+            elif image_x3.dim() == 4:
+                image_x3 = image_x3.unsqueeze(-1)
+            # 이제 [B, C, 1, 1, 1] 보장
+            image_logit = self.image_classifier(image_x3)  # [B, 1, 1, 1, 1]
+            image_logit = image_logit.squeeze(-1).squeeze(-1).squeeze(-1)  # [B, 1]
+            adjusted_image_logits = image_logit  # 추가 zero conv 없음
         else:
             # Use Classifier
             image_logits = self.image_classifier([image_x3])
             image_logit = image_logits[LOGIT_KEY][self.model_patch.classifier.target_attr_downstream]
-            image_logit = image_logit.unsqueeze(2).unsqueeze(3).unsqueeze(4)
-        
-        # Logit-level fusion with zero conv
-        adjusted_image_logits = self.zero_conv(image_logit)
-        adjusted_image_logits = adjusted_image_logits.squeeze(-1).squeeze(-1).squeeze(-1)
+            image_logit = image_logit.unsqueeze(2).unsqueeze(3).unsqueeze(4)  # [B, 1, 1, 1, 1]
+            adjusted_image_logits = self.zero_conv(image_logit)
+            adjusted_image_logits = adjusted_image_logits.squeeze(-1).squeeze(-1).squeeze(-1)  # [B, 1]
         
         # Only fuse the target attribute logit
         target_attr = self.model_patch.classifier.target_attr_downstream
