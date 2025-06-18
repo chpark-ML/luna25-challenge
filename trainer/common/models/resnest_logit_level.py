@@ -74,8 +74,6 @@ class LogitLevelFusionModel(nn.Module):
         image_x3 = image_x3.mean(dim=[2, 3, 4], keepdim=True)  # Global average pooling
         
         if self.use_zero_conv:
-            print(f"image_x3.shape: {image_x3.shape}")
-            # image_x3: [B, C, 1, 1, 1]가 아니면 강제로 맞추기
             if image_x3.dim() == 2:
                 image_x3 = image_x3.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
             elif image_x3.dim() == 3:
