@@ -31,4 +31,5 @@ model_repr:
       avd_first: False
       radix: 2
   fusion_channels: 192
+  use_zero_conv_classifier: True
   path_patch_model: /opt/challenge/trainer/downstream/outputs/single_scale/cv_fine_single_scale_val_fold5_fmaps_24/model_auroc.pth
