@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from trainer.common.constants import GATE_KEY, GATED_LOGIT_KEY, LOGIT_KEY, MULTI_SCALE_LOGIT_KEY
+from trainer.common.constants import GATE_KEY, GATED_LOGIT_KEY, LOGIT_KEY, MULTI_SCALE_LOGIT_KEY, LATENT_KEY
 from trainer.common.models.modules.gate import GateBlock
 
 
@@ -203,6 +203,132 @@ class MultiScaleAttnClassifier(nn.Module):
 
         return {
             LOGIT_KEY: logits,
+            MULTI_SCALE_LOGIT_KEY: logits_multi_scale,
+            GATE_KEY: gate_results,
+            GATED_LOGIT_KEY: gated_ce_dict,
+        }
+
+
+class MultiScaleAttnClassifierV2(nn.Module):
+    def __init__(
+        self,
+        f_maps,
+        num_levels,
+        num_features,
+        drop_prob,
+        pyramid_channels,
+        num_fpn_layers,
+        target_attr_total,
+        target_attr_to_train,
+        target_attr_downstream,
+        use_gate,
+        use_coord,
+        use_fusion,
+        return_latent=False,
+    ):
+        super(MultiScaleAttnClassifierV2, self).__init__()
+
+        if isinstance(f_maps, int):
+            f_maps = [f_maps * 2**k for k in range(num_levels)]  # e.g., [24, 48, 96, 192]
+        self.num_features = num_features
+
+        self.target_attr_total = target_attr_total
+        self.target_attr_to_train = target_attr_to_train
+        self.target_attr_downstream = target_attr_downstream
+        self.use_gate = use_gate
+        self.use_coord = use_coord
+        self.use_fusion = use_fusion
+        self.return_latent = return_latent
+
+        # f1, f2, f3 > g1, g2, g3_attr
+        self.gate_block = (
+            GateBlock(
+                f_maps[-self.num_features :],
+                pyramid_channels,
+                num_fpn_layers,
+                drop_prob=drop_prob,
+                use_coord=use_coord,
+                use_fusion=use_fusion,
+                target_attr_total=target_attr_total,
+            )
+            if self.use_gate
+            else None
+        )
+
+        # f1, f2, f3 > e1, e2, e3_attr
+        self.classifiers = nn.ModuleList(
+            [
+                nn.ModuleDict(
+                    {
+                        i_attr: nn.Sequential(
+                            nn.Dropout3d(p=drop_prob),
+                            nn.Conv3d(f_map, 1, kernel_size=1, bias=True),
+                        )
+                        for i_attr in target_attr_total
+                    }
+                )
+                for f_map in f_maps[-self.num_features :]
+            ]
+        )
+
+    def forward(self, inputs: list) -> dict:
+        f_maps = inputs[-self.num_features :]  # (B, 48, 24, 36, 36), (B, 96, 12, 18, 18), (B, 192, 6, 9, 9)
+
+        # get gate results
+        gate_results = list()
+        if self.use_gate:
+            gate_results = self.gate_block(f_maps)
+            gates_flatten = [torch.flatten(i_gate, start_dim=1) for i_gate in gate_results]
+            total_interest = torch.cat(gates_flatten, dim=1).sum(1, keepdim=True)
+
+        else:
+            total_interest = 0
+            for x in f_maps:
+                total_interest += torch.prod(torch.tensor(x.size()[-3:]))
+
+        # Loop for attributions
+        logits = dict()
+        latents = None
+        logits_multi_scale = [dict() for _ in range(self.num_features)]
+        gated_ce_dict = dict()
+
+        if self.return_latent:
+            _latents = list()
+            for idx_fmap, (x, classifier) in enumerate(zip(f_maps, self.classifiers)):
+                gate = gate_results[idx_fmap]
+                gated_x = x * gate
+                latent = torch.sum(gated_x, dim=(2, 3, 4), keepdim=False)  # (B, 48) or (B, 96) or (B, 192)
+                _latents.append(latent)
+            latents = torch.cat(_latents, dim=1) / total_interest
+        else:
+            for i_attr in self.target_attr_to_train:
+                # init
+                gated_ce_dict[i_attr] = list()
+                logits[i_attr] = None
+
+                # Loop for multi-scale
+                _latents = list()
+                _logits = list()
+                _gates = list()
+                for idx_fmap, (x, classifier) in enumerate(zip(f_maps, self.classifiers)):
+                    # local class evidence
+                    if self.use_gate:
+                        CE = classifier[i_attr](x)
+                        CE = CE * gate_results[idx_fmap]
+                    else:
+                        CE = classifier[i_attr](x)
+
+                    logits_multi_scale[idx_fmap][i_attr] = torch.sum(CE, dim=(2, 3, 4), keepdim=True)
+                    gated_ce_dict[i_attr].append(CE)
+
+                    # spatial aggregation for local class evidence
+                    _logit = torch.sum(CE, dim=(2, 3, 4), keepdim=True)
+                    _logits.append(torch.flatten(_logit, start_dim=1))
+                logits[i_attr] = torch.cat(_logits, dim=1).sum(1, keepdim=True) / total_interest
+
+        return {
+            LOGIT_KEY: logits,
+            LATENT_KEY: latents,
             MULTI_SCALE_LOGIT_KEY: logits_multi_scale,
             GATE_KEY: gate_results,
             GATED_LOGIT_KEY: gated_ce_dict,
