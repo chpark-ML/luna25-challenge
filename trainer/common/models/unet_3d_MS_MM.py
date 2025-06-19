@@ -43,18 +43,13 @@ class Model(nn.Module):
             nn.Linear(39, 128),
             nn.LayerNorm(128),
             nn.GELU(),
-
-            nn.Dropout(0.1),
             nn.Linear(128, 64),
             nn.LayerNorm(64),
             nn.GELU(),
         )
         self.classifier_mm = nn.Sequential(
-            nn.Linear(sum(f_maps[-3:]) + 64, 128),
-            nn.LayerNorm(128),
-            nn.GELU(),
-            nn.Dropout(0.1),
-            nn.Linear(128, 1),
+            nn.Dropout(p=0.2),
+            nn.Linear(sum(f_maps[-3:]) + 64, 1),
         )
 
     def forward(self, x, x_mm):
