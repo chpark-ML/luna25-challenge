@@ -16,6 +16,7 @@ dataset:
   size_px_z: 48
   use_weighted_sampler: true
   interpolate_order: 1
+  target_attr_total: ${trainer.target_attr_total}
 
   # augmentation
   augmentation:

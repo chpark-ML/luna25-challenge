@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 def main(config: omegaconf.DictConfig) -> object:
     from trainer.common.train import train
 
-    logger.info("Training Model for Downstream Task.")
+    logger.info("Training Model for Multi-modal (MM) Task.")
 
     return train(config)
 
