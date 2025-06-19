@@ -5,6 +5,7 @@ from typing import Union
 
 import hydra
 import numpy as np
+import pickle
 import torch
 import torch.utils.data as data
 from h5py import File
@@ -13,6 +14,7 @@ from omegaconf import OmegaConf
 from data_lake.constants import DBKey, H5DataKey, DataLakeKey
 from data_lake.dataset_handler import DatasetHandler
 from shared_lib.enums import RunMode
+from shared_lib.radiomics import RadiomicsFeatureKeys
 from shared_lib.tools.image_parser import extract_patch
 from trainer.common.augmentation.coarse_drop import CoarseDropout3D
 from trainer.common.augmentation.compose import ComposeAugmentation
@@ -31,6 +33,10 @@ class DataLoaderKeys:
     IMAGE = "image"
     LABEL = "label"
     ID = "ID"
+    NODULE_ATTR = "nodule_attr"
+    RADIOMICS = "radiomics"
+    AGE = "age"
+    GENDER = "gender"
 
 
 def _get_3d_patch(image_shape=None, center=None, patchsize=None):
@@ -129,6 +135,7 @@ class CTCaseDataset(data.Dataset):
         size_px_z: int = 48,
         size_mm: int = 50,
         interpolate_order: int = 1,
+        target_attr_total: list = None,
         dataset_infos=None,
         target_dataset_train=None,
         target_dataset_val_test=None,
@@ -159,6 +166,24 @@ class CTCaseDataset(data.Dataset):
         self.size_px_z = size_px_z
         self.size_mm = size_mm
         self.order = interpolate_order
+
+        # radiomics mean, std
+        with open("/opt/challenge/shared_lib/radiomics_stats.pkl", "rb") as f:
+            radiomics_stats = pickle.load(f)
+            self.radiomics_means = radiomics_stats["mean"]
+            self.radiomics_stds = radiomics_stats["std"]
+
+        # radiomics feature keys
+        features = RadiomicsFeatureKeys()
+        self.radiomics_feature_keys = list()
+        for group_name in features.__dataclass_fields__:
+            group_keys = getattr(features, group_name)
+            for group_key in group_keys:
+                self.radiomics_feature_keys.append(f"pred_{group_key}")
+
+        # nodule attributes
+        self.target_attr_total = [f"pred_{attr}" for attr in target_attr_total]
+
         # data augmentation
         if self.mode == RunMode.TRAIN:
             self.transform = ComposeAugmentation(
@@ -217,6 +242,18 @@ class CTCaseDataset(data.Dataset):
         spacing = np.array(elem[DBKey.SPACING])
         transform = np.array(elem[DBKey.TRANSFORM])
         d_coord_zyx = np.array(elem[DBKey.D_COORD_ZYX])
+
+        # demographics
+        age = np.array(elem[DBKey.AGE_AT_STUDY])
+        gender = np.array(1.0 if elem[DBKey.GENDER] == "Male" else 0.0)
+
+        # radiomics
+        radiomics = elem[self.radiomics_feature_keys]
+        common_keys = radiomics.index.intersection(self.radiomics_means.index).intersection(self.radiomics_stds.index)
+        normalized_radiomics = ((radiomics[common_keys] - self.radiomics_means[common_keys]) / self.radiomics_stds).astype(np.float32).values
+
+        # nodule attributes
+        nodule_attr = elem[self.target_attr_total].astype(np.float32).values
 
         # fetch large patch
         if self.fetch_from_patch:
@@ -284,6 +321,10 @@ class CTCaseDataset(data.Dataset):
             DataLoaderKeys.IMAGE: torch.from_numpy(patch).float(),  # float32
             DataLoaderKeys.LABEL: target.long(),
             DataLoaderKeys.ID: annotation_id,
+            DataLoaderKeys.AGE: age,
+            DataLoaderKeys.GENDER: gender,
+            DataLoaderKeys.NODULE_ATTR: nodule_attr,
+            DataLoaderKeys.RADIOMICS: normalized_radiomics,
         }
 
         return sample
