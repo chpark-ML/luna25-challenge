@@ -56,8 +56,8 @@ class LogitLevelFusionModel(nn.Module):
             )
             self.use_zero_conv = False
         
-        # Zero conv for logit-level fusion
-        self.zero_conv = ZeroConv3d(1, 1)  # 1 channel for binary classification
+            # Zero conv for logit-level fusion
+            self.zero_conv = ZeroConv3d(1, 1)  # 1 channel for binary classification
         
     def forward(self, patch_image, image_large):
         # Patch model forward
