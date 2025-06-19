@@ -1,14 +1,12 @@
 model_repr:
-  _target_: trainer.common.models.unet_3d_MS.Model
+  _target_: trainer.common.models.unet_3d_MS_MM.Model
   in_channels: 1
   f_maps: 24
   num_levels: 4
   num_groups: 4
   layer_order: gcr
-  return_downstream_logit: True
-  return_named_tuple: False
   classifier:
-    _target_: trainer.common.models.modules.classifier.MultiScaleAttnClassifier
+    _target_: trainer.common.models.modules.classifier.MultiScaleAttnClassifierV2
     f_maps: ${model.model_repr.f_maps}
     num_levels: ${model.model_repr.num_levels}
     num_features: 3
@@ -23,3 +21,4 @@ model_repr:
     use_gate: True
     use_coord: True
     use_fusion: True
+    return_latent: True
