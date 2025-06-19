@@ -1,0 +1,23 @@
+# specify default training configuration
+defaults:
+  - _self_
+  - trainer: default
+  - loader: default.yaml
+  - criterion: focal_loss
+  - model: unet_3d_MS
+  - optim: adamw
+  - scheduler: one_cycle_lr
+  - experiment_tool: mlflow
+
+run_modes:
+  - train
+  - val
+  - test
+
+path_best_model: None  # e.g., /nvme1/5_personal/.../model.pth
+
+hydra:
+  run:
+    dir: ./outputs/${experiment_tool.run_group}/${experiment_tool.run_name}
+  job:
+    chdir: True  # keep hydra = 1.1 change directory behavior
