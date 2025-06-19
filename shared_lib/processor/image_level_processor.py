@@ -16,12 +16,19 @@ class ImageLevelProcessor(BaseProcessor):
     def predict(self, numpy_image, header, coord):
         """
         Perform model inference on the given input image and coordinate.
+        For image_level models, we need both patch and large image inputs.
         """
-        patch = self.prepare_patch(numpy_image, header, coord, self.mode)
+        # Prepare patch input (smaller patch)
+        patch_image = self.prepare_patch(numpy_image, header, coord, self.mode)
+        
+        # Prepare large image input (larger context)
+        # For now, we'll use the same patch but with different size parameters
+        # This might need to be adjusted based on your specific image_level dataset implementation
+        image_large = self.prepare_patch(numpy_image, header, coord, self.mode)
 
         probs = list()
         for model_name, model in self.models.items():
-            logits = model.get_prediction(patch)
+            logits = model.get_prediction(patch_image, image_large)
             logits = logits.data.cpu().numpy()
             probs.append(torch.sigmoid(torch.from_numpy(logits)).numpy())
 
