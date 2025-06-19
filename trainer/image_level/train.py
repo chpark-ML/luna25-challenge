@@ -366,7 +366,7 @@ class Trainer(comm_train.Trainer):
             self.path_best_model[BaseBestModelStandard.AUROC] = model_path
             self.epoch_best_model[BaseBestModelStandard.AUROC] = epoch
             self.threshold_best_model[BaseBestModelStandard.AUROC] = self.dict_threshold
-            self.save_checkpoint(model_path, thresholds=self.diㄹct_threshold)
+            self.save_checkpoint(model_path, thresholds=self.dict_threshold)
         
         if val_metrics.loss < best_metrics.loss:
             found_better = True
