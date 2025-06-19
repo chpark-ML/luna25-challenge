@@ -13,7 +13,6 @@ import trainer.common.train as comm_train
 from shared_lib.enums import BaseBestModelStandard, RunMode
 from trainer.common.enums import ModelName, ThresholdMode
 from trainer.image_level.datasets.luna25 import DataLoaderKeys
-from trainer.common.models.unet_3d_MS_weighted_fusion import WeightedFusionModel
 
 logger = logging.getLogger(__name__)
 
@@ -344,6 +343,7 @@ class Trainer(comm_train.Trainer):
 
     def save_best_metrics(self, val_metrics: Metrics, best_metrics: Metrics, epoch) -> (object, bool):
         found_better = False
+        
         if val_metrics.loss < best_metrics.loss:
             found_better = True
             model_path = f"model_loss.pth"
@@ -357,13 +357,16 @@ class Trainer(comm_train.Trainer):
             self.threshold_best_model[BaseBestModelStandard.REPRESENTATIVE] = self.dict_threshold
             self.save_checkpoint(model_path, thresholds=self.dict_threshold)
 
-        if val_metrics.eval_metrics["auroc"] > best_metrics.eval_metrics["auroc"]:
+        if val_metrics.eval_metrics["auroc"] > best_metrics.eval_metrics["auroc"] or best_metrics.eval_metrics["auroc"] is None:
             found_better = True
             model_path = f"model_auroc.pth"
-            logger.info(
-                f"AUROC improved from {best_metrics.eval_metrics['auroc']:4f} to {val_metrics.eval_metrics['auroc']:4f}, "
-                f"saving model to {model_path}."
-            )
+            if best_metrics.eval_metrics["auroc"] is None:
+                logger.info(f"AUROC is {val_metrics.eval_metrics['auroc']:4f}, saving initial model to {model_path}.")
+            else:
+                logger.info(
+                    f"AUROC improved from {best_metrics.eval_metrics['auroc']:4f} to {val_metrics.eval_metrics['auroc']:4f}, "
+                    f"saving model to {model_path}."
+                )
 
             best_metrics = val_metrics
             self.path_best_model[BaseBestModelStandard.AUROC] = model_path
