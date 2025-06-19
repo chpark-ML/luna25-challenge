@@ -144,11 +144,11 @@ class Trainer(comm_train.Trainer):
             gender = data[DataLoaderKeys.GENDER].to(self.device)  # (B, 1)
             nodule_attr = data[DataLoaderKeys.NODULE_ATTR].to(self.device)  # (B, 8)
             radiomics = data[DataLoaderKeys.RADIOMICS].to(self.device)  # (B, 29)
-            mm_input = torch.cat([age, gender, nodule_attr, radiomics], dim=1)  # (B, 39)
+            input_mm = torch.cat([age, gender, nodule_attr, radiomics], dim=1)  # (B, 39)
 
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
-                logits = self.model[ModelName.REPRESENTATIVE](patch_image, mm_input)
+                logits = self.model[ModelName.REPRESENTATIVE](patch_image, input_mm)
                 logits = logits.view(-1, 1)  # considering the prediction tensor can be either (B,) or (B, 1)
                 loss = self.criterion(logits, annot)
                 train_losses.append(loss.detach())
