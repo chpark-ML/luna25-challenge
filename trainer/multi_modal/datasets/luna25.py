@@ -244,8 +244,8 @@ class CTCaseDataset(data.Dataset):
         d_coord_zyx = np.array(elem[DBKey.D_COORD_ZYX])
 
         # demographics
-        age = np.array(elem[DBKey.AGE_AT_STUDY])
-        gender = np.array(1.0 if elem[DBKey.GENDER] == "Male" else 0.0)
+        age = np.expand_dims(np.array(elem[DBKey.AGE_AT_STUDY]), axis=0)
+        gender = np.expand_dims(np.array(1.0 if elem[DBKey.GENDER] == "Male" else 0.0), axis=0)
 
         # radiomics
         radiomics = elem[self.radiomics_feature_keys]
@@ -321,10 +321,10 @@ class CTCaseDataset(data.Dataset):
             DataLoaderKeys.IMAGE: torch.from_numpy(patch).float(),  # float32
             DataLoaderKeys.LABEL: target.long(),
             DataLoaderKeys.ID: annotation_id,
-            DataLoaderKeys.AGE: age,
-            DataLoaderKeys.GENDER: gender,
-            DataLoaderKeys.NODULE_ATTR: nodule_attr,
-            DataLoaderKeys.RADIOMICS: normalized_radiomics,
+            DataLoaderKeys.AGE: torch.from_numpy(age).float(),
+            DataLoaderKeys.GENDER: torch.from_numpy(gender).float(),
+            DataLoaderKeys.NODULE_ATTR: torch.from_numpy(nodule_attr).float(),
+            DataLoaderKeys.RADIOMICS: torch.from_numpy(normalized_radiomics).float(),
         }
 
         return sample

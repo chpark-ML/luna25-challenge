@@ -139,9 +139,16 @@ class Trainer(comm_train.Trainer):
             _check_any_nan(patch_image)
             annot = data[DataLoaderKeys.LABEL].to(self.device).float()
 
+            # multi-modal input
+            age = data[DataLoaderKeys.AGE].to(self.device)  # (B, 1)
+            gender = data[DataLoaderKeys.GENDER].to(self.device)  # (B, 1)
+            nodule_attr = data[DataLoaderKeys.NODULE_ATTR].to(self.device)  # (B, 8)
+            radiomics = data[DataLoaderKeys.RADIOMICS].to(self.device)  # (B, 29)
+            mm_input = torch.cat([age, gender, nodule_attr, radiomics], dim=1)  # (B, 39)
+
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
-                logits = self.model[ModelName.REPRESENTATIVE](patch_image)
+                logits = self.model[ModelName.REPRESENTATIVE](patch_image, mm_input)
                 logits = logits.view(-1, 1)  # considering the prediction tensor can be either (B,) or (B, 1)
                 loss = self.criterion(logits, annot)
                 train_losses.append(loss.detach())
@@ -370,11 +377,18 @@ class Trainer(comm_train.Trainer):
             patch_image = data[DataLoaderKeys.IMAGE].to(self.device)
             _check_any_nan(patch_image)
 
+            # multi-modal input
+            age = data[DataLoaderKeys.AGE].to(self.device)  # (B, 1)
+            gender = data[DataLoaderKeys.GENDER].to(self.device)  # (B, 1)
+            nodule_attr = data[DataLoaderKeys.NODULE_ATTR].to(self.device)  # (B, 8)
+            radiomics = data[DataLoaderKeys.RADIOMICS].to(self.device)  # (B, 29)
+            mm_input = torch.cat([age, gender, nodule_attr, radiomics], dim=1)  # (B, 39)
+
             # annotation
             annot = data[DataLoaderKeys.LABEL].to(self.device).float()
 
             # inference
-            logits = self.model[ModelName.REPRESENTATIVE](patch_image)
+            logits = self.model[ModelName.REPRESENTATIVE](patch_image, mm_input)
             logits = logits.view(-1, 1)  # considering the prediction tensor can be either (B,) or (B, 1)
 
             list_logits.append(logits)
