@@ -2,4 +2,4 @@ _target_: shared_lib.processor.image_level_processor.ImageLevelProcessor
 models:
 mode: 3D
 device: 0
-suppress_logs: False 
+suppress_logs: False
