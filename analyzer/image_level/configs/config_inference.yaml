@@ -14,4 +14,4 @@ hydra:
   run:
     dir: ./outputs/inference_results
   job:
-    chdir: True  # keep hydra = 1.1 change directory behavior 
+    chdir: True  # keep hydra = 1.1 change directory behavior
