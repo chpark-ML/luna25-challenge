@@ -10,6 +10,11 @@ grad_clip_max_norm: 1.0
 thresholding_mode_representative: youden
 thresholding_mode: all
 
+# nodule attr
+target_attr_total: [ 'c_subtlety_logistic', 'c_sphericity_logistic', 'c_lobulation_logistic', 'c_spiculation_logistic',
+                     'c_margin_logistic', 'c_texture_logistic',
+                     'c_calcification_logistic', 'c_internalStructure_logistic' ]
+
 # operation
 gpus: auto
 log_every_n_steps: 50

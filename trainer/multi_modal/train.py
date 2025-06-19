@@ -51,6 +51,7 @@ class Trainer(comm_train.Trainer):
         criterion,
         thresholding_mode_representative,
         thresholding_mode,
+        target_attr_total,
         grad_clip_max_norm,
         **kwargs,
     ) -> None:
