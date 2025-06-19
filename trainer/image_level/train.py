@@ -344,6 +344,30 @@ class Trainer(comm_train.Trainer):
     def save_best_metrics(self, val_metrics: Metrics, best_metrics: Metrics, epoch) -> (object, bool):
         found_better = False
         
+        if best_metrics.eval_metrics is None:
+            print("first epoch")
+            found_better = True
+            model_path = f"model_auroc.pth"
+            logger.info(f"AUROC is {val_metrics.eval_metrics['auroc']:4f}, saving initial model to {model_path}.")
+            best_metrics = val_metrics
+            self.path_best_model[BaseBestModelStandard.AUROC] = model_path
+            self.epoch_best_model[BaseBestModelStandard.AUROC] = epoch
+            self.threshold_best_model[BaseBestModelStandard.AUROC] = self.dict_threshold
+            self.save_checkpoint(model_path, thresholds=self.dict_threshold)
+        elif val_metrics.eval_metrics["auroc"] > best_metrics.eval_metrics["auroc"]:
+            print("auroc improved")
+            found_better = True
+            model_path = f"model_auroc.pth"
+            logger.info(
+                f"AUROC improved from {best_metrics.eval_metrics['auroc']:4f} to {val_metrics.eval_metrics['auroc']:4f}, "
+                f"saving model to {model_path}."
+            )
+            best_metrics = val_metrics
+            self.path_best_model[BaseBestModelStandard.AUROC] = model_path
+            self.epoch_best_model[BaseBestModelStandard.AUROC] = epoch
+            self.threshold_best_model[BaseBestModelStandard.AUROC] = self.dict_threshold
+            self.save_checkpoint(model_path, thresholds=self.diㄹct_threshold)
+        
         if val_metrics.loss < best_metrics.loss:
             found_better = True
             model_path = f"model_loss.pth"
@@ -355,23 +379,6 @@ class Trainer(comm_train.Trainer):
             self.path_best_model[BaseBestModelStandard.REPRESENTATIVE] = model_path
             self.epoch_best_model[BaseBestModelStandard.REPRESENTATIVE] = epoch
             self.threshold_best_model[BaseBestModelStandard.REPRESENTATIVE] = self.dict_threshold
-            self.save_checkpoint(model_path, thresholds=self.dict_threshold)
-
-        if val_metrics.eval_metrics["auroc"] > best_metrics.eval_metrics["auroc"] or best_metrics.eval_metrics["auroc"] is None:
-            found_better = True
-            model_path = f"model_auroc.pth"
-            if best_metrics.eval_metrics["auroc"] is None:
-                logger.info(f"AUROC is {val_metrics.eval_metrics['auroc']:4f}, saving initial model to {model_path}.")
-            else:
-                logger.info(
-                    f"AUROC improved from {best_metrics.eval_metrics['auroc']:4f} to {val_metrics.eval_metrics['auroc']:4f}, "
-                    f"saving model to {model_path}."
-                )
-
-            best_metrics = val_metrics
-            self.path_best_model[BaseBestModelStandard.AUROC] = model_path
-            self.epoch_best_model[BaseBestModelStandard.AUROC] = epoch
-            self.threshold_best_model[BaseBestModelStandard.AUROC] = self.dict_threshold
             self.save_checkpoint(model_path, thresholds=self.dict_threshold)
 
         if epoch == self.max_epoch - 1:  # the given `epoch` is in the range of (0, self.max_epoch)
