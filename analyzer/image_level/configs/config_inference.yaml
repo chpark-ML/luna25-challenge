@@ -1,0 +1,17 @@
+# specify default configuration
+defaults:
+  - loader: default
+  - processor: default
+  - models: image_level_models
+
+run_name: "image_level_inference"
+run_modes:
+  - val
+  - test
+sanity_check: False
+
+hydra:
+  run:
+    dir: ./outputs/inference_results
+  job:
+    chdir: True  # keep hydra = 1.1 change directory behavior 
