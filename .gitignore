@@ -171,3 +171,7 @@ cython_debug/
 # Docker
 docker-compose.override.yaml
 docker-compose.yaml
+
+# Hydra
+*/.hydra/
+*/outputs/
