@@ -1,4 +1,4 @@
-  scheduler_repr:
+scheduler_repr:
   _target_: torch.optim.lr_scheduler.OneCycleLR
   max_lr: 1.0e-03
   epochs: ${trainer.max_epoch}
