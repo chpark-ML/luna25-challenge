@@ -27,4 +27,4 @@ class ImageLevelRunner(ModelBaseTorchscript):
         # Forward pass with both inputs
         output = self.model(patch_image, image_large)
 
-        return output 
+        return output
