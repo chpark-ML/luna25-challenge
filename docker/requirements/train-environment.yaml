@@ -76,7 +76,7 @@ dependencies: # Use conda packages if possible.
   - pip
   - pip:
       - lightgbm
-      - mlflow
+      - mlflow==2.21.3
       - monai==1.4.0
       - pydicom
       - pylidc
