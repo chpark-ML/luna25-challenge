@@ -86,4 +86,4 @@ class ImageLevelProcessor(BaseProcessor):
         # Convert dict_probs to numpy
         dict_probs = {k: torch.vstack(v).squeeze().cpu().numpy() for k, v in dict_probs.items()}
 
-        return overall_probs, overall_annots, list_annot_ids, dict_probs 
+        return overall_probs, overall_annots, list_annot_ids, dict_probs

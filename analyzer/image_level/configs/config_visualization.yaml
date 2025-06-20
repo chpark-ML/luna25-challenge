@@ -6,4 +6,3 @@ hydra:
     dir: ./outputs/visualization_result
   job:
     chdir: True  # keep hydra = 1.1 change directory behavior
- 

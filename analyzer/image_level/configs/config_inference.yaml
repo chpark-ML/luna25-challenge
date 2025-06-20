@@ -12,6 +12,6 @@ sanity_check: False
 
 hydra:
   run:
-    dir: ./outputs/inference_results
+    dir: ./outputs/resnest_logit_level_classifier_f_192_unet_f_24_lr_1e-4_scale_1.5_fold
   job:
     chdir: True  # keep hydra = 1.1 change directory behavior
