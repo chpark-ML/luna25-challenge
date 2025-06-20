@@ -28,7 +28,7 @@ def main() -> None:
     logger.info("Encrypt weight file and export TorchScript for image_level models.")
 
     base_dir = os.path.join(_THIS_DIR, "outputs/logit_level_resnest")
-    prefix = "resnest_logit_level_classifier_f_192_unet_f_24_lr_1e-4_scale_1.5_fold"
+    prefix = "resnest_logit_level_classifier_f_192_unet_f_24_lr_1e-4_scale_1.2_fold"
     suffix = ""
 
     list_prefix = [
@@ -114,4 +114,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main() 
+    main()
