@@ -98,7 +98,7 @@ class UNet3D(nn.Module):
         result[SEG_LOGIT_KEY] = x
 
         if self.return_named_tuple:
-            merged_dict = {**result[LOGIT_KEY], SEG_LOGIT_KEY: x}
+            merged_dict = {**result[LOGIT_KEY], "c_segmentation_logistic": x}
             return ModelOutputClsSeg(**merged_dict)
         else:
             return result
