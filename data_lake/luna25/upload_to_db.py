@@ -12,7 +12,7 @@ from tqdm import tqdm
 from data_lake.constants import (
     DB_ADDRESS,
     DEFAULT_RESAMPLED_SPACING,
-    TARGET_COLLECTION_FEATURE,
+    TARGET_COLLECTION,
     TARGET_DB,
     DBKey,
     H5DataKey,
@@ -39,6 +39,8 @@ class ColumnKey:
 @dataclass(frozen=True)
 class ColumnKeyAppend:
     Fold: str = "fold"
+    Fold_10: str = "fold_10"
+    Fold_15: str = "fold_15"
     Coord: str = "coord"
     Origin: str = "origin"
     Spacing: str = "spacing"
@@ -46,6 +48,13 @@ class ColumnKeyAppend:
     ImageShape: str = "image_shape"
     H5PathNFS: str = "h5_path_nfs"
     H5PathLocal: str = "h5_path"
+
+
+split_key_map = {
+    7: ColumnKeyAppend.Fold,
+    10: ColumnKeyAppend.Fold_10,
+    15: ColumnKeyAppend.Fold_15,
+}
 
 
 def append_image_metadata(df: pd.DataFrame) -> pd.DataFrame:
@@ -71,7 +80,7 @@ def append_image_metadata(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def split_fold(df: pd.DataFrame) -> pd.DataFrame:
+def split_fold(df: pd.DataFrame, n_splits: list = [7, 10, 15], random_state: int = 42) -> pd.DataFrame:
     patient_df = (
         df.groupby(ColumnKey.PatientID)
         .agg(
@@ -93,34 +102,39 @@ def split_fold(df: pd.DataFrame) -> pd.DataFrame:
         return f"{threshold}_over" if spacing >= threshold else f"{threshold}_under"
 
     patient_df["strat"] = (
-        patient_df["malignancy"].astype(str)
-        + "_"
-        + patient_df["benign"].astype(str)
-        + "_"
-        + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=50))
-        + "_"
-        + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=60))
-        + "_"
-        + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=70))
-        + "_"
-        + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=80))
-        + "_"
-        + patient_df["Gender"].astype(str)
-        + "_"
-        + patient_df["z_spacing_max"].apply(spacing_bin)
+            patient_df["malignancy"].astype(str)
+            + "_"
+            + patient_df["benign"].astype(str)
+            + "_"
+            + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=50))
+            + "_"
+            + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=60))
+            + "_"
+            + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=70))
+            + "_"
+            + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=80))
+            + "_"
+            + patient_df["Gender"].astype(str)
+            + "_"
+            + patient_df["z_spacing_max"].apply(spacing_bin)
     )
 
-    skf = StratifiedKFold(n_splits=7, shuffle=True, random_state=42)
-    for fold, (_, val_idx) in enumerate(skf.split(patient_df, patient_df["strat"])):
-        val_patients = patient_df.iloc[val_idx][ColumnKey.PatientID]
-        df.loc[df[ColumnKey.PatientID].isin(val_patients), ColumnKeyAppend.Fold] = fold
+    for n_split in n_splits:
+        fold_key = split_key_map.get(n_split)
+        if fold_key is None:
+            raise ValueError(f"Unsupported n_split value: {n_split}")
+
+        skf = StratifiedKFold(n_splits=n_split, shuffle=True, random_state=random_state)
+        for fold, (_, val_idx) in enumerate(skf.split(patient_df, patient_df["strat"])):
+            val_patients = patient_df.iloc[val_idx][ColumnKey.PatientID]
+            df.loc[df[ColumnKey.PatientID].isin(val_patients), fold_key] = fold
 
     return df
 
 
 def insert_to_db(df: pd.DataFrame):
     client = pymongo.MongoClient(DB_ADDRESS)
-    collection = client[TARGET_DB][TARGET_COLLECTION_FEATURE]
+    collection = client[TARGET_DB][TARGET_COLLECTION]
 
     for _, row in tqdm(df.iterrows(), total=len(df), desc="Inserting to DB"):
         try:
@@ -176,7 +190,7 @@ def insert_to_db(df: pd.DataFrame):
 
 def insert_to_db_parallel(df: pd.DataFrame, num_jobs: int = 1):
     chunk_size = len(df) // num_jobs or 1
-    chunks = [df.iloc[i : i + chunk_size] for i in range(0, len(df), chunk_size)]
+    chunks = [df.iloc[i: i + chunk_size] for i in range(0, len(df), chunk_size)]
     Parallel(n_jobs=num_jobs)(delayed(insert_to_db)(chunk) for chunk in chunks)
 
 
@@ -204,7 +218,7 @@ def main():
     # 3. insert to DB
     if args.clean_documents:
         client = pymongo.MongoClient(DB_ADDRESS)
-        client[TARGET_DB][TARGET_COLLECTION_FEATURE].delete_many({})
+        client[TARGET_DB][TARGET_COLLECTION].delete_many({})
         print("Deleted existing documents.")
     insert_to_db_parallel(df, num_jobs=args.chunk_size)
     print("Insertion completed successfully.")
