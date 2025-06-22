@@ -4,6 +4,7 @@ dataset:
   _target_: trainer.nodule_attr.datasets.lidc.Dataset
   mode: train
   use_weighted_sampler: false
+  annotation_prefix: ""  # This is applied only during training mode.
 
   # optimal size for unet_3d was 72 x 72 x 72
   # swin-t needs the size to be a multiple of 32

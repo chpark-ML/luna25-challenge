@@ -6,7 +6,7 @@ val_fold=${2:-0}
 
 # load model configs
 model_num=5
-source /opt/challenge/trainer/common/model_config.sh ${model_num} ${val_fold}
+source /opt/challenge/trainer/common/model_config.sh ${model_num}
 
 model_name=cls_all_model_${model_num}_val_fold${val_fold}_7CV
 

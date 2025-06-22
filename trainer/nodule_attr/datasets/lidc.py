@@ -119,6 +119,7 @@ class Dataset(LctDataset):
         target_dataset=None,
         dataset_info=None,
         use_weighted_sampler=None,
+        annotation_prefix="",
     ):
         super().__init__(
             mode,
@@ -135,6 +136,7 @@ class Dataset(LctDataset):
         self.do_segmentation = do_segmentation
         self.target_attr_total = dataset_info["pylidc"]["target_attr_total"]
         self.target_attr_to_train = dataset_info["pylidc"]["target_attr_to_train"]
+        self.annotation_prefix = annotation_prefix
 
     def __getitem__(self, index):
         """
@@ -164,7 +166,8 @@ class Dataset(LctDataset):
 
             attributes = dict()
             for i_attr in self.target_attr_total:
-                attributes[i_attr] = elem[i_attr]
+                attr_name = (self.annotation_prefix + i_attr) if self.mode == RunMode.TRAIN else i_attr
+                attributes[i_attr] = elem[attr_name]
 
         else:
             assert False, "_getitem_ did not work as intended."
