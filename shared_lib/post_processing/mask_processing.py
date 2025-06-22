@@ -3,9 +3,9 @@ from scipy import ndimage
 
 
 def get_k_largest_connected_components(
-        mask: np.ndarray,
-        structure: np.ndarray,
-        k: int = 1,
+    mask: np.ndarray,
+    structure: np.ndarray,
+    k: int = 1,
 ) -> np.ndarray:
     """
     Extract the k largest connected components from a binary mask.

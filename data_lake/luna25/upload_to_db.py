@@ -102,21 +102,21 @@ def split_fold(df: pd.DataFrame, n_splits: list = [7, 10, 15], random_state: int
         return f"{threshold}_over" if spacing >= threshold else f"{threshold}_under"
 
     patient_df["strat"] = (
-            patient_df["malignancy"].astype(str)
-            + "_"
-            + patient_df["benign"].astype(str)
-            + "_"
-            + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=50))
-            + "_"
-            + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=60))
-            + "_"
-            + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=70))
-            + "_"
-            + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=80))
-            + "_"
-            + patient_df["Gender"].astype(str)
-            + "_"
-            + patient_df["z_spacing_max"].apply(spacing_bin)
+        patient_df["malignancy"].astype(str)
+        + "_"
+        + patient_df["benign"].astype(str)
+        + "_"
+        + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=50))
+        + "_"
+        + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=60))
+        + "_"
+        + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=70))
+        + "_"
+        + patient_df["Age_at_StudyDate"].apply(lambda x: age_bin(x, threshold=80))
+        + "_"
+        + patient_df["Gender"].astype(str)
+        + "_"
+        + patient_df["z_spacing_max"].apply(spacing_bin)
     )
 
     for n_split in n_splits:
@@ -192,7 +192,7 @@ def insert_to_db(df: pd.DataFrame):
 
 def insert_to_db_parallel(df: pd.DataFrame, num_jobs: int = 1):
     chunk_size = len(df) // num_jobs or 1
-    chunks = [df.iloc[i: i + chunk_size] for i in range(0, len(df), chunk_size)]
+    chunks = [df.iloc[i : i + chunk_size] for i in range(0, len(df), chunk_size)]
     Parallel(n_jobs=num_jobs)(delayed(insert_to_db)(chunk) for chunk in chunks)
 
 

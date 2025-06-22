@@ -88,10 +88,7 @@ def main() -> None:
 
                 with torch.no_grad():
                     # Trace the model with both inputs
-                    traced_model = torch.jit.trace(
-                        model_device, 
-                        (patch_sample_device, image_sample_device)
-                    )
+                    traced_model = torch.jit.trace(model_device, (patch_sample_device, image_sample_device))
 
                     # Save TorchScript model
                     traced_model.save(torchscript_path)

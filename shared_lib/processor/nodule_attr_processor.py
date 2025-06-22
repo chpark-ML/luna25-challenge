@@ -13,8 +13,9 @@ class NoduleAttrProcessor(BaseProcessor):
     Loads a chest CT scan, and predicts the malignancy around a nodule
     """
 
-    def __init__(self, models=None, mode="3D", device=torch.device("cuda:0"), suppress_logs=False,
-                 do_segmentation=True):
+    def __init__(
+        self, models=None, mode="3D", device=torch.device("cuda:0"), suppress_logs=False, do_segmentation=True
+    ):
         super().__init__(models=models, mode=mode, device=device, suppress_logs=suppress_logs)
         self.do_segmentation = do_segmentation  # whether model predict segmentation mask
         self.return_segmentation_mask = True  # whether processor return segmentation mask if available
@@ -52,9 +53,7 @@ class NoduleAttrProcessor(BaseProcessor):
                 output = ModelOutputCls(*output)
 
             # Apply sigmoid and convert to dict
-            output_dict = {
-                key: torch.sigmoid(getattr(output, key)) for key in keys
-            }
+            output_dict = {key: torch.sigmoid(getattr(output, key)) for key in keys}
             model_outputs.append(output_dict)
 
         # Assumes all outputs are logistic regression probabilities,
@@ -62,8 +61,7 @@ class NoduleAttrProcessor(BaseProcessor):
         # Each output tensor is either for classification: (B, 1),
         # or for segmentation: (B, 1, W, H, D).
         ensemble_output = {
-            key: torch.stack([output[key] for output in model_outputs], dim=1).mean(dim=1)
-            for key in keys
+            key: torch.stack([output[key] for output in model_outputs], dim=1).mean(dim=1) for key in keys
         }
 
         return ensemble_output  # (B, 1) or (B, 1, w, h, d)
@@ -95,8 +93,7 @@ class NoduleAttrProcessor(BaseProcessor):
             keys = ModelOutputCls._fields
 
         stacked_probs = {
-            key: torch.vstack([result[key] for result in list_results]).detach().cpu().numpy()
-            for key in keys
+            key: torch.vstack([result[key] for result in list_results]).detach().cpu().numpy() for key in keys
         }
 
         return stacked_probs  # dict[str, np.ndarray] of shape (N, 1) or (N, 1, w, h, d)

@@ -9,15 +9,15 @@ from omegaconf import DictConfig
 from radiomics import featureextractor
 from tqdm import tqdm
 
-from data_lake.dataset_handler import DatasetHandler
 from data_lake.constants import DataLakeKey
+from data_lake.dataset_handler import DatasetHandler
 from shared_lib.enums import RunMode
-from shared_lib.utils.utils import print_config, set_seed
 from shared_lib.radiomics import RadiomicsFeatureKeys
+from shared_lib.utils.utils import print_config, set_seed
 from trainer.downstream.datasets.luna25 import DataLoaderKeys
 
 # disable PyRadiomics logger
-for logger_name in ['radiomics', 'radiomics.featureextractor', 'radiomics.glcm']:
+for logger_name in ["radiomics", "radiomics.featureextractor", "radiomics.glcm"]:
     logger = logging.getLogger(logger_name)
     logger.setLevel(logging.CRITICAL + 1)  # 모든 로그 레벨 무시
     logger.propagate = False  # 부모 logger로 전달 차단
@@ -86,10 +86,11 @@ def main(config: DictConfig):
                 updated_cols = [attr for attr in config.target_attr_total]
 
                 # nodule attr features
-                _features = {DataLakeKey.COLLECTION: col_id,
-                             DataLakeKey.DOC_ID: doc_id,
-                             **{key: value for key, value in zip(config.target_attr_total, attrs)}
-                             }
+                _features = {
+                    DataLakeKey.COLLECTION: col_id,
+                    DataLakeKey.DOC_ID: doc_id,
+                    **{key: value for key, value in zip(config.target_attr_total, attrs)},
+                }
 
                 # calculate radiomics
                 if config.calcu_radiomics:

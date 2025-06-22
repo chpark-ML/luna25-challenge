@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from trainer.common.constants import GATE_KEY, GATED_LOGIT_KEY, LOGIT_KEY, MULTI_SCALE_LOGIT_KEY, LATENT_KEY
+from trainer.common.constants import GATE_KEY, GATED_LOGIT_KEY, LATENT_KEY, LOGIT_KEY, MULTI_SCALE_LOGIT_KEY
 from trainer.common.models.modules.gate import GateBlock
 
 
