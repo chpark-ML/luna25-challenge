@@ -48,6 +48,8 @@ class DBKey:
     H5_PATH_LOCAL = "h5_path"
     H5_PATH_NFS = "h5_path_nfs"
     FOLD = "fold"
+    FOLD_10 = "fold_10"
+    FOLD_15 = "fold_15"
     LABEL = "label"
     AGE_AT_STUDY = "age_at_study"
     GENDER = "gender"

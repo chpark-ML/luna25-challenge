@@ -51,6 +51,7 @@ dataset:
       total_fold: [ 0, 1, 2, 3, 4, 5, 6 ]
       val_fold: [ ]
       test_fold: [ 0, 1, 2, 3, 4, 5, 6 ]
+      fold_key: fold  # one of {fold, fold_10, fold_15}
       collection_name: LUNA25-Malignancy-Feature
       query:
 
