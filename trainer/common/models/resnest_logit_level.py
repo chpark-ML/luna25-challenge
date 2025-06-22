@@ -23,7 +23,7 @@ class LogitLevelFusionModel(nn.Module):
         super().__init__()
         self.model_patch = model_patch
         self.model_image = model_image
-        
+
         # Load pretrained weights for patch model if provided
         if path_patch_model is not None:
             logger.info(f"Loading pretrained weights for patch-level model from: {path_patch_model}")
@@ -39,7 +39,7 @@ class LogitLevelFusionModel(nn.Module):
                 state_dict = checkpoint
             self.model_patch.load_state_dict(state_dict, strict=False)
             logger.info("Successfully loaded patch level model")
-        
+
         # Initialize image classifier
         if use_zero_conv_classifier:
             self.image_classifier = ZeroConv3d(fusion_channels, 1)  # (f, 1) zero conv
@@ -52,13 +52,13 @@ class LogitLevelFusionModel(nn.Module):
                 target_attr_total=self.model_patch.classifier.target_attr_total,
                 target_attr_to_train=self.model_patch.classifier.target_attr_to_train,
                 target_attr_downstream=self.model_patch.classifier.target_attr_downstream,
-                return_logit=False
+                return_logit=False,
             )
             self.use_zero_conv = False
-        
+
             # Zero conv for logit-level fusion
             self.zero_conv = ZeroConv3d(1, 1)  # 1 channel for binary classification
-        
+
     def forward(self, patch_image, image_large):
         # Patch model forward
         patch_features = []
@@ -68,11 +68,11 @@ class LogitLevelFusionModel(nn.Module):
             patch_features.append(x)
         patch_features = patch_features[-1]
         patch_logits = self.model_patch.classifier([patch_features])
-        
+
         # Image model forward
         image_x1, image_x2, image_x3 = self.model_image.backbone(image_large)
         image_x3 = image_x3.mean(dim=[2, 3, 4], keepdim=True)  # Global average pooling
-        
+
         if self.use_zero_conv:
             if image_x3.dim() == 2:
                 image_x3 = image_x3.unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
@@ -91,14 +91,14 @@ class LogitLevelFusionModel(nn.Module):
             image_logit = image_logit.unsqueeze(2).unsqueeze(3).unsqueeze(4)  # [B, 1, 1, 1, 1]
             adjusted_image_logits = self.zero_conv(image_logit)
             adjusted_image_logits = adjusted_image_logits.squeeze(-1).squeeze(-1).squeeze(-1)  # [B, 1]
-        
+
         # Only fuse the target attribute logit
         target_attr = self.model_patch.classifier.target_attr_downstream
         final_logits = {LOGIT_KEY: {target_attr: patch_logits[LOGIT_KEY][target_attr] + adjusted_image_logits}}
-        
+
         if self.model_patch.return_downstream_logit:
             return final_logits[LOGIT_KEY][target_attr]
-        
+
         if self.model_patch.return_named_tuple:
             return ModelOutputCls(**final_logits[LOGIT_KEY])
         else:

@@ -171,6 +171,7 @@ class Trainer(comm_train.Trainer):
             # set trace for checking nan values
             if torch.any(torch.isnan(loss)):
                 import pdb
+
                 pdb.set_trace()
                 is_param_nan = torch.stack(
                     [torch.isnan(p).any() for p in self.model[ModelName.REPRESENTATIVE].parameters()]
@@ -343,7 +344,7 @@ class Trainer(comm_train.Trainer):
 
     def save_best_metrics(self, val_metrics: Metrics, best_metrics: Metrics, epoch) -> (object, bool):
         found_better = False
-        
+
         if best_metrics.eval_metrics is None:
             print("first epoch")
             found_better = True
@@ -367,7 +368,7 @@ class Trainer(comm_train.Trainer):
             self.epoch_best_model[BaseBestModelStandard.AUROC] = epoch
             self.threshold_best_model[BaseBestModelStandard.AUROC] = self.dict_threshold
             self.save_checkpoint(model_path, thresholds=self.dict_threshold)
-        
+
         if val_metrics.loss < best_metrics.loss:
             found_better = True
             model_path = f"model_loss.pth"

@@ -23,7 +23,7 @@ class ImageLevelRunner(ModelBaseTorchscript):
         """
         patch_image = patch_image.to(self.device)
         image_large = image_large.to(self.device)
-        
+
         # Forward pass with both inputs
         output = self.model(patch_image, image_large)
 
