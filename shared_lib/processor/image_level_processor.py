@@ -20,7 +20,7 @@ class ImageLevelProcessor(BaseProcessor):
         """
         # Prepare patch input (smaller patch)
         patch_image = self.prepare_patch(numpy_image, header, coord, self.mode)
-        
+
         # Prepare large image input (larger context)
         # For now, we'll use the same patch but with different size parameters
         # This might need to be adjusted based on your specific image_level dataset implementation

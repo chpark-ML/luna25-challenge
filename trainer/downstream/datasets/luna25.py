@@ -10,7 +10,7 @@ import torch.utils.data as data
 from h5py import File
 from omegaconf import OmegaConf
 
-from data_lake.constants import DBKey, H5DataKey, DataLakeKey
+from data_lake.constants import DataLakeKey, DBKey, H5DataKey
 from data_lake.dataset_handler import DatasetHandler
 from shared_lib.enums import RunMode
 from shared_lib.tools.image_parser import extract_patch

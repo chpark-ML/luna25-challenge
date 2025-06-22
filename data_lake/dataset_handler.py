@@ -52,11 +52,11 @@ class DatasetHandler:
 
     @staticmethod
     def fetch_documents(
-            collection: str,
-            query: Union[dict, omegaconf.DictConfig] = None,
-            projection: dict = None,
-            field_name: str = None,
-            verbose=False,
+        collection: str,
+        query: Union[dict, omegaconf.DictConfig] = None,
+        projection: dict = None,
+        field_name: str = None,
+        verbose=False,
     ) -> List:
         # Run data lake client.
         with pymongo.MongoClient(DB_ADDRESS) as client:
@@ -101,8 +101,7 @@ class DatasetHandler:
                 fold_indices = self.get_fold_indices(mode, dataset_info)
                 # the case of luna16 dataset, the fold can be set by subset index instead of fold.
                 # the name of key for fold var. is set by "fold_key".
-                query[getattr(dataset_info, "fold_key", DatasetInfoKey.FOLD)] = {
-                    "$in": fold_indices}
+                query[getattr(dataset_info, "fold_key", DatasetInfoKey.FOLD)] = {"$in": fold_indices}
 
             # get dataframe
             docs = self.fetch_documents(collection=collection_name, query=query)
@@ -140,13 +139,13 @@ class DatasetHandler:
 
     @staticmethod
     def update_existing_docs(
-            df: pd.DataFrame,
-            updated_cols: list,
-            field_prefix: str,
-            doc_id_key: str = DataLakeKey.DOC_ID,
-            collection_key: str = DataLakeKey.COLLECTION,
-            dbms_uri: str = DB_ADDRESS,
-            db: str = TARGET_DB,
+        df: pd.DataFrame,
+        updated_cols: list,
+        field_prefix: str,
+        doc_id_key: str = DataLakeKey.DOC_ID,
+        collection_key: str = DataLakeKey.COLLECTION,
+        dbms_uri: str = DB_ADDRESS,
+        db: str = TARGET_DB,
     ) -> None:
         """Updates fields of existing documents at DBMS(MongoDB).
 

@@ -1,17 +1,17 @@
 import ast
 import logging
+import pickle
 from pathlib import Path
 from typing import Union
 
 import hydra
 import numpy as np
-import pickle
 import torch
 import torch.utils.data as data
 from h5py import File
 from omegaconf import OmegaConf
 
-from data_lake.constants import DBKey, H5DataKey, DataLakeKey
+from data_lake.constants import DataLakeKey, DBKey, H5DataKey
 from data_lake.dataset_handler import DatasetHandler
 from shared_lib.enums import RunMode
 from shared_lib.radiomics import RadiomicsFeatureKeys
@@ -250,7 +250,11 @@ class CTCaseDataset(data.Dataset):
         # radiomics
         radiomics = elem[self.radiomics_feature_keys]
         common_keys = radiomics.index.intersection(self.radiomics_means.index).intersection(self.radiomics_stds.index)
-        normalized_radiomics = ((radiomics[common_keys] - self.radiomics_means[common_keys]) / self.radiomics_stds).astype(np.float32).values
+        normalized_radiomics = (
+            ((radiomics[common_keys] - self.radiomics_means[common_keys]) / self.radiomics_stds)
+            .astype(np.float32)
+            .values
+        )
 
         # nodule attributes
         nodule_attr = elem[self.target_attr_total].astype(np.float32).values
