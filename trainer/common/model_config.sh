@@ -1,13 +1,6 @@
 #!/bin/bash
 
 model_num=${1:-0}
-val_fold=${2:-0}
-
-# set model_num, val_fold
-if [[ -z "${model_num}" || -z "${val_fold}" ]]; then
-  echo "Error: model_num과 val_fold를 설정해야 합니다."
-  exit 1
-fi
 
 case ${model_num} in
   0)
@@ -53,6 +46,14 @@ case ${model_num} in
   5)
     num_features=3
     aux_loss_weight=0.0
+    use_gate=True
+    use_coord=True
+    use_fusion=True
+    entropy_loss_weight=0.01
+    ;;
+  6)
+    num_features=3
+    aux_loss_weight=0.01
     use_gate=True
     use_coord=True
     use_fusion=True
