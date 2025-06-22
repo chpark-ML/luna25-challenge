@@ -159,6 +159,8 @@ def insert_to_db(df: pd.DataFrame):
                 DBKey.H5_PATH_NFS: h5_path_nfs,
                 DBKey.H5_PATH_LOCAL: h5_path_local,
                 DBKey.FOLD: row[ColumnKeyAppend.Fold],
+                DBKey.FOLD_10: row[ColumnKeyAppend.Fold_10],
+                DBKey.FOLD_15: row[ColumnKeyAppend.Fold_15],
                 DBKey.LABEL: row[ColumnKey.Label],
                 DBKey.AGE_AT_STUDY: row[ColumnKey.AgeAtStudy],
                 DBKey.GENDER: row[ColumnKey.Gender],
