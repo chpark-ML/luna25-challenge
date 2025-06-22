@@ -10,7 +10,7 @@ from radiomics import featureextractor
 from tqdm import tqdm
 
 from data_lake.dataset_handler import DatasetHandler
-from data_lake.constants import DataLakeKey, TARGET_COLLECTION_FEATURE
+from data_lake.constants import DataLakeKey
 from shared_lib.enums import RunMode
 from shared_lib.utils.utils import print_config, set_seed
 from shared_lib.radiomics import RadiomicsFeatureKeys
@@ -26,8 +26,6 @@ for logger_name in ['radiomics', 'radiomics.featureextractor', 'radiomics.glcm']
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-_COLLECTION_NAME = TARGET_COLLECTION_FEATURE
 
 
 @hydra.main(version_base="1.2", config_path="configs", config_name="config_inference")
