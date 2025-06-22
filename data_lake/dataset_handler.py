@@ -83,7 +83,7 @@ class DatasetHandler:
 
         return docs
 
-    def fetch_multiple_datasets(self, dataset_infos, fold_key=None, mode=None) -> pd.DataFrame:
+    def fetch_multiple_datasets(self, dataset_infos, mode=None) -> pd.DataFrame:
         assert dataset_infos is not None, "dataset_infos is not given."
         dfs = list()
         for dataset, dataset_info in dataset_infos.items():
@@ -100,8 +100,8 @@ class DatasetHandler:
             if mode:
                 fold_indices = self.get_fold_indices(mode, dataset_info)
                 # the case of luna16 dataset, the fold can be set by subset index instead of fold.
-                # the name of key for fold var. is set by "key_fold".
-                query[getattr(dataset_info, "key_fold", DatasetInfoKey.FOLD if fold_key is None else fold_key)] = {
+                # the name of key for fold var. is set by "fold_key".
+                query[getattr(dataset_info, "fold_key", DatasetInfoKey.FOLD)] = {
                     "$in": fold_indices}
 
             # get dataframe
