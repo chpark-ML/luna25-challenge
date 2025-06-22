@@ -6,7 +6,7 @@ import torch
 from h5py import File
 from sklearn.utils import resample
 
-from data_lake.constants import DB_ADDRESS
+from data_lake.constants import DB_ADDRESS, DataLakeKey
 from data_lake.lidc.constants import LOGISTIC_TASK_POSTFIX, RESAMPLED_FEATURE_POSTFIX, ClusterLevelInfo
 from shared_lib.constants import DataLakeKeyDict
 from shared_lib.enums import RunMode
@@ -141,6 +141,8 @@ class Dataset(LctDataset):
         (Resize) -> Augmentation -> Windowing
         """
         elem = self.meta_df.iloc[index]
+        doc_id = elem[DataLakeKey.DOC_ID]
+        collection_id = elem[DataLakeKey.COLLECTION]
         dataset = elem["dataset"]
 
         # Extract voxel of shape (D, H, W)
@@ -181,6 +183,8 @@ class Dataset(LctDataset):
         img = np.concatenate(img, axis=0)  # (n, 48, 72, 72)
 
         output = {
+            "collection_id": collection_id,
+            "doc_id": str(doc_id),
             INPUT_PATCH_KEY: torch.from_numpy(img).float(),  # float32
             ATTR_ANNOTATION_KEY: attributes,
             "file_path": img_path,
