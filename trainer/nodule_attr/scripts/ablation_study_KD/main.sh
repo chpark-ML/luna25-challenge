@@ -2,18 +2,18 @@
 
 # args
 gpu_num=${1:-0}
-val_fold=0
-batch_size=4
+param=${2:-0}
+val_fold=6
 
 cd /opt/challenge/trainer/nodule_attr
 
 model_num=5
 source /opt/challenge/trainer/common/model_config.sh ${model_num}
 
-model_name=cls_all_KD
+model_name=cls_all_KD_LR_${param}
 annotation_prefix=pred_
-LR=1e-5
-epoch=20
+LR=${param}
+epoch=10
 model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_fmaps24_7CV_v3/cls_all_model_5_val_fold6_7CV/model_loss.pth
 
 HYDRA_FULL_ERROR=1 python3 main.py \
@@ -28,8 +28,9 @@ HYDRA_FULL_ERROR=1 python3 main.py \
   scheduler.scheduler_repr.max_lr=${LR} \
   criterion.aux_criterion.loss_weight=${aux_loss_weight} \
   criterion.entropy_criterion.loss_weight=${entropy_loss_weight} \
-  loader.batch_size=${batch_size} \
-  "loader.dataset.dataset_info.pylidc.val_fold=[ 6 ]" \
+  criterion.cls_criterion.use_alpha=False \
+  criterion.aux_criterion.use_alpha=False \
+  "loader.dataset.dataset_info.pylidc.val_fold=[${val_fold}]" \
   "loader.dataset.dataset_info.pylidc.test_fold=[]" \
   trainer.fine_tune_info.enable=True \
   trainer.fine_tune_info.freeze_encoder=False \
