@@ -10,7 +10,7 @@ run_name=cv_fine_val_fold${val_fold}_7CV
 
 nodule_attr_model_name=cls_all_model_5_val_fold${val_fold}_7CV
 model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_fmaps24_7CV_v3/${nodule_attr_model_name}/model_loss.pth
-max_lr=3e-4
+max_lr=1e-3
 
 HYDRA_FULL_ERROR=1 python3 main.py \
   experiment_tool.run_name=${run_name} \
