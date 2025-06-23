@@ -11,8 +11,8 @@ source /opt/challenge/trainer/common/model_config.sh ${model_num}
 model_name=cls_all_KD_val_fold${val_fold}
 annotation_prefix=pred_
 LR=1e-6
-epoch=30
-model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_fmaps24_7CV_v3/cls_all_model_5_val_fold6_7CV/model_loss.pth
+epoch=20
+model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_fmaps24_7CV_v3/cls_all_model_5_val_fold${val_fold}_7CV/model_loss.pth
 
 cd /opt/challenge/trainer/nodule_attr
 HYDRA_FULL_ERROR=1 python3 main.py \
@@ -28,7 +28,9 @@ HYDRA_FULL_ERROR=1 python3 main.py \
   criterion.aux_criterion.loss_weight=${aux_loss_weight} \
   criterion.entropy_criterion.loss_weight=${entropy_loss_weight} \
   criterion.cls_criterion.use_alpha=False \
+  criterion.cls_criterion.smoothing=None \
   criterion.aux_criterion.use_alpha=False \
+  criterion.aux_criterion.smoothing=None \
   "loader.dataset.dataset_info.pylidc.val_fold=[${val_fold}]" \
   "loader.dataset.dataset_info.pylidc.test_fold=[]" \
   trainer.fine_tune_info.enable=True \
