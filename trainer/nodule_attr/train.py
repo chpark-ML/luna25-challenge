@@ -62,7 +62,7 @@ def _check_any_nan(arr):
 
 
 def get_binary_classification_metrics(
-    logit: dict, prob: dict, annot: dict, threshold: dict, threshold_mode: ThresholdMode = ThresholdMode.YOUDEN
+        logit: dict, prob: dict, annot: dict, threshold: dict, threshold_mode: ThresholdMode = ThresholdMode.YOUDEN
 ):
     assert type(prob) == type(annot)
     result_dict = dict()
@@ -87,13 +87,13 @@ def get_binary_classification_metrics(
 
 
 def compute_dice(
-    input_array,
-    target_array,
-    epsilon=1e-6,
-    weight=None,
-    squared=True,
-    per_channel=False,
-    reduction="mean",  # "mean" or "none"
+        input_array,
+        target_array,
+        epsilon=1e-6,
+        weight=None,
+        squared=True,
+        per_channel=False,
+        reduction="mean",  # "mean" or "none"
 ):
     """
     Computes Dice coefficient between input and target NumPy arrays.
@@ -118,8 +118,8 @@ def compute_dice(
     intersect = np.sum(input_flat * target_flat, axis=-1)  # shape: (N, C)
 
     if squared:
-        input_sum = np.sum(input_flat**2, axis=-1)
-        target_sum = np.sum(target_flat**2, axis=-1)
+        input_sum = np.sum(input_flat ** 2, axis=-1)
+        target_sum = np.sum(target_flat ** 2, axis=-1)
     else:
         input_sum = np.sum(input_flat, axis=-1)
         target_sum = np.sum(target_flat, axis=-1)
@@ -146,22 +146,22 @@ class Trainer(comm_train.Trainer):
     """Trainer to train model"""
 
     def __init__(
-        self,
-        model,
-        optimizer,
-        scheduler,
-        criterion,
-        remove_ambiguous_in_val_test,
-        lower_bound_ambiguous_label,
-        upper_bound_ambiguous_label,
-        thresholding_mode_representative,
-        thresholding_mode,
-        target_attr_total,
-        target_attr_to_train,
-        target_attr_downstream,
-        do_segmentation,
-        grad_clip_max_norm,
-        **kwargs,
+            self,
+            model,
+            optimizer,
+            scheduler,
+            criterion,
+            remove_ambiguous_in_val_test,
+            lower_bound_ambiguous_label,
+            upper_bound_ambiguous_label,
+            thresholding_mode_representative,
+            thresholding_mode,
+            target_attr_total,
+            target_attr_to_train,
+            target_attr_downstream,
+            do_segmentation,
+            grad_clip_max_norm,
+            **kwargs,
     ) -> None:
         self.repr_model_name = ModelName.REPRESENTATIVE
         super().__init__(model, optimizer, scheduler, criterion, **kwargs)
@@ -185,7 +185,7 @@ class Trainer(comm_train.Trainer):
 
     @classmethod
     def instantiate_trainer(
-        cls, config: omegaconf.DictConfig, loaders, logging_tool, optuna_trial=None
+            cls, config: omegaconf.DictConfig, loaders, logging_tool, optuna_trial=None
     ) -> comm_train.Trainer:
         # Init model
         if isinstance(config.model, (omegaconf.DictConfig, dict)):
@@ -285,7 +285,8 @@ class Trainer(comm_train.Trainer):
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
                 output = self.model[ModelName.REPRESENTATIVE](dicom)
-                dict_loss = self.criterion(output, annots, seg_annot, attr_mask=None, is_logit=True, is_logistic=True)
+                dict_loss = self.criterion(output, annots, seg_annot, epoch=epoch, total_epoch=self.max_epoch - 1,
+                                           attr_mask=None, is_logit=True, is_logistic=True)
                 loss_total = dict_loss[LossKey.total]
 
             # attributes
@@ -386,7 +387,7 @@ class Trainer(comm_train.Trainer):
         if LOGISTIC_TASK_POSTFIX in target_attr_downstream:
             # samples where annotation label is not ambiguous, 0.5.
             index_to_be_validated = (dict_annots[target_attr_downstream][:, 0] < self.lower_bound_ambiguous_label) | (
-                dict_annots[target_attr_downstream][:, 0] > self.upper_bound_ambiguous_label
+                    dict_annots[target_attr_downstream][:, 0] > self.upper_bound_ambiguous_label
             )
             assert index_to_be_validated.sum() != 0, f"{target_attr_downstream} has no sample for validation"
             dict_logits[target_attr_downstream] = dict_logits[target_attr_downstream][index_to_be_validated]

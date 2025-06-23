@@ -51,10 +51,15 @@ class EntropyLoss(nn.Module):
         self.loss_weight = loss_weight
         self.eps = 1e-06
 
-    def forward(self, probs):
+    def forward(self, probs, epoch=None, total_epoch=None):
+        if epoch is not None and total_epoch is not None:
+            weight = self.loss_weight * (1 - (epoch / total_epoch))
+        else:
+            weight = self.loss_weight
+
         term1 = probs * torch.log(probs + self.eps)
         term2 = (1 - probs) * torch.log(1 - probs + self.eps)
         entropy = -(term1 + term2)
         loss = -1 * entropy.mean(dim=(2, 3, 4)).squeeze()  # (B,)
 
-        return loss.mean() * self.loss_weight
+        return loss.mean() * weight
