@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /opt/challenge/trainer/downstream/scripts/cross_validation_finetune || exit 1
+cd /opt/challenge/trainer/downstream/scripts/cross_validation_finetune_10CV || exit 1
 
 # tmux_window gpu_num val_fold
 paired_values=(
@@ -10,9 +10,10 @@ paired_values=(
   "4 3 3"
   "5 4 4"
   "6 5 5"
+  "7 6 6"
 )
 
-my_session=1
+my_session=fine_10cv
 tmux new-session -d -s ${my_session}  # 새로운 tmux 세션 생성
 
 for pair in "${paired_values[@]}"

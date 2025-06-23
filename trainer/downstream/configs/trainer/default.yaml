@@ -1,7 +1,7 @@
 _target_: trainer.downstream.train.Trainer
 
 # hyper params
-max_epoch: 20
+max_epoch: 50
 early_stop_patience: null
 
 grad_clip_max_norm: 1.0
