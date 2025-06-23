@@ -314,11 +314,12 @@ class MultiScaleAttnClassifierV2(nn.Module):
                     # local class evidence
                     if self.use_gate:
                         CE = classifier[i_attr](x)
-                        CE = CE * gate_results[idx_fmap]
+                        gate = gate_results[idx_fmap]
+                        CE = CE * gate
+                        logits_multi_scale[idx_fmap][i_attr] = torch.sum(CE, dim=(2, 3, 4), keepdim=True) / torch.sum(gate, dim=(2, 3, 4), keepdim=True)
                     else:
                         CE = classifier[i_attr](x)
-
-                    logits_multi_scale[idx_fmap][i_attr] = torch.sum(CE, dim=(2, 3, 4), keepdim=True)
+                        logits_multi_scale[idx_fmap][i_attr] = torch.mean(CE, dim=(2, 3, 4), keepdim=True)
                     gated_ce_dict[i_attr].append(CE)
 
                     # spatial aggregation for local class evidence
