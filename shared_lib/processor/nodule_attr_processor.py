@@ -18,7 +18,7 @@ class NoduleAttrProcessor(BaseProcessor):
     ):
         super().__init__(models=models, mode=mode, device=device, suppress_logs=suppress_logs)
         self.do_segmentation = do_segmentation  # whether model predict segmentation mask
-        self.return_segmentation_mask = True  # whether processor return segmentation mask if available
+        self.return_segmentation_mask = False  # whether processor return segmentation mask if available
 
     def predict(self, numpy_image, header, coord):
         """
@@ -66,34 +66,69 @@ class NoduleAttrProcessor(BaseProcessor):
 
         return ensemble_output  # (B, 1) or (B, 1, w, h, d)
 
-    def inference(self, loader, mode, sanity_check=False) -> Dict[str, np.ndarray]:
-        list_results = list()
+    def inference(self, loader, mode, sanity_check=False):
+        """
+        inference given luna25 loader specifically.
+        """
+        list_probs = list()
+        dict_probs = {model_name: [] for model_name in self.models.keys()}
+        list_annots = list()
         list_annot_ids = list()
+
+        if self.do_segmentation and self.return_segmentation_mask:
+            keys = ModelOutputClsSeg._fields
+        else:
+            keys = ModelOutputCls._fields
 
         for data in tqdm(loader):
             # prediction
             patch_image = data["image"].to(self.device)
 
-            # annotation id
+            # annotation
+            annot = data["label"].to(self.device).float()
             annot_ids = data["ID"]
 
-            # inference
-            result = self.predict_ensemble_result(patch_image)  # (B, 1) or (B, 1, w, h, d)
+            # inference (model-wise)
+            batch_probs = list()
+            for model_name, model in self.models.items():
+                output = model.get_prediction(patch_image)
 
-            list_results.append(result)
+                # Convert to namedtuple
+                if self.do_segmentation:
+                    output = ModelOutputClsSeg(*output)
+                else:
+                    output = ModelOutputCls(*output)
+
+                # Apply sigmoid and convert to dict
+                output_dict = {key: torch.sigmoid(getattr(output, key)) for key in keys}
+                prob = output_dict["c_malignancy_logistic"]
+
+                # Save per-model probabilities
+                dict_probs[model_name].append(prob)
+
+                # Aggregate for overall averaging
+                batch_probs.append(prob)
+
+            # Mean across models
+            batch_probs = torch.stack(batch_probs)  # (num_models, B, 1)
+            mean_probs = torch.mean(batch_probs, dim=0)  # (B, 1)
+
+            list_probs.append(mean_probs)
+            list_annots.append(annot)
             list_annot_ids.extend(annot_ids)
             # sanity check
             if sanity_check:
                 break
 
         # Combine batches
-        if self.do_segmentation and self.return_segmentation_mask:
-            keys = ModelOutputClsSeg._fields
-        else:
-            keys = ModelOutputCls._fields
+        probs = torch.vstack(list_probs)
+        annots = torch.vstack(list_annots)
 
-        stacked_probs = {
-            key: torch.vstack([result[key] for result in list_results]).detach().cpu().numpy() for key in keys
-        }
+        # Convert to numpy
+        overall_probs = probs.squeeze().cpu().numpy()
+        overall_annots = annots.squeeze().cpu().numpy()
 
-        return stacked_probs  # dict[str, np.ndarray] of shape (N, 1) or (N, 1, w, h, d)
+        # Convert dict_probs to numpy
+        dict_probs = {k: torch.vstack(v).squeeze().cpu().numpy() for k, v in dict_probs.items()}
+
+        return overall_probs, overall_annots, list_annot_ids, dict_probs
