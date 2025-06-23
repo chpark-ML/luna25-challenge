@@ -31,7 +31,7 @@ class AdvancedEnsembleAnalyzer:
 
     def logistic_regression_ensemble(self) -> Dict:
         """Learn optimal weights using logistic regression"""
-        if self.valdf is None:
+        if self.val_df is None:
             raise ValueError("Validation data is required for meta-learner training")
 
         # Prepare training data (val)
