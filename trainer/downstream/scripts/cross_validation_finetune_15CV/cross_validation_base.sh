@@ -6,11 +6,11 @@ val_fold=$2
 
 cd /opt/challenge/trainer/downstream
 
-run_name=cv_fine_val_fold${val_fold}_7CV
+run_name=cv_fine_val_fold${val_fold}_15CV
 
 LR=1e-3
 epoch=20
-fold_key=fold
+fold_key=fold_15
 model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_final/cls_all_model_6_val_fold0_7CV/model_loss.pth
 
 HYDRA_FULL_ERROR=1 python3 main.py \
