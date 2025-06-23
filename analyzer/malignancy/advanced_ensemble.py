@@ -50,10 +50,23 @@ class MalignancyAdvancedEnsembleAnalyzer:
             lr = LogisticRegression(random_state=42, max_iter=1000)
             lr.fit(X_train, y_train)
 
-            # Test on the held-out model
-            X_test = self.df[test_col].values.reshape(-1, 1)
-            lr_probs = lr.predict_proba(X_test)[:, 1]
-            auroc = roc_auc_score(self.y_true, lr_probs)
+            # Test on the held-out model by creating ensemble with learned weights
+            # We can't directly test on single model since LR expects same number of features
+            # Instead, we create ensemble with learned weights + held-out model
+            ensemble_probs = np.zeros(len(self.df))
+
+            # Add predictions from trained models with learned weights
+            for j, col in enumerate(train_cols):
+                ensemble_probs += lr.coef_[0][j] * self.df[col].values
+            ensemble_probs += lr.intercept_[0]
+
+            # Add held-out model with equal weight
+            ensemble_probs += self.df[test_col].values
+
+            # Convert to probabilities (sigmoid)
+            ensemble_probs = 1 / (1 + np.exp(-ensemble_probs))
+
+            auroc = roc_auc_score(self.y_true, ensemble_probs)
 
             all_weights.append(lr.coef_[0])
             all_intercepts.append(lr.intercept_[0])
@@ -109,10 +122,20 @@ class MalignancyAdvancedEnsembleAnalyzer:
             rf = RandomForestClassifier(n_estimators=100, random_state=42)
             rf.fit(X_train, y_train)
 
-            # Test on the held-out model
-            X_test = self.df[test_col].values.reshape(-1, 1)
-            rf_probs = rf.predict_proba(X_test)[:, 1]
-            auroc = roc_auc_score(self.y_true, rf_probs)
+            # Test on the held-out model by creating ensemble with learned feature importance
+            ensemble_probs = np.zeros(len(self.df))
+
+            # Add predictions from trained models with feature importance as weights
+            for j, col in enumerate(train_cols):
+                ensemble_probs += rf.feature_importances_[j] * self.df[col].values
+
+            # Add held-out model with equal weight
+            ensemble_probs += self.df[test_col].values
+
+            # Normalize
+            ensemble_probs = ensemble_probs / (np.sum(rf.feature_importances_) + 1)
+
+            auroc = roc_auc_score(self.y_true, ensemble_probs)
 
             all_feature_importances.append(rf.feature_importances_)
             all_aurocs.append(auroc)
