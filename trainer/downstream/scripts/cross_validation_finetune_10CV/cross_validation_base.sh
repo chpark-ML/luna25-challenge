@@ -11,7 +11,7 @@ run_name=cv_fine_val_fold${val_fold}_10CV
 LR=1e-3
 epoch=20
 fold_key=fold_10
-model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_fmaps24_7CV_v3/cls_all_model_5_val_fold6_7CV/model_loss.pth
+model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_final/cls_all_model_6_val_fold0_7CV/model_loss.pth
 
 HYDRA_FULL_ERROR=1 python3 main.py \
   experiment_tool.run_name=${run_name} \
