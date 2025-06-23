@@ -72,7 +72,7 @@ class ClsLoss(nn.Module):
             elif RESAMPLED_FEATURE_POSTFIX in i_attr:
                 self.dict_criterion[i_attr] = nn.SmoothL1Loss(reduction="none")
 
-    def forward(self, pred, annot, mask=None, is_logit=True, is_logistic=True):
+    def forward(self, pred, annot, epoch=None, total_epoch=None, mask=None, is_logit=True, is_logistic=True):
         dict_loss = {}
         list_loss = []
         target_attr = self.target_attr_to_train
@@ -83,6 +83,12 @@ class ClsLoss(nn.Module):
                 threshold_key = f"threshold_{self.threshold_mode}_{i_attr}"
                 if threshold_key in (self.dict_threshold or {}):
                     annot[i_attr] = (i_annot > self.dict_threshold[threshold_key]) * 1.0
+
+        # calculate loss weight
+        if epoch is not None and total_epoch is not None:
+            weight = self.loss_weight * (1 - (epoch / total_epoch))
+        else:
+            weight = self.loss_weight
 
         for i_attr in target_attr:
             criterion = self.dict_criterion[i_attr]
@@ -101,7 +107,7 @@ class ClsLoss(nn.Module):
             else:
                 loss = loss.mean()
 
-            loss = loss * self.loss_weight
+            loss = loss * weight
 
             list_loss.append(loss)
             dict_loss[f"loss_{i_attr}"] = loss.detach()
