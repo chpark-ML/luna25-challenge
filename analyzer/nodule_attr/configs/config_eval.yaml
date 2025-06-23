@@ -2,9 +2,9 @@
 defaults:
   - loader: luna25
   - processor: default
-  - models: nodule_attr_seg.yaml
+  - models: nodule_attr_seg_final.yaml
 
-run_name: "eval_KD_bef"
+run_name: "eval_final"
 run_modes:
   - test
 
