@@ -11,7 +11,7 @@ class AttrLoss(nn.Module):
         self.aux_criterion = aux_criterion
         self.seg_criterion = seg_criterion
 
-    def forward(self, outputs, attr_annot, seg_annot, attr_mask=None, is_logit=True, is_logistic=True):
+    def forward(self, outputs, attr_annot, seg_annot, epoch=None, total_epoch=None, attr_mask=None, is_logit=True, is_logistic=True):
         losses = list()
 
         # cls loss
@@ -31,7 +31,7 @@ class AttrLoss(nn.Module):
             # list of tensors, e.g., [(B, 1, 24, 36, 36), (B, 1, 12, 18, 18), (B, 1, 6, 9 ,9)]
             gates = outputs[GATE_KEY]
             for gate in gates:  # loop for scale
-                entropy_loss = self.entropy_criterion(gate)
+                entropy_loss = self.entropy_criterion(gate, epoch=epoch, total_epoch=total_epoch)
                 entropy_losses.append(entropy_loss)
                 losses.append(entropy_loss)
 
