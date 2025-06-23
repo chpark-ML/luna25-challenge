@@ -4,7 +4,7 @@ defaults:
   - trainer: default
   - loader: default.yaml
   - criterion: focal_loss
-  - model: unet_3d_MS
+  - model: unet_3d_MS_v2
   - optim: adamw
   - scheduler: one_cycle_lr
   - experiment_tool: mlflow
