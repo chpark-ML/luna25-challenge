@@ -2,68 +2,68 @@ model_0:
   _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v4.0.1rc2
   exp_name: cv_fine_val_fold0_10CV
-  file_name: cuda_model_final.ts
+  file_name: cuda_model_auroc.ts
   device: cuda # e.g., "cpu" or "cuda"
 
 model_1:
   _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v4.0.1rc2
   exp_name: cv_fine_val_fold1_10CV
-  file_name: cuda_model_final.ts
+  file_name: cuda_model_auroc.ts
   device: cuda # e.g., "cpu" or "cuda"
 
 model_2:
   _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v4.0.1rc2
   exp_name: cv_fine_val_fold2_10CV
-  file_name: cuda_model_final.ts
+  file_name: cuda_model_auroc.ts
   device: cuda # e.g., "cpu" or "cuda"
 
 model_3:
   _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v4.0.1rc2
   exp_name: cv_fine_val_fold3_10CV
-  file_name: cuda_model_final.ts
+  file_name: cuda_model_auroc.ts
   device: cuda # e.g., "cpu" or "cuda"
 
 model_4:
   _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v4.0.1rc2
   exp_name: cv_fine_val_fold4_10CV
-  file_name: cuda_model_final.ts
+  file_name: cuda_model_auroc.ts
   device: cuda # e.g., "cpu" or "cuda"
 
 model_5:
   _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v4.0.1rc2
   exp_name: cv_fine_val_fold5_10CV
-  file_name: cuda_model_final.ts
+  file_name: cuda_model_auroc.ts
   device: cuda # e.g., "cpu" or "cuda"
 
 model_6:
   _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v4.0.1rc2
   exp_name: cv_fine_val_fold6_10CV
-  file_name: cuda_model_final.ts
+  file_name: cuda_model_auroc.ts
   device: cuda # e.g., "cpu" or "cuda"
 
 model_7:
   _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v4.0.1rc2
   exp_name: cv_fine_val_fold7_10CV
-  file_name: cuda_model_final.ts
+  file_name: cuda_model_auroc.ts
   device: cuda # e.g., "cpu" or "cuda"
 
 model_8:
   _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v4.0.1rc2
   exp_name: cv_fine_val_fold8_10CV
-  file_name: cuda_model_final.ts
+  file_name: cuda_model_auroc.ts
   device: cuda # e.g., "cpu" or "cuda"
 
 model_9:
   _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
   root_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v4.0.1rc2
   exp_name: cv_fine_val_fold9_10CV
-  file_name: cuda_model_final.ts
+  file_name: cuda_model_auroc.ts
   device: cuda # e.g., "cpu" or "cuda"
