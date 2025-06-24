@@ -29,7 +29,7 @@ def main() -> None:
 
     base_dir = os.path.join(_THIS_DIR, "outputs/default")
     prefix = "cv_fine_val_fold"
-    suffix = ""
+    suffix = "7CV"
 
     list_prefix = [
         os.path.join(base_dir, name)
