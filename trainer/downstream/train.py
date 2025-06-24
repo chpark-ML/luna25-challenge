@@ -322,28 +322,36 @@ class Trainer(comm_train.Trainer):
 
     def save_best_metrics(self, val_metrics: Metrics, best_metrics: Metrics, epoch) -> (object, bool):
         found_better = False
-        if val_metrics.loss < best_metrics.loss:
+
+        best_metric = self.best_metrics.get(BaseBestModelStandard.REPRESENTATIVE, None)
+        val_loss = getattr(val_metrics, "loss", None)
+        best_loss = getattr(best_metric, "loss", None)
+        if best_loss is None or (val_loss is not None and val_loss < best_loss):
             found_better = True
             model_path = f"model_loss.pth"
             logger.info(
-                f"loss improved from {best_metrics.loss:4f} to {val_metrics.loss:4f}, " f"saving model to {model_path}."
+                f"loss improved to {val_metrics.loss:4f}, "
+                f"saving model to {model_path}."
             )
 
-            best_metrics = val_metrics
+            self.best_metrics[BaseBestModelStandard.REPRESENTATIVE] = val_metrics
             self.path_best_model[BaseBestModelStandard.REPRESENTATIVE] = model_path
             self.epoch_best_model[BaseBestModelStandard.REPRESENTATIVE] = epoch
             self.threshold_best_model[BaseBestModelStandard.REPRESENTATIVE] = self.dict_threshold
             self.save_checkpoint(model_path, thresholds=self.dict_threshold)
 
-        if val_metrics.eval_metrics["auroc"] > best_metrics.eval_metrics["auroc"]:
+        best_metric = self.best_metrics.get(BaseBestModelStandard.AUROC, None)
+        val_auroc = val_metrics.eval_metrics.get("auroc", None)
+        best_auroc = best_metric.eval_metrics.get("auroc", None) if best_metric is not None else None
+        if best_auroc is None or (val_auroc is not None and val_auroc > best_auroc):
             found_better = True
             model_path = f"model_auroc.pth"
             logger.info(
-                f"AUROC improved from {best_metrics.eval_metrics['auroc']:4f} to {val_metrics.eval_metrics['auroc']:4f}, "
+                f"AUROC improved to {val_metrics.eval_metrics['auroc']:4f}, "
                 f"saving model to {model_path}."
             )
 
-            best_metrics = val_metrics
+            self.best_metrics[BaseBestModelStandard.AUROC] = val_metrics
             self.path_best_model[BaseBestModelStandard.AUROC] = model_path
             self.epoch_best_model[BaseBestModelStandard.AUROC] = epoch
             self.threshold_best_model[BaseBestModelStandard.AUROC] = self.dict_threshold
