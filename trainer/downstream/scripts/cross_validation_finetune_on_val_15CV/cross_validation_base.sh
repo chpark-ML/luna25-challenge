@@ -10,9 +10,9 @@ run_name=cv_fine_val_fold${val_fold}_15CV
 
 LR=1e-5
 epoch=10
-fold_key=fold_15
 model_path=/team/team_blu3/lung/project/luna25/weights/nodulex-v4.0.0rc3/cv_fine_val_fold${val_fold}_15CV/model_auroc.pth
 
+fold_key=fold_15
 all_folds=(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14)
 all_fold_str=$(printf ",%s" "${all_folds[@]}")
 all_fold_str="[${all_fold_str:1}]"  # 앞의 쉼표 제거
