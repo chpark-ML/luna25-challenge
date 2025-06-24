@@ -111,6 +111,11 @@ class Trainer(ABC):
             self.repr_model_name = None
         self.dict_threshold = dict()
 
+        # best metric storage
+        self.best_metrics = {
+            standard: None for standard in BaseBestModelStandard
+        }  # best model can be defined based on the various standard.
+
         # model path storage
         self.path_best_model = {
             standard: "" for standard in BaseBestModelStandard
