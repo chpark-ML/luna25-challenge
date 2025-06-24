@@ -333,7 +333,6 @@ class Trainer(comm_train.Trainer):
                 f"loss improved to {val_metrics.loss:4f}, "
                 f"saving model to {model_path}."
             )
-
             self.best_metrics[BaseBestModelStandard.REPRESENTATIVE] = val_metrics
             self.path_best_model[BaseBestModelStandard.REPRESENTATIVE] = model_path
             self.epoch_best_model[BaseBestModelStandard.REPRESENTATIVE] = epoch
@@ -344,13 +343,11 @@ class Trainer(comm_train.Trainer):
         val_auroc = val_metrics.eval_metrics.get("auroc", None)
         best_auroc = best_metric.eval_metrics.get("auroc", None) if best_metric is not None else None
         if best_auroc is None or (val_auroc is not None and val_auroc > best_auroc):
-            found_better = True
             model_path = f"model_auroc.pth"
             logger.info(
                 f"AUROC improved to {val_metrics.eval_metrics['auroc']:4f}, "
                 f"saving model to {model_path}."
             )
-
             self.best_metrics[BaseBestModelStandard.AUROC] = val_metrics
             self.path_best_model[BaseBestModelStandard.AUROC] = model_path
             self.epoch_best_model[BaseBestModelStandard.AUROC] = epoch
@@ -358,13 +355,14 @@ class Trainer(comm_train.Trainer):
             self.save_checkpoint(model_path, thresholds=self.dict_threshold)
 
         if epoch == self.max_epoch - 1:  # the given `epoch` is in the range of (0, self.max_epoch)
-            found_better = True
             model_path = f"model_final.pth"
             logger.info(f"saving model to {model_path}.")
             self.path_best_model[BaseBestModelStandard.LAST] = model_path
             self.epoch_best_model[BaseBestModelStandard.LAST] = epoch
             self.threshold_best_model[BaseBestModelStandard.LAST] = self.dict_threshold
             self.save_checkpoint(model_path, thresholds=self.dict_threshold)
+
+        best_metrics = self.best_metrics[BaseBestModelStandard.REPRESENTATIVE]
 
         return best_metrics, found_better
 
