@@ -2,9 +2,9 @@
 defaults:
   - loader: default
   - processor: default
-  - models: 4_0_0rc2.yaml
+  - models: 4_0_1rc3.yaml
 
-run_name: "4_0_0rc2"
+run_name: "4_0_1rc3"
 run_modes:
   - test
 sanity_check: False
