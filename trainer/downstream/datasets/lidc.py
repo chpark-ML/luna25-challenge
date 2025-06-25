@@ -187,7 +187,7 @@ class Dataset(LctDataset):
             DataLoaderKeys.DOC_ID: str(doc_id),
             DataLoaderKeys.IMAGE: torch.from_numpy(img).float(),  # float32
             DataLoaderKeys.LABEL: target.long(),
-            DataLoaderKeys.ID: None,
+            DataLoaderKeys.ID: 0.0,
         }
 
         return output
