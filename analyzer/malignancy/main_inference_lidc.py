@@ -1,16 +1,13 @@
 import logging
+from pathlib import Path
 
 import hydra
 import pandas as pd
-import torch
 from omegaconf import DictConfig
-from tqdm import tqdm
+from sklearn import metrics
 
-from data_lake.constants import DataLakeKey
-from data_lake.dataset_handler import DatasetHandler
 from shared_lib.enums import RunMode
 from shared_lib.utils.utils import print_config, set_seed
-from trainer.downstream.datasets.luna25 import DataLoaderKeys
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -44,50 +41,46 @@ def main(config: DictConfig):
         for mode in run_modes
     }
 
-    # inference and save nodule attributes
+     # Initialize an empty list to store all results
+    all_results = []
+
+    # get inference results
     for mode in run_modes:
         print(f"Mode: {mode}")
+        probs, annots, annot_ids, dict_probs = processor.inference(
+            loaders[mode], mode=mode, sanity_check=config.sanity_check
+        )
 
-        # get inference results
-        all_features = []
-        for data in tqdm(loaders[mode]):
-            # annotation id
-            col_ids = data[DataLoaderKeys.COLLECTION_ID]
-            doc_ids = data[DataLoaderKeys.DOC_ID]
+        # Convert continuous annotations to binary (0.5 threshold)
+        binary_annots = (annots > 0.5).astype(float)
 
-            # prediction
-            patch_image = data[DataLoaderKeys.IMAGE]
+        # get auroc score
+        auroc = metrics.roc_auc_score(binary_annots, probs)
+        print(f"Auroc score: {auroc}")
 
-            # inference
-            pred_results = processor.predict_ensemble_result(patch_image)  # (B, 1) or (B, 1, w, h, d)
-            pred_results = {
-                key: val.squeeze(1).detach().cpu().numpy() if isinstance(val, torch.Tensor) and val.dim() > 1 else val
-                for key, val in pred_results.items()
-            }
+        # Prepare DataFrame data
+        df_data = {
+            "mode": [mode.value] * len(annot_ids),
+            "annot_ids": annot_ids,
+            "annotation": annots,
+            "binary_annotation": binary_annots,
+            "prob_ensemble": probs,
+        }
+        for model_name, model_probs in dict_probs.items():
+            df_data[f"prob_{model_name}"] = model_probs
 
-            # batch samples
-            attr_lists = [pred_results[key] for key in config.target_attr_total]  # nodule attributes
-            for values in zip(col_ids, doc_ids, *attr_lists):
-                col_id, doc_id, *attrs = values
-                updated_cols = [attr for attr in config.target_attr_total]
+        # Append to the combined results list
+        all_results.append(pd.DataFrame(df_data))
 
-                # nodule attr features
-                _features = {
-                    DataLakeKey.COLLECTION: col_id,
-                    DataLakeKey.DOC_ID: doc_id,
-                    **{key: value for key, value in zip(config.target_attr_total, attrs)},
-                }
+    # Combine all results into a single DataFrame
+    combined_df = pd.concat(all_results, ignore_index=True)
 
-                # update docs
-                if config.update_docs:
-                    df = pd.DataFrame([_features])
-                    DatasetHandler().update_existing_docs(df, updated_cols, field_prefix="pred")
+    # Save to a single CSV file
+    df_path = Path(f"result_{config.run_name}.csv")
+    combined_df.to_csv(df_path, index=False)
+    print(f"Results saved to: {df_path}")
 
-                if config.sanity_check:
-                    break
-
-            if config.sanity_check:
-                break
+    return 0
 
 
 if __name__ == "__main__":
