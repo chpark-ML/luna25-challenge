@@ -183,13 +183,11 @@ class Dataset(LctDataset):
         label = attributes["c_malignancy_logistic"] > 0.5
         target = torch.ones((1,)) * label
         output = {
-            "collection_id": collection_id,
-            "doc_id": str(doc_id),
+            DataLoaderKeys.COLLECTION_ID: collection_id,
+            DataLoaderKeys.DOC_ID: str(doc_id),
             DataLoaderKeys.IMAGE: torch.from_numpy(img).float(),  # float32
             DataLoaderKeys.LABEL: target.long(),
-            "file_path": img_path,
-            "mask_path": mask_path,
-            "index": index,
+            DataLoaderKeys.ID: None,
         }
 
         return output
