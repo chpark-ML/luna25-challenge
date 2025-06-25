@@ -4,7 +4,7 @@ defaults:
   - processor: default
   - models: nodule_attr_seg_final.yaml
 
-run_name: "eval_final"
+run_name: "eval"
 run_modes:
   - test
 
