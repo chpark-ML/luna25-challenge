@@ -1,6 +1,4 @@
-_target_: shared_lib.processor.nodule_attr_processor.NoduleAttrProcessor
-models:
-mode: 3D
-device: 0
+_target_: shared_lib.processor.malignancy_processor_lidc.MalignancyProcessorLIDC
+mode: "3D"
+device: "cuda:7"
 suppress_logs: False
-do_segmentation: True
