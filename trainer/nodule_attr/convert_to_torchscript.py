@@ -27,8 +27,8 @@ def main() -> None:
     logger.info("Encrypt weight file and export TorchScript.")
 
     base_dir = os.path.join(_THIS_DIR, "outputs/baseline")
-    prefix = "cls_all_model_6_val_fold"
-    suffix = ""
+    prefix = "cls_all_model_5"
+    suffix = "7CV"
 
     list_prefix = [
         os.path.join(base_dir, name)
