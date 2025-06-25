@@ -2,19 +2,14 @@
 defaults:
   - loader: lidc
   - processor: processor_lidc
-  - models: nodule_attr_seg.yaml
+  - models: 4_0_1rc3.yaml
 
-run_name: "nodule_attr_seg_lidc_eval"
+run_name: "4_0_1rc3_lidc_eval"
 run_modes:
   - val
   - test
 sanity_check: True
 update_docs: False
-calcu_radiomics: False
-mask_key: "c_segmentation_logistic"
-target_attr_total: [ 'c_subtlety_logistic', 'c_sphericity_logistic', 'c_lobulation_logistic', 'c_spiculation_logistic',
-                     'c_margin_logistic', 'c_texture_logistic',
-                     'c_calcification_logistic', 'c_internalStructure_logistic', 'c_malignancy_logistic' ]
 
 hydra:
   run:
