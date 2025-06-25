@@ -14,7 +14,7 @@ model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_fmaps8
 
 HYDRA_FULL_ERROR=1 python3 main.py \
   experiment_tool.run_name=${run_name} \
-  "loader.dataset.dataset_infos.luna25.val_fold=[${val_fold}]" \
+  "loader.dataset.datasets.0.dataset_infos.luna25.val_fold=[${val_fold}]" \
   scheduler.scheduler_repr.max_lr=${LR} \
   trainer.max_epoch=${epoch} \
   trainer.fine_tune_info.enable=True \
