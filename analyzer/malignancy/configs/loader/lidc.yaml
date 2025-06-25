@@ -2,7 +2,6 @@ _target_: torch.utils.data.DataLoader
 
 dataset:
   _target_: trainer.nodule_attr.datasets.lidc.Dataset
-  mode: train
   use_weighted_sampler: false
 
   # optimal size for unet_3d was 72 x 72 x 72
