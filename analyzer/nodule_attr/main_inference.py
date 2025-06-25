@@ -14,7 +14,7 @@ from data_lake.dataset_handler import DatasetHandler
 from shared_lib.enums import RunMode
 from shared_lib.radiomics import RadiomicsFeatureKeys
 from shared_lib.utils.utils import print_config, set_seed
-from trainer.downstream.datasets.luna25 import DataLoaderKeys
+from trainer.downstream.datasets.constants import DataLoaderKeys
 
 # disable PyRadiomics logger
 for logger_name in ["radiomics", "radiomics.featureextractor", "radiomics.glcm"]:

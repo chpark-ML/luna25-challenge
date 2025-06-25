@@ -34,10 +34,20 @@ def _log_params_from_omegaconf_dict(params: omegaconf.dictconfig.DictConfig, log
                 if isinstance(v, omegaconf.DictConfig) or isinstance(v, omegaconf.ListConfig):
                     _explore_recursive(f"{parent_name}.{k}", v)
                 else:
-                    logging_tool.log_param(f"{parent_name}.{k}", v)
+                    try:
+                        logging_tool.log_param(f"{parent_name}.{k}", v)
+                    except Exception as e:
+                        # Skipping logging: MLflow log_param() only supports strings ≤ 500 characters;
+                        # long configs (e.g., full dataset definitions) will raise an exception.
+                        print(f"Skipping param '{k}': {e}")
         elif isinstance(element, omegaconf.ListConfig):
             for i, v in enumerate(element):
-                logging_tool.log_param(f"{parent_name}.{i}", v)
+                try:
+                    logging_tool.log_param(f"{parent_name}.{i}", v)
+                except Exception as e:
+                    # Skipping logging: MLflow log_param() only supports strings ≤ 500 characters;
+                    # long configs (e.g., full dataset definitions) will raise an exception.
+                    print(f"Skipping param '{v}': {e}")
         else:
             pass  # recursive terminal
 

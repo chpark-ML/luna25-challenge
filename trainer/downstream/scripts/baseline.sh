@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # args
-gpu_num=${1:-0}
+gpu_num=${1:-7}
 
 run_name=baseline_default
 

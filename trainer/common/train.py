@@ -14,6 +14,7 @@ import optuna
 import torch
 import torch.backends.cudnn as cudnn
 import torch.cuda.amp as amp
+from omegaconf import OmegaConf
 
 from shared_lib.enums import BaseBestModelStandard, RunMode, ThresholdMode
 from shared_lib.utils.utils import get_torch_device_string, print_config, set_config
@@ -33,30 +34,52 @@ def get_loaders(config):
 
     loaders = dict()
     for mode in run_modes:
+        dataset_cfg = config.loader.dataset
+        is_combined = getattr(dataset_cfg, "_target_", "").endswith("CombinedDataset")
         if mode == RunMode.TRAIN:
-            dataset = hydra.utils.instantiate(config.loader.dataset, mode=mode)
-            _sampler = None
-            if dataset.use_weighted_sampler:
-                train_df = dataset.dataset
-                weights = make_weights_for_balanced_classes(train_df.label.values)
-                weights = torch.DoubleTensor(weights)
-                _sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(train_df))
+            if is_combined:
+                patched_datasets_cfg = [OmegaConf.merge(ds_cfg, {"mode": mode}) for ds_cfg in dataset_cfg.datasets]
+                combined_dataset = hydra.utils.instantiate(dataset_cfg, datasets=patched_datasets_cfg)
+                loaders[mode] = hydra.utils.instantiate(
+                    config.loader,
+                    dataset=combined_dataset,
+                    drop_last=True,
+                    shuffle=False,
+                )
+            else:
+                dataset = hydra.utils.instantiate(config.loader.dataset, mode=mode)
+                _sampler = None
+                if dataset.use_weighted_sampler:
+                    train_df = dataset.dataset
+                    weights = make_weights_for_balanced_classes(train_df.label.values)
+                    weights = torch.DoubleTensor(weights)
+                    _sampler = torch.utils.data.sampler.WeightedRandomSampler(weights, len(train_df))
 
-            loaders[mode] = hydra.utils.instantiate(
-                config.loader,
-                dataset={"mode": mode},
-                sampler=_sampler,
-                drop_last=True,
-                shuffle=False,
-            )
+                loaders[mode] = hydra.utils.instantiate(
+                    config.loader,
+                    dataset={"mode": mode},
+                    sampler=_sampler,
+                    drop_last=True,
+                    shuffle=False,
+                )
 
         else:
-            loaders[mode] = hydra.utils.instantiate(
-                config.loader,
-                dataset={"mode": mode},
-                drop_last=False,
-                shuffle=False,
-            )
+            if is_combined:
+                patched_datasets_cfg = [OmegaConf.merge(ds_cfg, {"mode": mode}) for ds_cfg in dataset_cfg.datasets]
+                combined_dataset = hydra.utils.instantiate(dataset_cfg, datasets=patched_datasets_cfg)
+                loaders[mode] = hydra.utils.instantiate(
+                    config.loader,
+                    dataset=combined_dataset,
+                    drop_last=False,
+                    shuffle=False,
+                )
+            else:
+                loaders[mode] = hydra.utils.instantiate(
+                    config.loader,
+                    dataset={"mode": mode},
+                    drop_last=False,
+                    shuffle=False,
+                )
 
     return loaders
 
@@ -87,24 +110,24 @@ class Metrics(ABC):
 
 class Trainer(ABC):
     def __init__(
-        self,
-        model,
-        optimizer,
-        scheduler,
-        criterion,
-        logging_tool,
-        gpus,
-        fast_dev_run,
-        max_epoch,
-        log_every_n_steps=1,
-        test_epoch_start=0,
-        resume_from_checkpoint=False,
-        benchmark=False,
-        deterministic=True,
-        fine_tune_info=None,
-        early_stop_patience: int = None,
-        use_amp: bool = True,
-        optuna_trial: optuna.Trial = None,
+            self,
+            model,
+            optimizer,
+            scheduler,
+            criterion,
+            logging_tool,
+            gpus,
+            fast_dev_run,
+            max_epoch,
+            log_every_n_steps=1,
+            test_epoch_start=0,
+            resume_from_checkpoint=False,
+            benchmark=False,
+            deterministic=True,
+            fine_tune_info=None,
+            early_stop_patience: int = None,
+            use_amp: bool = True,
+            optuna_trial: optuna.Trial = None,
     ):
         self.model = model
         if not hasattr(self, "repr_model_name"):
@@ -332,10 +355,10 @@ class Trainer(ABC):
 
     @abstractmethod
     def save_best_metrics(
-        self,
-        val_metrics: Union[object, dict],
-        best_model_metrics: Union[object, dict],
-        epoch,
+            self,
+            val_metrics: Union[object, dict],
+            best_model_metrics: Union[object, dict],
+            epoch,
     ) -> (object, bool):
         """Save best metrics and return best metrics and whether it better metrics was found"""
 
@@ -407,8 +430,8 @@ class Trainer(ABC):
         patience = 0
         best_model_metrics = self.get_initial_model_metric()
         for epoch in range(
-            self.resume_epoch,
-            self.resume_epoch + 2 if self.fast_dev_run else self.max_epoch,
+                self.resume_epoch,
+                self.resume_epoch + 2 if self.fast_dev_run else self.max_epoch,
         ):
             best_model_metrics, found_better = self.run_epoch(
                 epoch,
@@ -449,13 +472,13 @@ class Trainer(ABC):
                     self.log_metrics(f"checkpoint_test_{standard.value}", None, best_model_test_metrics)
 
     def log_metrics(
-        self,
-        run_mode_str: str,
-        step,
-        metrics: object,
-        log_prefix="",
-        mlflow_log_prefix="",
-        duration=None,
+            self,
+            run_mode_str: str,
+            step,
+            metrics: object,
+            log_prefix="",
+            mlflow_log_prefix="",
+            duration=None,
     ):
         """Log the metrics to logger and to mlflow if mlflow is used. Metrics could be None if learning isn't
         performed for the epoch."""
