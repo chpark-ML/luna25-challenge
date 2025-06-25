@@ -20,17 +20,10 @@ from trainer.common.augmentation.flip_rotate import Flip3D, FlipXY
 from trainer.common.augmentation.hu_value import DicomWindowing, RandomDicomWindowing
 from trainer.common.augmentation.rescale import RescaleImage
 from trainer.common.constants import DB_ADDRESS, HU_WINDOW
+from trainer.downstream.datasets.constants import DataLoaderKeys
 
 logger = logging.getLogger(__name__)
 _VUNO_LUNG_DB = DB_ADDRESS
-
-
-class DataLoaderKeys:
-    COLLECTION_ID = "collection_id"
-    DOC_ID = "doc_id"
-    IMAGE = "image"
-    LABEL = "label"
-    ID = "ID"
 
 
 def _get_3d_patch(image_shape=None, center=None, patchsize=None):

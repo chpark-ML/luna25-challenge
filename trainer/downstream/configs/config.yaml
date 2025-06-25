@@ -2,7 +2,7 @@
 defaults:
   - _self_
   - trainer: default
-  - loader: default.yaml
+  - loader: combined.yaml
   - criterion: focal_loss
   - model: unet_3d_MS_v2
   - optim: adamw
