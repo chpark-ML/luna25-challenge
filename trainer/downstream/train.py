@@ -12,7 +12,7 @@ from sklearn import metrics
 import trainer.common.train as comm_train
 from shared_lib.enums import BaseBestModelStandard, RunMode
 from trainer.common.enums import ModelName, ThresholdMode
-from trainer.downstream.datasets.luna25 import DataLoaderKeys
+from trainer.downstream.datasets.constants import DataLoaderKeys
 
 logger = logging.getLogger(__name__)
 
