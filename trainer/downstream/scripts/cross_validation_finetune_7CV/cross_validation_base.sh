@@ -8,7 +8,7 @@ cd /opt/challenge/trainer/downstream
 
 run_name=cv_fine_val_fold${val_fold}_7CV
 
-LR=3e-4
+LR=1e-3
 epoch=100
 model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_fmaps8_7CV/cls_all_model_5_val_fold2_7CV/model_loss.pth
 
@@ -19,10 +19,10 @@ all_fold_str="[${all_fold_str:1}]"  # 앞의 쉼표 제거
 
 HYDRA_FULL_ERROR=1 python3 main.py \
   experiment_tool.run_name=${run_name} \
-  "loader.dataset.dataset_infos.luna25.total_fold=${all_fold_str}" \
-  "loader.dataset.dataset_infos.luna25.val_fold=[${val_fold}]" \
-  "loader.dataset.dataset_infos.luna25.test_fold=[]" \
-  loader.dataset.dataset_infos.luna25.fold_key=${fold_key} \
+  "loader.dataset.datasets.0.dataset_infos.luna25.total_fold=${all_fold_str}" \
+  "loader.dataset.datasets.0.dataset_infos.luna25.val_fold=[${val_fold}]" \
+  "loader.dataset.datasets.0.dataset_infos.luna25.test_fold=[]" \
+  "loader.dataset.datasets.0.dataset_infos.luna25.fold_key=${fold_key}" \
   scheduler.scheduler_repr.max_lr=${LR} \
   trainer.max_epoch=${epoch} \
   trainer.fine_tune_info.enable=True \

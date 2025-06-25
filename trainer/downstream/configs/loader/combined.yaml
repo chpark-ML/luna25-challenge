@@ -136,7 +136,7 @@ dataset:
             dicom_series_info.slice_thickness:
               "$lte": 3.5
             num_mask:
-              "$gte": 2
+              "$gte": 3
             c_malignancy_logistic:
               "$ne": 0.5
 batch_size: 32
