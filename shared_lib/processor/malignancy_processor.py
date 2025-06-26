@@ -42,31 +42,44 @@ class MalignancyProcessor(BaseProcessor):
     @staticmethod
     def interpolate_and_center_crop_5d(image, scale_factor, target_size):
         B, C, W, H, D = image.shape
-        target_W, target_H, target_D = target_size
+        tgt_W, tgt_H, tgt_D = target_size
 
-        # 리사이즈할 크기
         new_W = int(W * scale_factor)
         new_H = int(H * scale_factor)
         new_D = int(D * scale_factor)
 
-        resized = torch.nn.functional.interpolate(
+        x = torch.nn.functional.interpolate(
             image,
             size=(new_W, new_H, new_D),
             mode='trilinear',
             align_corners=True
         )
 
-        # center crop
-        start_w = (new_W - target_W) // 2
-        start_h = (new_H - target_H) // 2
-        start_d = (new_D - target_D) // 2
+        # Determine padding or cropping
+        diff_W = tgt_W - new_W
+        diff_H = tgt_H - new_H
+        diff_D = tgt_D - new_D
 
-        cropped = resized[:, :,
-                  start_w:start_w + target_W,
-                  start_h:start_h + target_H,
-                  start_d:start_d + target_D]
+        if diff_W > 0 or diff_H > 0 or diff_D > 0:
+            # Pad if any dimension is smaller
+            pad = [
+                max(diff_D // 2, 0), max(diff_D - diff_D // 2, 0),
+                max(diff_H // 2, 0), max(diff_H - diff_H // 2, 0),
+                max(diff_W // 2, 0), max(diff_W - diff_W // 2, 0),
+            ]
+            x = torch.nn.functional.pad(x, pad, mode='constant', value=0)
 
-        return cropped
+        if x.shape[2] > tgt_W or x.shape[3] > tgt_H or x.shape[4] > tgt_D:
+            # Crop if any dimension is larger
+            start_w = (x.shape[2] - tgt_W) // 2
+            start_h = (x.shape[3] - tgt_H) // 2
+            start_d = (x.shape[4] - tgt_D) // 2
+            x = x[:, :,
+                start_w:start_w + tgt_W,
+                start_h:start_h + tgt_H,
+                start_d:start_d + tgt_D]
+
+        return x
 
     def inference(self, loader, mode, do_tta_by_size=False, sanity_check=False):
         list_probs = list()
