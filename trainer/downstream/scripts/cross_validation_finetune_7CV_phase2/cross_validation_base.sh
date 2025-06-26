@@ -8,8 +8,8 @@ cd /opt/challenge/trainer/downstream
 
 run_name=cv_fine_val_fold${val_fold}_7CV_phase2
 
-LR=3e-4
-epoch=50
+LR=1e-4
+epoch=100
 model_path=/opt/challenge/trainer/downstream/outputs/default/cv_fine_val_fold${val_fold}_7CV/model_auroc.pth
 
 fold_key=fold

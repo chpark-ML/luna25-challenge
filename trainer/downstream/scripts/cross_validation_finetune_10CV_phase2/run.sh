@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /opt/challenge/trainer/downstream/scripts/cross_validation_finetune_10CV || exit 1
+cd /opt/challenge/trainer/downstream/scripts/cross_validation_finetune_10CV_phase2 || exit 1
 
 # tmux_window gpu_num val_fold
 paired_values=(
