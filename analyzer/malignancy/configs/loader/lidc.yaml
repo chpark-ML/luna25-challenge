@@ -51,7 +51,7 @@ dataset:
   dataset_info:
     pylidc:
       total_fold: [ 0, 1, 2, 3, 4, 5, 6 ]
-      val_fold: [ 0, 1, 2, 3, 4, 5, 6 ]
+      val_fold: [ ]
       test_fold: [ 0, 1, 2, 3, 4, 5, 6 ]
       fold_key: fold
       collection_name: pylidc-nodule-cluster
