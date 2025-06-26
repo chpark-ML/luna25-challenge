@@ -83,6 +83,7 @@ class ImageProcessor:
         for model_indicator, config_model in config.models.items():
             models[model_indicator] = hydra.utils.instantiate(config_model)
         self.malignancy_processor = hydra.utils.instantiate(config.processor, models=models)
+        self.do_tta_by_size = config.do_tta_by_size
 
     def _predict(self, input_image: SimpleITK.Image, coords: np.array, clinical_information) -> List:
         """
@@ -105,7 +106,10 @@ class ImageProcessor:
         # predict malignancy risk
         malignancy_risks = []
         for i in range(len(coords)):
-            malignancy_risk = self.malignancy_processor.predict(numpy_image, header, coords[i])
+            if self.do_tta_by_size:
+                malignancy_risk = self.malignancy_processor.predict(numpy_image, header, coords[i], size_mm=[40, 50, 60])
+            else:
+                malignancy_risk = self.malignancy_processor.predict(numpy_image, header, coords[i])
             malignancy_risk = np.array(malignancy_risk).reshape(-1)[0]
             malignancy_risks.append(malignancy_risk)
         malignancy_risks = np.array(malignancy_risks)
