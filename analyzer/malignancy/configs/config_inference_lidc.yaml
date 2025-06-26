@@ -8,7 +8,6 @@ run_name: "4_0_1rc3_lidc_eval"
 run_modes:
   - test
 sanity_check: False
-update_docs: False
 
 hydra:
   run:
