@@ -48,7 +48,7 @@ def main(config: DictConfig):
     for mode in run_modes:
         print(f"Mode: {mode}")
         probs, annots, annot_ids, dict_probs = processor.inference(
-            loaders[mode], mode=mode, sanity_check=config.sanity_check
+            loaders[mode], mode=mode, do_tta_by_size=config.do_tta_by_size, sanity_check=config.sanity_check
         )
 
         # get auroc score

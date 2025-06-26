@@ -39,7 +39,36 @@ class MalignancyProcessor(BaseProcessor):
 
         return final_prediction
 
-    def inference(self, loader, mode, sanity_check=False):
+    @staticmethod
+    def interpolate_and_center_crop_5d(image, scale_factor, target_size):
+        B, C, W, H, D = image.shape
+        target_W, target_H, target_D = target_size
+
+        # 리사이즈할 크기
+        new_W = int(W * scale_factor)
+        new_H = int(H * scale_factor)
+        new_D = int(D * scale_factor)
+
+        resized = torch.nn.functional.interpolate(
+            image,
+            size=(new_W, new_H, new_D),
+            mode='trilinear',
+            align_corners=True
+        )
+
+        # center crop
+        start_w = (new_W - target_W) // 2
+        start_h = (new_H - target_H) // 2
+        start_d = (new_D - target_D) // 2
+
+        cropped = resized[:, :,
+                  start_w:start_w + target_W,
+                  start_h:start_h + target_H,
+                  start_d:start_d + target_D]
+
+        return cropped
+
+    def inference(self, loader, mode, do_tta_by_size=False, sanity_check=False):
         list_probs = list()
         dict_probs = {model_name: [] for model_name in self.models.keys()}
         list_annots = list()
@@ -48,6 +77,8 @@ class MalignancyProcessor(BaseProcessor):
         for data in tqdm(loader):
             # prediction
             patch_image = data["image"].to(self.device)
+            _, _, W, H, D = patch_image.shape
+            target_size = (W, H, D)
 
             # annotation
             annot = data["label"].to(self.device).float()
@@ -56,8 +87,16 @@ class MalignancyProcessor(BaseProcessor):
             # inference (model-wise)
             batch_probs = list()
             for model_name, model in self.models.items():
-                logits = model.get_prediction(patch_image)  # (B, 1)
-                prob = torch.sigmoid(logits)  # (B, 1)
+                if do_tta_by_size:
+                    probs_by_size = []
+                    for scale_factor in [0.8, 1.0, 1.2]:
+                        resized_image = self.interpolate_and_center_crop_5d(patch_image, scale_factor, target_size)
+                        logits = model.get_prediction(resized_image)  # (B, 1)
+                        probs_by_size.append(torch.sigmoid(logits))
+                    prob = torch.mean(torch.stack(probs_by_size, dim=0), dim=0)  # (B, 1)
+                else:
+                    logits = model.get_prediction(patch_image)  # (B, 1)
+                    prob = torch.sigmoid(logits)  # (B, 1)
 
                 # Save per-model probabilities
                 dict_probs[model_name].append(prob)
