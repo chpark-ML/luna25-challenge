@@ -2,9 +2,9 @@
 defaults:
   - loader: lidc
   - processor: processor_lidc
-  - models: 4_0_1rc3.yaml
+  - models: 5_0_1rc1.yaml
 
-run_name: "4_0_1rc3_lidc_eval"
+run_name: "5_0_1rc1_lidc"
 run_modes:
   - test
 sanity_check: False
