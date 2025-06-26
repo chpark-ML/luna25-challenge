@@ -6,9 +6,8 @@ defaults:
 
 run_name: "4_0_1rc3_lidc_eval"
 run_modes:
-  - val
   - test
-sanity_check: True
+sanity_check: False
 update_docs: False
 
 hydra:
