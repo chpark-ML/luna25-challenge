@@ -26,7 +26,8 @@ class BaseProcessor(ABC):
         self.mode = mode
         self.models = models
 
-    def _extract_patch(self, image, header, coord, output_shape, mode) -> np.array:
+    def _extract_patch(self, image, header, coord, output_shape, mode, size_mm=None) -> np.array:
+        size_mm = size_mm if size_mm is not None else self.size_mm
         patch = extract_patch(
             CTData=image,
             coord=coord,
@@ -35,9 +36,9 @@ class BaseProcessor(ABC):
             srcVoxelSpacing=header["spacing"],
             output_shape=output_shape,
             voxel_spacing=(
-                self.size_mm / self.size_px_z,
-                self.size_mm / self.size_px_xy,
-                self.size_mm / self.size_px_xy,
+                size_mm / self.size_px_z,
+                size_mm / self.size_px_xy,
+                size_mm / self.size_px_xy,
             ),
             coord_space_world=True,
             mode=mode,
@@ -51,13 +52,13 @@ class BaseProcessor(ABC):
         patch = clip_and_scale(patch)
         return patch  # (1, w, h, d)
 
-    def prepare_patch(self, image, header, coord, mode="3D") -> torch.Tensor:
+    def prepare_patch(self, image, header, coord, mode="3D", size_mm=None) -> torch.Tensor:
         if not self.suppress_logs:
             logging.info("Processing in " + mode)
 
         assert mode == "3D"
         output_shape = [self.size_px_z, self.size_px_xy, self.size_px_xy]
-        patch = self._extract_patch(image, header, coord, output_shape, mode=mode)  # (1, w, h, d)
+        patch = self._extract_patch(image, header, coord, output_shape, mode=mode, size_mm=size_mm)  # (1, w, h, d)
         patch = torch.from_numpy(patch).to(self.device)
 
         return patch.unsqueeze(0)  # 1, 1, w, h, d

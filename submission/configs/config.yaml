@@ -4,3 +4,4 @@ defaults:
   - models: 4_0_1.yaml
 
 mode: 3D
+do_tta_by_size: False

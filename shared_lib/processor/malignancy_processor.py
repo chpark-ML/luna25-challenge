@@ -13,22 +13,31 @@ class MalignancyProcessor(BaseProcessor):
     def __init__(self, models=None, mode="3D", device=torch.device("cuda:0"), suppress_logs=False):
         super().__init__(models=models, mode=mode, device=device, suppress_logs=suppress_logs)
 
-    def predict(self, numpy_image, header, coord):
+    def predict(self, numpy_image, header, coord, size_mm=None):
         """
         Perform model inference on the given input image and coordinate.
         """
-        patch = self.prepare_patch(numpy_image, header, coord, self.mode)
+        if not isinstance(size_mm, list):
+            size_mm = [size_mm]
 
-        probs = list()
-        for model_name, model in self.models.items():
-            logits = model.get_prediction(patch)
-            logits = logits.data.cpu().numpy()
-            probs.append(torch.sigmoid(torch.from_numpy(logits)).numpy())
+        tta_by_size = []
+        for size in size_mm:
+            patch = self.prepare_patch(numpy_image, header, coord, self.mode, size_mm=size)
+            probs = list()
+            for model_name, model in self.models.items():
+                logits = model.get_prediction(patch)
+                logits = logits.data.cpu().numpy()
+                probs.append(torch.sigmoid(torch.from_numpy(logits)).numpy())
 
-        probs = np.stack(probs, axis=0)  # shape: (num_models, ...)
-        mean_probs = np.mean(probs, axis=0)
+            probs = np.stack(probs, axis=0)  # shape: (num_models, ...)
+            mean_prob = np.mean(probs, axis=0)  # ensemble result
 
-        return mean_probs
+            tta_by_size.append(mean_prob)
+
+        # Combine predictions over different sizes (TTA)
+        final_prediction = np.mean(tta_by_size, axis=0)  # shape: (...)
+
+        return final_prediction
 
     def inference(self, loader, mode, sanity_check=False):
         list_probs = list()
