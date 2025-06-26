@@ -276,15 +276,17 @@ class MultiScaleAttnClassifierV2(nn.Module):
 
         # get gate results
         gate_results = list()
+        eps = torch.finfo(torch.float16).eps
         if self.use_gate:
             gate_results = self.gate_block(f_maps)
             gates_flatten = [torch.flatten(i_gate, start_dim=1) for i_gate in gate_results]
             total_interest = torch.cat(gates_flatten, dim=1).sum(1, keepdim=True)
-
         else:
             total_interest = 0
             for x in f_maps:
-                total_interest += torch.prod(torch.tensor(x.size()[-3:]))
+                volume = torch.prod(torch.tensor(x.size()[-3:], dtype=torch.float16))
+                total_interest += volume
+        total_interest = torch.clamp(total_interest, min=eps)
 
         # Loop for attributions
         logits = dict()
@@ -316,7 +318,9 @@ class MultiScaleAttnClassifierV2(nn.Module):
                         CE = classifier[i_attr](x)
                         gate = gate_results[idx_fmap]
                         CE = CE * gate
-                        logits_multi_scale[idx_fmap][i_attr] = torch.sum(CE, dim=(2, 3, 4), keepdim=True) / torch.sum(gate, dim=(2, 3, 4), keepdim=True)
+                        local_interest = torch.sum(gate, dim=(2, 3, 4), keepdim=True)
+                        local_interest = torch.clamp(local_interest, min=eps)
+                        logits_multi_scale[idx_fmap][i_attr] = torch.sum(CE, dim=(2, 3, 4), keepdim=True) / local_interest
                     else:
                         CE = classifier[i_attr](x)
                         logits_multi_scale[idx_fmap][i_attr] = torch.mean(CE, dim=(2, 3, 4), keepdim=True)
