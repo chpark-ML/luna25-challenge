@@ -2,9 +2,9 @@
 defaults:
   - loader: default
   - processor: default
-  - models: 5_0_2rc2.yaml
+  - models: 5_0_3rc2.yaml
 
-run_name: "5_0_2rc2"
+run_name: "5_0_3rc2"
 run_modes:
   - test
 
