@@ -10,7 +10,7 @@ run_name=cv_fine_val_fold${val_fold}_7CV_phase2
 
 LR=1e-4
 epoch=100
-model_path=/opt/challenge/trainer/downstream/outputs/default/cv_fine_val_fold${val_fold}_7CV/model_auroc.pth
+model_path=/team/team_blu3/lung/project/luna25/weights/nodulex-v5.0.2rc1/cv_fine_val_fold${val_fold}_7CV/model_auroc.pth
 
 fold_key=fold
 all_folds=(0 1 2 3 4 5 6)
