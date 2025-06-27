@@ -85,7 +85,7 @@ dataset:
       # augmentation
       augmentation:
         dicom_windowing:
-          aug_prob: 0.0
+          aug_prob: 0.5
           level_shift:
             min: -100.0
             max: 100.0
@@ -104,7 +104,7 @@ dataset:
           aug_prob: 1.0
           max_holes: 12
         rescale_image_3d:
-          aug_prob: 0.0
+          aug_prob: 0.5
           is_same_across_axes: True
           scale_factor:
             min: 0.8
@@ -117,8 +117,8 @@ dataset:
       dataset_info:
         pylidc:
           total_fold: [0, 1, 2, 3, 4, 5, 6]
-          val_fold: [ ]
-          test_fold: [ ]
+          val_fold: [ 5 ]
+          test_fold: [ 6 ]
           fold_key: fold
           collection_name: pylidc-nodule-cluster
           constant_mapper:
@@ -136,9 +136,12 @@ dataset:
             dicom_series_info.slice_thickness:
               "$lte": 3.5
             num_mask:
-              "$gte": 3
-            c_malignancy_logistic:
-              "$ne": 0.5
+              "$gte": 2
+            "$or": [
+              { "c_malignancy_logistic": { "$gte": 0.7 } },
+              { "c_malignancy_logistic": { "$lte": 0.3 } },
+            ]
+
 batch_size: 32
 num_workers: 4
 pin_memory: True
