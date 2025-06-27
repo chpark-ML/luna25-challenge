@@ -10,6 +10,7 @@ run_name=cv_fine_val_fold${val_fold}_7CV
 
 LR=1e-3
 epoch=100
+gamma=1
 model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_logistic_fmaps16_7CV/cls_all_model_5_val_fold${val_fold}_7CV/model_loss.pth
 
 fold_key=fold
@@ -28,6 +29,7 @@ HYDRA_FULL_ERROR=1 python3 main.py \
   "loader.dataset.datasets.1.dataset_info.pylidc.test_fold=[]" \
   "loader.dataset.datasets.1.dataset_info.pylidc.fold_key=${fold_key}" \
   scheduler.scheduler_repr.max_lr=${LR} \
+  criterion.cls_criterion.gamma=${gamma} \
   trainer.max_epoch=${epoch} \
   trainer.fine_tune_info.enable=True \
   trainer.fine_tune_info.freeze_encoder=False \

@@ -8,8 +8,9 @@ cd /opt/challenge/trainer/downstream
 
 run_name=cv_fine_val_fold${val_fold}_7CV_phase2
 
-LR=3e-3
+LR=1e-4
 epoch=100
+gamma=0
 model_path=/team/team_blu3/lung/project/luna25/weights/nodulex-v5.0.3rc1/cv_fine_val_fold${val_fold}_7CV/model_auroc.pth
 
 fold_key=fold
@@ -25,6 +26,7 @@ HYDRA_FULL_ERROR=1 python3 main.py \
   "loader.dataset.dataset_infos.luna25.test_fold=[]" \
   "loader.dataset.dataset_infos.luna25.fold_key=${fold_key}" \
   scheduler.scheduler_repr.max_lr=${LR} \
+  criterion.cls_criterion.gamma=${gamma} \
   trainer.max_epoch=${epoch} \
   trainer.fine_tune_info.enable=True \
   trainer.fine_tune_info.freeze_encoder=False \
