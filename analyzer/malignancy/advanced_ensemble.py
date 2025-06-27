@@ -598,6 +598,12 @@ def main(config: DictConfig):
     model_cols = [col for col in df.columns if col.startswith("prob_model_")]
     ensemble_col = "prob_ensemble"
 
+    # Check if this is LIDC dataset
+    is_lidc = "lidc" in result_path.lower()
+    if is_lidc:
+        logger.info("LIDC dataset detected, using binary_annotation")
+        df['annotation'] = df['binary_annotation']
+
     # Initialize analyzer with LOMO approach to avoid data leakage
     # LOMO: Leave-One-Model-Out approach where we train meta-learners on n-1 models
     # and test on the remaining model, repeating this for all models
