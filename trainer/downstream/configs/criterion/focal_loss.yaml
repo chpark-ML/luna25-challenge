@@ -1,7 +1,7 @@
 _target_: trainer.downstream.criterion.ClsLoss
 cls_criterion:
   _target_: trainer.common.criterions.focal_loss.FocalLoss
-  gamma: 0
+  gamma: 1
   alpha: 0.25
   smoothing: 0.05
   target_threshold_gte: 0.5
