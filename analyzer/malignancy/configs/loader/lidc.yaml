@@ -74,10 +74,11 @@ dataset:
         dicom_series_info.slice_thickness:
           "$lte": 3.5
         num_mask:
-          "$gte": 3
-        c_malignancy_logistic:
-          "$ne": 0.5
-
+          "$gte": 2
+        "$or": [
+          { "c_malignancy_logistic": { "$gte": 0.7 } },
+          { "c_malignancy_logistic": { "$lte": 0.3 } },
+        ]
 batch_size: 16
 num_workers: 4
 pin_memory: True

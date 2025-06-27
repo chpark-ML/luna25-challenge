@@ -1,4 +1,4 @@
 _target_: shared_lib.processor.malignancy_processor_lidc.MalignancyProcessorLIDC
 mode: "3D"
-device: "cuda:7"
+device: "cuda:0"
 suppress_logs: False
