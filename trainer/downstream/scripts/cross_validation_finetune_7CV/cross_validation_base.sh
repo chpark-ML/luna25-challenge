@@ -10,7 +10,7 @@ run_name=cv_fine_val_fold${val_fold}_7CV
 
 LR=1e-3
 epoch=100
-model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_logistic_7CV/cls_all_model_5_val_fold${val_fold}_7CV/model_loss.pth
+model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_logistic_fmaps16_7CV/cls_all_model_5_val_fold${val_fold}_7CV/model_loss.pth
 
 fold_key=fold
 all_folds=(0 1 2 3 4 5 6)
