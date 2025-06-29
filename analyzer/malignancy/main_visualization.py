@@ -6,6 +6,8 @@ import hydra
 import numpy as np
 import pandas as pd
 import pymongo
+import torch
+import torch.nn.functional as F
 from omegaconf import DictConfig
 from tqdm import tqdm
 
@@ -13,6 +15,8 @@ from data_lake.constants import DB_ADDRESS, TARGET_COLLECTION, TARGET_DB, DBKey
 from shared_lib.tools.image_parser import extract_patch
 from shared_lib.utils.utils import print_config
 from shared_lib.utils.utils_vis import save_plot
+from trainer.common.augmentation.hu_value import DicomWindowing
+from trainer.common.constants import GATE_KEY, GATED_LOGIT_KEY, LOGIT_KEY
 from trainer.downstream.datasets.luna25 import extract_patch_dicom_space
 
 logging.basicConfig(level=logging.INFO)
@@ -21,7 +25,7 @@ logger = logging.getLogger(__name__)
 _CLIENT = pymongo.MongoClient(DB_ADDRESS)
 
 
-def _fn_save_fig(df, output_dir):
+def _fn_save_fig(df, processor, output_dir):
     # loop for computing individual nodule, which is corresponding to the row.
     for index, row in tqdm(df.iterrows(), total=len(df)):
         annotation = row.at["annotation"]
@@ -71,8 +75,48 @@ def _fn_save_fig(df, output_dir):
             coord_space_world=False,
             mode="3D",
             order=1,
-        )
-        patch = np.squeeze(patch)
+        )  # (1, 48, 72, 72)
+        patch = patch.astype(np.float32)
+        HU_WINDOW = (-300, 1400)
+        hu_range = (HU_WINDOW[0] - HU_WINDOW[1] // 2,
+                    HU_WINDOW[0] + HU_WINDOW[1] // 2,)
+        patch = DicomWindowing(hu_range=hu_range)(patch)
+        patch = np.concatenate(patch, axis=0)  # (48, 72, 72)
+
+        patch = torch.from_numpy(patch).float().unsqueeze(0).unsqueeze(0)
+        output = processor.get_class_evidence(patch)
+
+        # caclu gated class evidence
+        gate_levels = [0, 1, 2]
+        resampled_logits = []
+        for i in gate_levels:
+            gate_logit = output[GATED_LOGIT_KEY][i]  # shape: (B, 1, D, H, W)
+            gate_logit_tensor = torch.from_numpy(gate_logit)  # Convert to torch.Tensor
+
+            # Resample to match the patch size (spatial dimensions only)
+            gate_logit_resampled = F.interpolate(
+                gate_logit_tensor,
+                size=patch.size()[2:],  # (D, H, W)
+                mode="trilinear",
+                align_corners=True
+            )
+            resampled_logits.append(gate_logit_resampled)
+
+        # Compute mean across levels
+        resampled_mean = torch.mean(torch.stack(resampled_logits, dim=0), dim=0)  # shape: (B, 1, D, H, W)
+
+        # mask vmin, vmax
+        use_percentile = False
+        if use_percentile:
+            q5 = torch.quantile(resampled_mean, 0.02)
+            q95 = torch.quantile(resampled_mean, 0.98)
+            max_abs = torch.max(torch.abs(q5), torch.abs(q95))
+            vmin_mask = -max_abs
+            vmax_mask = max_abs
+        else:
+            resampled_mean = torch.sigmoid(resampled_mean)
+            vmin_mask = 0.0
+            vmax_mask = 1.0
 
         # save visualization result
         figure_title = ""
@@ -84,12 +128,14 @@ def _fn_save_fig(df, output_dir):
         }
 
         save_plot(
-            input_image=patch,
-            mask_image=None,
+            input_image=patch.squeeze().detach().cpu().numpy(),
+            mask_image=resampled_mean.squeeze().detach().cpu().numpy(),
             nodule_zyx=None,
             figure_title=figure_title,
             meta=attr,
-            use_norm=True,
+            use_norm=False,
+            vmin_mask=vmin_mask,
+            vmax_mask=vmax_mask,
             save_dir=str(save_dir),
             dpi=60,
         )
@@ -134,25 +180,25 @@ def _get_topk_interests(df, sort_criterion="prob_ensemble", top_k=20):
 @hydra.main(version_base="1.2", config_path="configs", config_name="config_visualization")
 def main(config: DictConfig):
     print_config(config, resolve=True)
-    result_csv_path = config.result_csv_path
-    sort_criterion = config.sort_criterion
+
+    # processor
+    models = dict()
+    for model_indicator, config_model in config.models.items():
+        models[model_indicator] = hydra.utils.instantiate(config_model)
+    processor = hydra.utils.instantiate(config.processor, models=models)
 
     # read result csv
+    result_csv_path = config.result_csv_path
     df = pd.read_csv(result_csv_path)
     df = df[df["mode"] == "test"]
 
     # get nodules of interest
+    sort_criterion = config.sort_criterion
     df_interest = _get_topk_interests(df, sort_criterion=sort_criterion)
-
-    # Prepare query for MongoDB
     annotation_ids = df_interest["annot_ids"].tolist()
     query = {"annotation_id": {"$in": annotation_ids}}
     projection = {}  # Include all fields
-
-    # Fetch documents from MongoDB
     nodule_candidates = list(_CLIENT[TARGET_DB][TARGET_COLLECTION].find(query, projection))
-
-    # Convert MongoDB documents to DataFrame
     db_df = pd.DataFrame(nodule_candidates)
 
     # Merge the interest dataframe with MongoDB results on 'annot_ids'
@@ -160,7 +206,7 @@ def main(config: DictConfig):
 
     # Visualization
     output_dir = f"fig_volume/{sort_criterion}"
-    _fn_save_fig(merged_df, output_dir=output_dir)
+    _fn_save_fig(merged_df, processor, output_dir=output_dir)
 
 
 if __name__ == "__main__":

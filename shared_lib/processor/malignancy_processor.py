@@ -3,6 +3,7 @@ import torch
 from tqdm import tqdm
 
 from shared_lib.processor.base_processor import BaseProcessor
+from trainer.common.constants import GATE_KEY, GATED_LOGIT_KEY, LOGIT_KEY
 
 
 class MalignancyProcessor(BaseProcessor):
@@ -38,6 +39,48 @@ class MalignancyProcessor(BaseProcessor):
         final_prediction = np.mean(tta_by_size, axis=0)  # shape: (...)
 
         return final_prediction
+
+    def get_class_evidence(self, patch):
+        """
+        Perform model inference using multiple models on a single input patch.
+        Aggregates outputs including logits, gate activations, and gated logits.
+        """
+        gate_levels = [0, 1, 2]
+
+        # Initialize containers for model ensemble aggregation
+        logits_all_models = []
+        gates_all_models = {i: [] for i in gate_levels}
+        gated_logits_all_models = {i: [] for i in gate_levels}
+
+        for model in self.models.values():
+            target_attr = model.model.classifier.target_attr_downstream
+            outputs = model.get_intermediate_results(patch)
+
+            # Extract and store sigmoid-activated logits
+            logits = outputs[LOGIT_KEY][target_attr]
+            logits_np = torch.sigmoid(logits).detach().cpu().numpy()
+            logits_all_models.append(logits_np)
+
+            # Extract gate features and gated logits at each level
+            for i in gate_levels:
+                gate_np = outputs[GATE_KEY][i].detach().cpu().numpy()
+                gated_logit_np = outputs[GATED_LOGIT_KEY][target_attr][i].detach().cpu().numpy()
+
+                gates_all_models[i].append(gate_np)
+                gated_logits_all_models[i].append(gated_logit_np)
+
+        # Final aggregation over models
+        final_results = {
+            LOGIT_KEY: np.mean(np.stack(logits_all_models, axis=0), axis=0),
+            GATE_KEY: {},
+            GATED_LOGIT_KEY: {}
+        }
+
+        for i in gate_levels:
+            final_results[GATE_KEY][i] = np.mean(np.stack(gates_all_models[i], axis=0), axis=0)
+            final_results[GATED_LOGIT_KEY][i] = np.mean(np.stack(gated_logits_all_models[i], axis=0), axis=0)
+
+        return final_results
 
     @staticmethod
     def interpolate_and_center_crop_5d(image, scale_factor, target_size):
