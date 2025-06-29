@@ -4,6 +4,7 @@ from typing import Union
 
 import hydra
 import torch
+from omegaconf import OmegaConf
 
 from shared_lib.utils.utils import get_device
 
@@ -56,16 +57,17 @@ class ModelBaseTorchCheckpoint(ABC):
     Base abstract class for all the models that use Torchscript
     """
 
-    def __init__(self, config_model=None, checkpoint_path=None, device=None):
+    def __init__(self, model_config_path=None, checkpoint_path=None, device=None):
         self.device = device if isinstance(device, torch.device) else torch.device(device)
-        self.config_model = config_model
+        self.model_config_path = model_config_path
         self.checkpoint_path = checkpoint_path
 
         self._build_model(training=False)
 
     def _build_model(self, training=False) -> None:
         # init
-        self.model = hydra.utils.instantiate(self.config_model)
+        # TODO: model.model_repr is hardcoded; consider making it configurable via a variable.
+        self.model = hydra.utils.instantiate(OmegaConf.load(self.model_config_path).model.model_repr)
         model_dict = self.model.state_dict()
 
         # load pretrained
