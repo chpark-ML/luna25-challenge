@@ -57,9 +57,9 @@ class ModelBaseTorchCheckpoint(ABC):
     Base abstract class for all the models that use Torchscript
     """
 
-    def __init__(self, model_config_path=None, checkpoint_path=None, device=None):
+    def __init__(self, config_path=None, checkpoint_path=None, device=None):
         self.device = device if isinstance(device, torch.device) else torch.device(device)
-        self.model_config_path = model_config_path
+        self.config_path = config_path
         self.checkpoint_path = checkpoint_path
 
         self._build_model(training=False)
@@ -67,7 +67,12 @@ class ModelBaseTorchCheckpoint(ABC):
     def _build_model(self, training=False) -> None:
         # init
         # TODO: model.model_repr is hardcoded; consider making it configurable via a variable.
-        self.model = hydra.utils.instantiate(OmegaConf.load(self.model_config_path).model.model_repr)
+        model_config = OmegaConf.load(self.config_path).model.model_repr
+        if hasattr(model_config, "return_downstream_logit"):
+            model_config.return_downstream_logit = False
+        if hasattr(model_config, "return_named_tuple"):
+            model_config.return_named_tuple = False
+        self.model = hydra.utils.instantiate(model_config)
         model_dict = self.model.state_dict()
 
         # load pretrained
@@ -82,6 +87,7 @@ class ModelBaseTorchCheckpoint(ABC):
 
         # 3. load the new state dict
         self.model.load_state_dict(model_dict)
+        self.model.to(self.device)
 
         if not training:
             self.model.eval()
