@@ -145,6 +145,7 @@ class MalignancyProcessor(BaseProcessor):
 
             # inference (model-wise)
             batch_probs = list()
+            weights = []  # collect weights if they exist
             for model_name, model in self.models.items():
                 if do_tta_by_size:
                     probs_by_size = []
@@ -160,12 +161,20 @@ class MalignancyProcessor(BaseProcessor):
                 # Save per-model probabilities
                 dict_probs[model_name].append(prob)
 
-                # Aggregate for overall averaging
+                # Collect probabilities and weights if they exist
                 batch_probs.append(prob)
+                weights.append(getattr(model, 'weight', None))
 
-            # Mean across models
+            # Stack probabilities
             batch_probs = torch.stack(batch_probs)  # (num_models, B, 1)
-            mean_probs = torch.mean(batch_probs, dim=0)  # (B, 1)
+
+            # Apply logistic regression weights if all models have weights, otherwise use mean
+            if all(w is not None for w in weights):
+                weights = torch.tensor(weights, device=batch_probs.device)
+                weights = weights / weights.sum()  # normalize weights
+                mean_probs = torch.sum(batch_probs * weights[:, None, None], dim=0)  # (B, 1)
+            else:
+                mean_probs = torch.mean(batch_probs, dim=0)  # (B, 1)
 
             list_probs.append(mean_probs)
             list_annots.append(annot)
