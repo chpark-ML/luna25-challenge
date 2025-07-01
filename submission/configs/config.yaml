@@ -5,3 +5,9 @@ defaults:
 
 mode: 3D
 do_tta_by_size: False
+
+# Ensemble configuration
+ensemble:
+  use_logistic_regression: False  # Set to True to enable ensemble
+  weights: [0.3, 0.3, 0.4]  # Example weights for 3 models
+  intercept: 0.0  # Logistic regression intercept
