@@ -4,6 +4,7 @@ model_0:
   exp_name: cv_fine_val_fold0_7CV_phase2
   file_name: cuda_model_auroc.ts
   device: 0
+  weight: 0.15  # logistic regression weight
 
 model_1:
   _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
@@ -11,6 +12,7 @@ model_1:
   exp_name: cv_fine_val_fold1_7CV_phase2
   file_name: cuda_model_auroc.ts
   device: 0
+  weight: 0.15  # logistic regression weight
 
 model_2:
   _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
@@ -18,6 +20,7 @@ model_2:
   exp_name: cv_fine_val_fold2_7CV_phase2
   file_name: cuda_model_auroc.ts
   device: 0
+  weight: 0.14  # logistic regression weight
 
 model_3:
   _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
@@ -25,6 +28,7 @@ model_3:
   exp_name: cv_fine_val_fold3_7CV_phase2
   file_name: cuda_model_auroc.ts
   device: 0
+  weight: 0.14  # logistic regression weight
 
 model_4:
   _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
@@ -32,6 +36,7 @@ model_4:
   exp_name: cv_fine_val_fold4_7CV_phase2
   file_name: cuda_model_auroc.ts
   device: 0
+  weight: 0.14  # logistic regression weight
 
 model_5:
   _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
@@ -39,6 +44,7 @@ model_5:
   exp_name: cv_fine_val_fold5_7CV_phase2
   file_name: cuda_model_auroc.ts
   device: 0
+  weight: 0.14  # logistic regression weight
 
 model_6:
   _target_: shared_lib.model_runner.malignancy_runner.MalignancyRunner
@@ -46,3 +52,4 @@ model_6:
   exp_name: cv_fine_val_fold6_7CV_phase2
   file_name: cuda_model_auroc.ts
   device: 0
+  weight: 0.14  # logistic regression weight
