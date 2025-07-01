@@ -6,7 +6,6 @@ import json
 from glob import glob
 from pathlib import Path
 
-import numpy as np
 import torch
 from input_processor import ImageProcessor
 
@@ -50,14 +49,6 @@ def _show_torch_cuda_info():
     print("=+=" * 10)
 
 
-def apply_logistic_regression(predictions, weights, intercept):
-    """Apply pre-trained logistic regression weights to ensemble predictions"""
-    # predictions: array of shape (n_samples, n_models)
-    # weights: array of shape (n_models,)
-    # intercept: float
-    return 1 / (1 + np.exp(-(np.dot(predictions, weights) + intercept)))
-
-
 def run(config):
     # Read the inputs
     input_nodule_locations = _load_json_file(location=INPUT_PATH / "nodule-locations.json")
@@ -66,23 +57,9 @@ def run(config):
 
     # Validate access to GPU
     _show_torch_cuda_info()
-
     # Run your algorithm here
     processor = ImageProcessor(config=config)
     malignancy_risks = processor.process(input_chest_ct, input_nodule_locations, input_clinical_information)
-
-    # If ensemble weights are provided in config, apply logistic regression
-    if hasattr(config, 'ensemble') and config.ensemble.use_logistic_regression:
-        raw_predictions = np.array([pred['probability'] for pred in predictions['points']])
-        ensemble_predictions = apply_logistic_regression(
-            raw_predictions,
-            config.ensemble.weights,
-            config.ensemble.intercept
-        )
-
-        # Update predictions with ensemble results
-        for i, point in enumerate(malignancy_risks['points']):
-            point['probability'] = float(ensemble_predictions[i])
 
     # Save your output
     _write_json_file(
