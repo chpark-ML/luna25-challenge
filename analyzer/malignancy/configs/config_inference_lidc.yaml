@@ -10,8 +10,10 @@ run_modes:
 
 sanity_check: False
 
+result_csv_path: "/opt/challenge/analyzer/malignancy/outputs/inference_results_lidc/5_0_2rc2/result_5_0_2rc2.csv"
+
 hydra:
   run:
-    dir: ./outputs/inference_results_lidc
+    dir: ./outputs/inference_results_lidc/5_0_2rc2
   job:
     chdir: True  # keep hydra = 1.1 change directory behavior
