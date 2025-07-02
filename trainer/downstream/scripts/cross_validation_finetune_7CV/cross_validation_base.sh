@@ -6,8 +6,13 @@ val_fold=$2
 
 cd /opt/challenge/trainer/downstream
 
-run_name=cv_fine_val_fold${val_fold}_7CV
+# load model configs
+model_num=6
+source /opt/challenge/trainer/common/model_config.sh ${model_num}
 
+run_name=cv_fine_model${model_num}_val_fold${val_fold}_7CV
+
+# args
 LR=1e-3
 epoch=100
 model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_logistic_7CV/cls_all_model_5_val_fold${val_fold}_7CV/model_loss.pth
@@ -19,6 +24,12 @@ all_fold_str="[${all_fold_str:1}]"  # 앞의 쉼표 제거
 
 HYDRA_FULL_ERROR=1 python3 main.py \
   experiment_tool.run_name=${run_name} \
+  model.model_repr.classifier.num_features=${num_features} \
+  model.model_repr.classifier.use_gate=${use_gate} \
+  model.model_repr.classifier.use_coord=${use_coord} \
+  model.model_repr.classifier.use_fusion=${use_fusion} \
+  criterion.aux_criterion.loss_weight=${aux_loss_weight} \
+  criterion.entropy_criterion.loss_weight=${entropy_loss_weight} \
   "loader.dataset.datasets.0.dataset_infos.luna25.total_fold=${all_fold_str}" \
   "loader.dataset.datasets.0.dataset_infos.luna25.val_fold=[${val_fold}]" \
   "loader.dataset.datasets.0.dataset_infos.luna25.test_fold=[]" \
