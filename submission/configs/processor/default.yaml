@@ -3,4 +3,4 @@ models:
 mode: 3D
 device: 0
 suppress_logs: False
-lr_weights_path: /opt/app/resources/lr_ensemble_weights.json
+lr_weights_path: /opt/app/shared_lib/processor/lr_ensemble_weights.json
