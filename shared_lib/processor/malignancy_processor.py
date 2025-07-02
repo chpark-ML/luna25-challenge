@@ -196,19 +196,16 @@ class MalignancyProcessor(BaseProcessor):
 
             # Apply logistic regression weights if loaded, otherwise use simple mean
             if self.lr_weights is not None and self.lr_intercept is not None:
-                # Convert probabilities back to logits for proper logistic regression ensemble
-                batch_logits = torch.log(batch_probs / (1 - batch_probs + 1e-7))  # (num_models, B, 1)
-
-                # Use loaded LR weights
-                weights = torch.tensor(self.lr_weights, device=batch_logits.device)
-                mean_logits = torch.sum(batch_logits * weights[:, None, None], dim=0)  # (B, 1)
+                # Apply learned weights directly in probability space (like advanced_ensemble.py)
+                weights = torch.tensor(self.lr_weights, device=batch_probs.device)
+                weighted_probs = torch.sum(batch_probs * weights[:, None, None], dim=0)  # (B, 1)
 
                 # Add loaded intercept
-                intercept_tensor = torch.tensor(self.lr_intercept, device=mean_logits.device)
-                mean_logits += intercept_tensor
+                intercept_tensor = torch.tensor(self.lr_intercept, device=weighted_probs.device)
+                weighted_probs += intercept_tensor
 
-                # Convert back to probabilities
-                mean_probs = torch.sigmoid(mean_logits)  # (B, 1)
+                # Convert to probabilities (sigmoid)
+                mean_probs = torch.sigmoid(weighted_probs)  # (B, 1)
             else:
                 # Fallback to simple mean if no LR weights loaded
                 mean_probs = torch.mean(batch_probs, dim=0)  # (B, 1)
