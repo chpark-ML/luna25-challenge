@@ -1,3 +1,6 @@
+import json
+import os
+
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -11,8 +14,36 @@ class MalignancyProcessor(BaseProcessor):
     Loads a chest CT scan, and predicts the malignancy around a nodule
     """
 
-    def __init__(self, models=None, mode="3D", device=torch.device("cuda:0"), suppress_logs=False):
+    def __init__(self, models=None, mode="3D", device=torch.device("cuda:0"), suppress_logs=False,
+                 lr_weights_path=None):
         super().__init__(models=models, mode=mode, device=device, suppress_logs=suppress_logs)
+
+        # Load logistic regression weights if provided
+        self.lr_weights = None
+        self.lr_intercept = None
+        if lr_weights_path and os.path.exists(lr_weights_path):
+            self.load_lr_weights(lr_weights_path)
+
+    def load_lr_weights(self, weights_path: str):
+        """Load logistic regression weights from JSON file"""
+        try:
+            with open(weights_path, 'r') as f:
+                weights_dict = json.load(f)
+
+            self.lr_weights = weights_dict['weights']
+            self.lr_intercept = weights_dict['intercept']
+            self.model_order = weights_dict.get('model_order', [])
+
+            if not self.suppress_logs:
+                print(f"Loaded LR weights from: {weights_path}")
+                print(f"Weights: {self.lr_weights}")
+                print(f"Intercept: {self.lr_intercept}")
+
+        except Exception as e:
+            if not self.suppress_logs:
+                print(f"Failed to load LR weights from {weights_path}: {e}")
+            self.lr_weights = None
+            self.lr_intercept = None
 
     def predict(self, numpy_image, header, coord, size_mm=None):
         """
@@ -142,7 +173,6 @@ class MalignancyProcessor(BaseProcessor):
 
             # inference (model-wise)
             batch_probs = list()
-            weights = []  # collect weights if they exist
             for model_name, model in self.models.items():
                 if do_tta_by_size:
                     probs_by_size = []
@@ -158,19 +188,29 @@ class MalignancyProcessor(BaseProcessor):
                 # Save per-model probabilities
                 dict_probs[model_name].append(prob)
 
-                # Collect probabilities and weights if they exist
+                # Collect probabilities
                 batch_probs.append(prob)
-                weights.append(getattr(model, 'weight', None))
 
             # Stack probabilities
             batch_probs = torch.stack(batch_probs)  # (num_models, B, 1)
 
-            # Apply logistic regression weights if all models have weights, otherwise use mean
-            if all(w is not None for w in weights):
-                weights = torch.tensor(weights, device=batch_probs.device)
-                weights = weights / weights.sum()  # normalize weights
-                mean_probs = torch.sum(batch_probs * weights[:, None, None], dim=0)  # (B, 1)
+            # Apply logistic regression weights if loaded, otherwise use simple mean
+            if self.lr_weights is not None and self.lr_intercept is not None:
+                # Convert probabilities back to logits for proper logistic regression ensemble
+                batch_logits = torch.log(batch_probs / (1 - batch_probs + 1e-7))  # (num_models, B, 1)
+
+                # Use loaded LR weights
+                weights = torch.tensor(self.lr_weights, device=batch_logits.device)
+                mean_logits = torch.sum(batch_logits * weights[:, None, None], dim=0)  # (B, 1)
+
+                # Add loaded intercept
+                intercept_tensor = torch.tensor(self.lr_intercept, device=mean_logits.device)
+                mean_logits += intercept_tensor
+
+                # Convert back to probabilities
+                mean_probs = torch.sigmoid(mean_logits)  # (B, 1)
             else:
+                # Fallback to simple mean if no LR weights loaded
                 mean_probs = torch.mean(batch_probs, dim=0)  # (B, 1)
 
             list_probs.append(mean_probs)
