@@ -3,7 +3,7 @@ defaults:
   - _self_
   - trainer: default
   - loader: combined.yaml
-  - criterion: focal_loss
+  - criterion: default
   - model: unet_3d_MS_v2
   - optim: adamw
   - scheduler: one_cycle_lr

@@ -11,6 +11,14 @@ from sklearn import metrics
 
 import trainer.common.train as comm_train
 from shared_lib.enums import BaseBestModelStandard, RunMode
+from trainer.common.constants import (
+    ATTR_ANNOTATION_KEY,
+    INPUT_PATCH_KEY,
+    LOGIT_KEY,
+    SEG_ANNOTATION_KEY,
+    SEG_LOGIT_KEY,
+    LossKey,
+)
 from trainer.common.enums import ModelName, ThresholdMode
 from trainer.downstream.datasets.constants import DataLoaderKeys
 
@@ -44,25 +52,29 @@ class Trainer(comm_train.Trainer):
     """Trainer to train model"""
 
     def __init__(
-        self,
-        model,
-        optimizer,
-        scheduler,
-        criterion,
-        thresholding_mode_representative,
-        thresholding_mode,
-        grad_clip_max_norm,
-        **kwargs,
+            self,
+            model,
+            optimizer,
+            scheduler,
+            criterion,
+            thresholding_mode_representative,
+            thresholding_mode,
+            grad_clip_max_norm,
+            target_attr_total,
+            target_attr_to_train,
+            target_attr_downstream,
+            **kwargs,
     ) -> None:
         self.repr_model_name = ModelName.REPRESENTATIVE
         super().__init__(model, optimizer, scheduler, criterion, **kwargs)
         self.thresholding_mode_representative = ThresholdMode.get_mode(thresholding_mode_representative)
         self.thresholding_mode = ThresholdMode.get_mode(thresholding_mode)
         self.grad_clip_max_norm = grad_clip_max_norm
+        self.target_attr_downstream = target_attr_downstream
 
     @classmethod
     def instantiate_trainer(
-        cls, config: omegaconf.DictConfig, loaders, logging_tool, optuna_trial=None
+            cls, config: omegaconf.DictConfig, loaders, logging_tool, optuna_trial=None
     ) -> comm_train.Trainer:
         # Init model
         models = dict()
@@ -136,13 +148,16 @@ class Trainer(comm_train.Trainer):
             self.optimizer[ModelName.REPRESENTATIVE].zero_grad()
             patch_image = data[DataLoaderKeys.IMAGE].to(self.device)
             _check_any_nan(patch_image)
-            annot = data[DataLoaderKeys.LABEL].to(self.device).float()
+
+            annot = data[DataLoaderKeys.LABEL].to(self.device).float()  # (B, 1)
+            annots = {self.target_attr_downstream: annot}
 
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
-                logits = self.model[ModelName.REPRESENTATIVE](patch_image)
-                logits = logits.view(-1, 1)  # considering the prediction tensor can be either (B,) or (B, 1)
-                loss = self.criterion(logits, annot)
+                output = self.model[ModelName.REPRESENTATIVE](patch_image)
+                dict_loss = self.criterion(output, annots, seg_annot=None, epoch=epoch, total_epoch=self.max_epoch - 1,
+                                           attr_mask=None, is_logit=True, is_logistic=True)
+                loss = dict_loss[LossKey.total]
                 train_losses.append(loss.detach())
 
             # set trace for checking nan values
@@ -241,7 +256,9 @@ class Trainer(comm_train.Trainer):
         self.dict_threshold = dict_threshold
 
     def get_metrics(self, logits, probs, annots):
-        losses = self.criterion(logits, annots)
+        outputs = {LOGIT_KEY: {self.target_attr_downstream: logits}}
+        annots_dict = {self.target_attr_downstream: annots}
+        losses = self.criterion(outputs, annots_dict)[LossKey.cls]
         result_dict = self.get_binary_classification_metrics(
             probs,
             annots,
@@ -253,10 +270,10 @@ class Trainer(comm_train.Trainer):
 
     @staticmethod
     def get_binary_classification_metrics(
-        prob: torch.Tensor,
-        annot: torch.Tensor,
-        threshold: dict,
-        threshold_mode: ThresholdMode = ThresholdMode.YOUDEN,
+            prob: torch.Tensor,
+            annot: torch.Tensor,
+            threshold: dict,
+            threshold_mode: ThresholdMode = ThresholdMode.YOUDEN,
     ):
         assert type(prob) == type(annot)
         result_dict = dict()
@@ -379,7 +396,8 @@ class Trainer(comm_train.Trainer):
             annot = data[DataLoaderKeys.LABEL].to(self.device).float()
 
             # inference
-            logits = self.model[ModelName.REPRESENTATIVE](patch_image)
+            outputs = self.model[ModelName.REPRESENTATIVE](patch_image)
+            logits = outputs[LOGIT_KEY][self.target_attr_downstream]
             logits = logits.view(-1, 1)  # considering the prediction tensor can be either (B,) or (B, 1)
 
             list_logits.append(logits)
