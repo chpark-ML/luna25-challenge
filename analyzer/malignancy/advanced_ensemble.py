@@ -1,5 +1,7 @@
+import json
 import logging
 import os
+import warnings
 from typing import Dict, List
 
 import hydra
@@ -18,6 +20,8 @@ from shared_lib.utils.utils import print_config, set_seed
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+warnings.filterwarnings('ignore')
+
 
 class MalignancyAdvancedEnsembleAnalyzer:
     """Advanced ensemble analysis with multiple methods and optimization for malignancy models"""
@@ -28,8 +32,8 @@ class MalignancyAdvancedEnsembleAnalyzer:
         self.ensemble_col = ensemble_col
         self.y_true = df['annotation']
 
-    def logistic_regression_ensemble_lomo(self) -> Dict:
-        """Learn optimal weights using logistic regression with Leave-One-Model-Out"""
+    def logistic_regression_ensemble_lomo(self, save_weights: bool = True, weights_path: str = "lr_ensemble_weights.json") -> Dict:
+        """Use Logistic Regression as meta-learner with Leave-One-Model-Out"""
         if len(self.model_cols) < 2:
             raise ValueError("Need at least 2 models for LOMO ensemble")
 
@@ -43,12 +47,32 @@ class MalignancyAdvancedEnsembleAnalyzer:
             train_cols = [col for j, col in enumerate(self.model_cols) if j != i]
             test_col = self.model_cols[i]
 
-            # Train logistic regression on n-1 models
-            X_train = self.df[train_cols].values
+            # Convert probabilities to logits for training
+            X_train = np.log(self.df[train_cols] / (1 - self.df[train_cols] + 1e-10))
             y_train = self.y_true.values
 
             lr = LogisticRegression(random_state=42, max_iter=1000)
             lr.fit(X_train, y_train)
+
+            # Save individual fold weights if requested
+            if save_weights:
+                fold_weights_dict = {
+                    'fold': i,
+                    'held_out_model': test_col,
+                    'train_models': train_cols,
+                    'weights': lr.coef_[0].tolist(),
+                    'intercept': float(lr.intercept_[0]),
+                    'model_order': train_cols
+                }
+
+                # Save individual fold weights
+                fold_weights_path = weights_path.replace('.json', f'_fold_{i}.json')
+                os.makedirs(os.path.dirname(fold_weights_path) if os.path.dirname(fold_weights_path) else '.', exist_ok=True)
+
+                with open(fold_weights_path, 'w') as f:
+                    json.dump(fold_weights_dict, f, indent=2)
+
+                print(f"Saved fold {i} weights to: {fold_weights_path}")
 
             # Test on the held-out model by creating ensemble with learned weights
             # We can't directly test on single model since LR expects same number of features
@@ -78,7 +102,6 @@ class MalignancyAdvancedEnsembleAnalyzer:
         avg_auroc = np.mean(all_aurocs)
 
         # Create final ensemble using all models with average weights
-        # Pad weights to match all models (insert zeros for held-out positions)
         final_weights = np.zeros(len(self.model_cols))
         for i in range(len(self.model_cols)):
             train_cols = [col for j, col in enumerate(self.model_cols) if j != i]
@@ -92,6 +115,25 @@ class MalignancyAdvancedEnsembleAnalyzer:
         ensemble_probs = np.zeros(len(self.df))
         for i, col in enumerate(self.model_cols):
             ensemble_probs += final_weights[i] * self.df[col].values
+
+        # Save final averaged weights if requested
+        if save_weights:
+            final_weights_dict = {
+                'weights': final_weights.tolist(),
+                'intercept': float(avg_intercept),
+                'model_order': self.model_cols,
+                'auroc': float(avg_auroc),
+                'lomo_aurocs': [float(auroc) for auroc in all_aurocs],
+                'description': 'Final averaged weights from LOMO cross-validation'
+            }
+
+            # Create directory if it doesn't exist
+            os.makedirs(os.path.dirname(weights_path) if os.path.dirname(weights_path) else '.', exist_ok=True)
+
+            with open(weights_path, 'w') as f:
+                json.dump(final_weights_dict, f, indent=2)
+
+            print(f"Saved final averaged weights to: {weights_path}")
 
         return {
             'probs': ensemble_probs,
@@ -390,8 +432,8 @@ class MalignancyAdvancedEnsembleAnalyzer:
             'weights': weights
         }
 
-        # Advanced methods with LOMO
-        methods['logistic_regression_lomo'] = self.logistic_regression_ensemble_lomo()
+        # Advanced methods with LOMO (disable saving)
+        methods['logistic_regression_lomo'] = self.logistic_regression_ensemble_lomo(save_weights=False)
         methods['random_forest_lomo'] = self.random_forest_ensemble_lomo()
         methods['gradient_optimization_lomo'] = self.optimize_weights_gradient_lomo()
 
@@ -585,51 +627,52 @@ def main(config: DictConfig):
     print_config(config, resolve=True)
     set_seed()
 
-    # Load results from config
-    result_path = config.result_csv_path
-    logger.info(f"Loading results from: {result_path}")
-    df = pd.read_csv(result_path)
+    # Load data
+    df = pd.read_csv(config.result_csv_path)
 
-    # For malignancy, use all data since there's no separate test set
-    # All models were trained on all folds, so we evaluate on the entire dataset
-    logger.info(f"Using all data for malignancy analysis: {len(df)} samples")
+    # Split data based on mode
+    df_val = df[df['mode'] == 'val'].copy()
+    df_test = df[df['mode'] == 'test'].copy()
 
-    # Extract model columns
-    model_cols = [col for col in df.columns if col.startswith("prob_model_")]
-    ensemble_col = "prob_ensemble"
+    if len(df_val) == 0:
+        print("No validation data found! Using test data for both training and evaluation.")
+        df_val = df_test.copy()
 
-    # Check if this is LIDC dataset
-    is_lidc = "lidc" in result_path.lower()
-    if is_lidc:
-        logger.info("LIDC dataset detected, using binary_annotation")
-        df['annotation'] = df['binary_annotation']
+    print(f"Validation data: {len(df_val)} samples")
+    print(f"Test data: {len(df_test)} samples")
 
-    # Initialize analyzer with LOMO approach to avoid data leakage
-    # LOMO: Leave-One-Model-Out approach where we train meta-learners on n-1 models
-    # and test on the remaining model, repeating this for all models
-    analyzer = MalignancyAdvancedEnsembleAnalyzer(df, model_cols, ensemble_col)
+    # Get model columns
+    model_cols = [col for col in df.columns if col.startswith('prob_model_')]
+    print(f"Found model columns: {model_cols}")
 
-    # Create output directory
-    output_dir = "malignancy_advanced_ensemble_output"
-    os.makedirs(output_dir, exist_ok=True)
+    # Train ensemble on validation data
+    analyzer_val = MalignancyAdvancedEnsembleAnalyzer(df_val, model_cols)
 
-    # Generate analysis
-    logger.info("Generating advanced ensemble analysis for malignancy with LOMO...")
-    report_path = analyzer.generate_advanced_report(output_dir)
+    # Learn logistic regression ensemble and save individual fold weights
+    weights_save_path = os.path.join(config.get('output_dir', 'outputs'), 'lr_ensemble_weights.json')
+    lr_result = analyzer_val.logistic_regression_ensemble_lomo(
+        save_weights=True,
+        weights_path=weights_save_path
+    )
 
-    # Create visualizations
-    logger.info("Creating comprehensive visualizations...")
-    analyzer.create_comprehensive_visualizations(output_dir)
+    print(f"\nLogistic Regression Ensemble (trained on val data):")
+    print(f"AUROC: {lr_result['auroc']:.4f}")
+    print(f"Weights: {lr_result['weights']}")
+    print(f"Intercept: {lr_result['intercept']:.4f}")
 
-    # Print summary
-    methods = analyzer.compare_all_methods()
+    # Test ensemble on test data
+    analyzer_test = MalignancyAdvancedEnsembleAnalyzer(df_test, model_cols)
 
-    print("\n" + "="*60)
-    print("MALIGNANCY ADVANCED ENSEMBLE ANALYSIS SUMMARY (LOMO)")
-    print("="*60)
+    # Compare all methods on test data
+    print("\n" + "="*50)
+    print("ENSEMBLE COMPARISON ON TEST DATA")
+    print("="*50)
 
+    results = analyzer_test.compare_all_methods()
+
+    # Print detailed comparison results
     print("\n🏆 Method Performance Ranking:")
-    sorted_methods = sorted(methods.items(), key=lambda x: x[1]['auroc'], reverse=True)
+    sorted_methods = sorted(results.items(), key=lambda x: x[1]['auroc'], reverse=True)
     for i, (method_name, method_result) in enumerate(sorted_methods, 1):
         print(f"  {i}. {method_name}: AUROC = {method_result['auroc']:.4f}")
 
@@ -643,16 +686,33 @@ def main(config: DictConfig):
             print(f"  {col}: {weight:.4f}")
 
     # Print LOMO details for methods that use it
-    for method_name, method_result in methods.items():
+    for method_name, method_result in results.items():
         if 'lomo_aurocs' in method_result:
             print(f"\n📈 {method_name} LOMO Details:")
             print(f"  Individual LOMO AUROCs: {[f'{auroc:.4f}' for auroc in method_result['lomo_aurocs']]}")
             print(f"  Average LOMO AUROC: {method_result['auroc']:.4f}")
 
-    print(f"\n📄 Detailed report saved to: {report_path}")
-    print(f"📊 Visualizations saved to: {output_dir}/")
+    # Copy only the final averaged weights to submission resources
+    submission_weights_path = "../../submission/resources/lr_ensemble_weights.json"
 
-    return 0
+    if os.path.exists(weights_save_path):
+        import shutil
+        os.makedirs(os.path.dirname(submission_weights_path), exist_ok=True)
+        shutil.copy2(weights_save_path, submission_weights_path)
+        print(f"\nCopied final weights to submission resources: {submission_weights_path}")
+
+    # Create output directory
+    output_dir = config.get('output_dir', 'outputs/advanced_ensemble_analysis')
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Generate comprehensive visualizations and report
+    analyzer_test.create_comprehensive_visualizations(output_dir)
+    report_path = analyzer_test.generate_advanced_report(output_dir)
+
+    print(f"\nAnalysis complete! Results saved to: {output_dir}")
+    print(f"Report saved to: {report_path}")
+    print(f"Final LR weights saved to: {weights_save_path}")
+    print(f"Individual fold weights saved as: {weights_save_path.replace('.json', '_fold_*.json')}")
 
 
 if __name__ == "__main__":
