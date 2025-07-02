@@ -693,13 +693,13 @@ def main(config: DictConfig):
             print(f"  Average LOMO AUROC: {method_result['auroc']:.4f}")
 
     # Copy only the final averaged weights to submission resources
-    submission_weights_path = "../../submission/resources/lr_ensemble_weights.json"
+    submission_weights_path = "../../shared_lib/processor/lr_ensemble_weights.json"
 
     if os.path.exists(weights_save_path):
         import shutil
         os.makedirs(os.path.dirname(submission_weights_path), exist_ok=True)
         shutil.copy2(weights_save_path, submission_weights_path)
-        print(f"\nCopied final weights to submission resources: {submission_weights_path}")
+        print(f"\nCopied final weights to shared_lib: {submission_weights_path}")
 
     # Create output directory
     output_dir = config.get('output_dir', 'outputs/advanced_ensemble_analysis')
