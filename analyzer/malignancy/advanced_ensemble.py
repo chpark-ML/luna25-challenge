@@ -30,7 +30,14 @@ class MalignancyAdvancedEnsembleAnalyzer:
         self.df = df
         self.model_cols = model_cols
         self.ensemble_col = ensemble_col
-        self.y_true = df['annotation']
+
+        # Use binary_annotation if available (for LIDC), otherwise use annotation
+        if 'binary_annotation' in df.columns:
+            self.y_true = df['binary_annotation']
+            print("Using binary_annotation column for LIDC data")
+        else:
+            self.y_true = df['annotation']
+            print("Using annotation column for LUNA data")
 
     def logistic_regression_ensemble_lomo(self, save_weights: bool = True, weights_path: str = "lr_ensemble_weights.json") -> Dict:
         """Use Logistic Regression as meta-learner with Leave-One-Model-Out"""
@@ -622,7 +629,7 @@ class MalignancyAdvancedEnsembleAnalyzer:
         return report_path
 
 
-@hydra.main(version_base="1.2", config_path="configs", config_name="config_inference")
+@hydra.main(version_base="1.2", config_path="configs", config_name="config_inference_lidc")
 def main(config: DictConfig):
     print_config(config, resolve=True)
     set_seed()
