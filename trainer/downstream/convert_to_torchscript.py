@@ -28,7 +28,7 @@ def main() -> None:
     logger.info("Encrypt weight file and export TorchScript.")
 
     base_dir = os.path.join(_THIS_DIR, "outputs/default")
-    prefix = "cv_fine_val_fold"
+    prefix = "cv_fine_"
     # suffix = "7CV"
     suffix = "7CV_phase2"
 
@@ -57,6 +57,9 @@ def main() -> None:
 
             # Load model and weights
             model = hydra.utils.instantiate(cfg_model, _recursive_=True)
+            if hasattr(model, "return_downstream_logit"):
+                # If the model has a return_named_tuple attribute, set it to True
+                model.return_downstream_logit = True
 
             model = get_torch_model(model, path_to_load_weight)
             model.eval()
