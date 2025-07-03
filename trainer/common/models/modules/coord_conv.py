@@ -7,7 +7,7 @@ class AddCoords(nn.Module):
     https://github.com/walsvid/CoordConv/blob/master/coordconv.py
     """
 
-    def __init__(self, rank, with_r=False, device=None):
+    def __init__(self, rank, with_r=True, device=None):
         super(AddCoords, self).__init__()
         self.rank = rank
         self.with_r = with_r
@@ -124,7 +124,7 @@ class CoordConv3d(nn.modules.conv.Conv3d):
         dilation=1,
         groups=1,
         bias=True,
-        with_r=False,
+        with_r=True,
         device=None,
     ):
         super(CoordConv3d, self).__init__(

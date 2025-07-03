@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 _CLIENT = pymongo.MongoClient(DB_ADDRESS)
 
 
-def _fn_save_fig(df, processor, output_dir):
+def _fn_save_fig(df, processor, output_dir, gate_levels):
     # loop for computing individual nodule, which is corresponding to the row.
     for index, row in tqdm(df.iterrows(), total=len(df)):
         annotation = row.at["annotation"]
@@ -87,7 +87,6 @@ def _fn_save_fig(df, processor, output_dir):
         output = processor.get_class_evidence(patch)
 
         # caclu gated class evidence
-        gate_levels = [0, 1, 2]
         resampled_logits = []
         for i in gate_levels:
             gate_logit = output[GATED_LOGIT_KEY][i]  # shape: (B, 1, D, H, W)
@@ -106,13 +105,14 @@ def _fn_save_fig(df, processor, output_dir):
         resampled_mean = torch.mean(torch.stack(resampled_logits, dim=0), dim=0)  # shape: (B, 1, D, H, W)
 
         # mask vmin, vmax
-        use_percentile = False
+        use_percentile = True
         if use_percentile:
             q5 = torch.quantile(resampled_mean, 0.02)
             q95 = torch.quantile(resampled_mean, 0.98)
             max_abs = torch.max(torch.abs(q5), torch.abs(q95))
-            vmin_mask = -max_abs
-            vmax_mask = max_abs
+            resampled_mean /= max_abs
+            vmin_mask = -1.0
+            vmax_mask = 1.0
         else:
             resampled_mean = torch.sigmoid(resampled_mean)
             vmin_mask = 0.0
@@ -205,8 +205,10 @@ def main(config: DictConfig):
     merged_df = df_interest.merge(db_df, left_on="annot_ids", right_on="annotation_id", how="left")
 
     # Visualization
-    output_dir = f"fig_volume/{sort_criterion}"
-    _fn_save_fig(merged_df, processor, output_dir=output_dir)
+    for gate_levels in [[0], [1], [2], [0, 1, 2]]:
+        gate_str = "_".join(map(str, gate_levels))
+        output_dir = f"fig_volume/{sort_criterion}/gate_{gate_str}"
+        _fn_save_fig(merged_df, processor, output_dir=output_dir, gate_levels=gate_levels)
 
 
 if __name__ == "__main__":
