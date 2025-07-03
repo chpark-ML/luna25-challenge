@@ -276,7 +276,7 @@ class MultiScaleAttnClassifierV2(nn.Module):
 
         # get gate results
         gate_results = list()
-        eps = torch.finfo(torch.float16).eps
+        eps = 1e-4
         if self.use_gate:
             gate_results = self.gate_block(f_maps)
             gates_flatten = [torch.flatten(i_gate, start_dim=1) for i_gate in gate_results]

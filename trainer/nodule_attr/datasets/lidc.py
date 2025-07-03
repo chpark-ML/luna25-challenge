@@ -188,14 +188,14 @@ class Dataset(LctDataset):
         output = {
             "collection_id": collection_id,
             "doc_id": str(doc_id),
-            INPUT_PATCH_KEY: torch.from_numpy(img).float(),  # float32
+            INPUT_PATCH_KEY: torch.from_numpy(img).float(),  # float16 half() / float32 float()
             ATTR_ANNOTATION_KEY: attributes,
             "file_path": img_path,
             "mask_path": mask_path,
             "index": index,
         }
         if self.do_segmentation:
-            output[SEG_ANNOTATION_KEY] = mask
+            output[SEG_ANNOTATION_KEY] = torch.from_numpy(img).float()
 
         return output
 

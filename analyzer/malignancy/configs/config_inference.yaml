@@ -2,19 +2,17 @@
 defaults:
   - loader: default
   - processor: default
-  - models: 5_0_2rc2.yaml
+  - models: 5_0_5rc2.yaml
 
-run_name: "5_0_2rc2"
+run_name: "5_0_5rc2"
 run_modes:
   - test
 
 do_tta_by_size: False
 sanity_check: False
 
-result_csv_path: "/opt/challenge/analyzer/malignancy/outputs/inference_results_lidc/result_5_0_2rc2_lidc_eval.csv"
-
 hydra:
   run:
-    dir: ./outputs/inference_results_lidc/5_0_2rc2
+    dir: ./outputs/inference_results
   job:
     chdir: True  # keep hydra = 1.1 change directory behavior
