@@ -11,6 +11,8 @@ run_modes:
 do_tta_by_size: False
 sanity_check: False
 
+result_csv_path: "/opt/challenge/analyzer/malignancy/outputs/inference_results_lidc/result_5_0_2rc2_lidc_eval.csv"
+
 hydra:
   run:
     dir: ./outputs/inference_results
