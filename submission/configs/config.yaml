@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - processor: default.yaml
-  - models: 5_0_2.yaml
+  - models: 5_0_5.yaml
 
 mode: 3D
 do_tta_by_size: False
