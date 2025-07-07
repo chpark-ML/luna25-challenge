@@ -4,7 +4,8 @@ from typing import Union
 import torch
 
 from shared_lib.model_runner.base_runner import ModelBaseTorchscript, ModelBaseTorchCheckpoint
-from trainer.common.constants import GATE_KEY, GATED_LOGIT_KEY, LOGIT_KEY
+
+LOGIT_KEY = "logit"
 
 
 class MalignancyRunner(ModelBaseTorchscript):
