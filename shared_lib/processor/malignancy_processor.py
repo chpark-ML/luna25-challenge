@@ -3,7 +3,10 @@ import torch
 from tqdm import tqdm
 
 from shared_lib.processor.base_processor import BaseProcessor
-from trainer.common.constants import GATE_KEY, GATED_LOGIT_KEY, LOGIT_KEY
+
+LOGIT_KEY = "logit"
+GATE_KEY = "gate_results"
+GATED_LOGIT_KEY = "gated_ce_dict"
 
 
 class MalignancyProcessor(BaseProcessor):
