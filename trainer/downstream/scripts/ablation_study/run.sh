@@ -4,14 +4,14 @@ cd /opt/challenge/trainer/downstream/scripts/ablation_study || exit 1
 
 # tmux_window gpu_num param
 paired_values=(
-  "1 1 1e-3"
-  "2 2 3e-4"
-  "3 3 1e-4"
-  "4 4 3e-5"
-  "5 5 1e-5"
+  "1 1 16"
+  "2 2 24"
+  "3 3 32"
+  "4 4 40"
+  "5 5 48"
 )
 
-my_session=1
+my_session=2
 tmux new-session -d -s ${my_session}  # 새로운 tmux 세션 생성
 
 for pair in "${paired_values[@]}"
