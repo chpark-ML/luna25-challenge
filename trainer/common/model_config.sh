@@ -64,7 +64,7 @@ case ${model_num} in
     aux_loss_weight=0.1
     use_gate=True
     use_coord=True
-    use_fusion=False
+    use_fusion=True
     entropy_loss_weight=0.1
     ;;
   *)
