@@ -24,9 +24,10 @@ class MalignancyProcessor(BaseProcessor):
         # Load logistic regression weights if provided
         self.lr_weights = None
         self.lr_intercept = None
-        if not lr_weights_path or not os.path.exists(lr_weights_path):
+        if lr_weights_path and not os.path.exists(lr_weights_path):
             raise FileNotFoundError(f"LR weights file not found at path: {lr_weights_path}")
-        self.load_lr_weights(lr_weights_path)
+        if lr_weights_path:
+            self.load_lr_weights(lr_weights_path)
 
     def load_lr_weights(self, weights_path: str):
         """Load logistic regression weights from JSON file"""
