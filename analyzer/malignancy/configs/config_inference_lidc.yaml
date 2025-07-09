@@ -10,6 +10,10 @@ run_modes:
 
 sanity_check: False
 
+# LR weights configuration
+is_lr_weight: false #default is false
+lr_weights_path: "/opt/challenge/analyzer/malignancy/outputs/inference_results/5_0_2rc2/outputs/lr_ensemble_weights_5_0_2rc2.json"
+
 result_csv_path: "/opt/challenge/analyzer/malignancy/outputs/inference_results_lidc/5_0_2rc2/result_5_0_2rc2.csv"
 
 hydra:
