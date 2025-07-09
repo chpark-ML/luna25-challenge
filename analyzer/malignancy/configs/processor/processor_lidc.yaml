@@ -2,3 +2,5 @@ _target_: shared_lib.processor.malignancy_processor_lidc.MalignancyProcessorLIDC
 mode: "3D"
 device: "cuda:0"
 suppress_logs: False
+is_lr_weight: ${is_lr_weight}
+lr_weights_path: ${lr_weights_path}
