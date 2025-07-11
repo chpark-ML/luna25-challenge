@@ -1,7 +1,7 @@
 # specify default configuration
 defaults:
   - loader: lidc
-  - processor: processor_lidc
+  - processor: default_lidc_lr
   - models: 5_0_5rc2.yaml
 
 run_name: "5_0_5rc2"
