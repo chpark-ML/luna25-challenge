@@ -47,6 +47,8 @@ def main() -> None:
         for path_to_load_weight in path_to_load_weights:
             path_to_load_weight = Path(path_to_load_weight)
             ckpt_name = path_to_load_weight.stem
+            if _LOSS_CHECKPOINT_POSTFIX in ckpt_name or _FINAL_CHECKPOINT_POSTFIX in ckpt_name:
+                continue
 
             # Load model config
             cfg = omegaconf.OmegaConf.load(prefix + "/.hydra/config.yaml")
