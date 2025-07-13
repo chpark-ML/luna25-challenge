@@ -8,7 +8,9 @@ val_fold=${2:-0}
 model_num=7
 source /opt/challenge/trainer/common/model_config.sh ${model_num}
 
-model_name=cls_all_model_${model_num}_val_fold${val_fold}_7CV
+patch_size=64  # 64, 72
+size_mm=70  # 70, 80, 90
+model_name=cls_all_p${patch_size}_s${size_mm}_model_${model_num}_val_fold${val_fold}_7CV
 
 cd /opt/challenge/trainer/nodule_attr
 HYDRA_FULL_ERROR=1 python3 main.py \
