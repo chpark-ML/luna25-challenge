@@ -193,6 +193,7 @@ class Dataset(LctDataset):
         # Data preprocessing
         if self.do_segmentation:
             mask = mask[None, ...]  # (1, 48, 72, 72)
+
         img = [fn(img)[np.newaxis, ...] for fn in self.dicom_windowing]  # [(1, 48, 72, 72), ...]
         img = np.concatenate(img, axis=0)  # (n, 48, 72, 72)
 
@@ -206,7 +207,7 @@ class Dataset(LctDataset):
             "index": index,
         }
         if self.do_segmentation:
-            output[SEG_ANNOTATION_KEY] = torch.from_numpy(img).float()
+            output[SEG_ANNOTATION_KEY] = torch.from_numpy(mask).float()
 
         return output
 
