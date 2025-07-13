@@ -6,11 +6,12 @@ dataset:
 
   # optimal size for unet_3d was 72 x 72 x 72
   # swin-t needs the size to be a multiple of 32
-  patch_size: [ 48, 72, 72 ]
+  patch_size: 64
+  size_mm: 70
   dicom_window: [ "BASE" ]  # "PROPOSED", "LUNG", "MEDIASTINAL", "BONE"
 
   # preprocessing
-  buffer: 8
+  buffer: 2
   dataset_size_scale_factor: 1.0
   do_random_balanced_sampling: False  # only when length of target_attr_to_train is 1.
 

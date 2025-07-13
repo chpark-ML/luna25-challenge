@@ -12,12 +12,14 @@ source /opt/challenge/trainer/common/model_config.sh ${model_num}
 aux_loss_weight=0.0
 entropy_loss_weight=0.0
 
-run_name=cv_fine_model${model_num}_val_fold${val_fold}_7CV_phase2
+patch_size=64  # 64
+size_mm=70  # 70, 90
+run_name=cv_fine_p${patch_size}_s${size_mm}_model${model_num}_val_fold${val_fold}_7CV_phase2
 
 LR=1e-3
 epoch=50
 #model_path=/team/team_blu3/lung/project/luna25/weights/nodulex-v5.0.2rc1/cv_fine_val_fold${val_fold}_7CV/model_auroc.pth
-model_path=/opt/challenge/trainer/downstream/outputs/default/cv_fine_model${model_num}_val_fold${val_fold}_7CV/model_auroc.pth
+model_path=/opt/challenge/trainer/downstream/outputs/default/cv_fine_p${patch_size}_s${size_mm}_model${model_num}_val_fold${val_fold}_7CV/model_auroc.pth
 
 fold_key=fold
 all_folds=(0 1 2 3 4 5 6)
@@ -37,6 +39,9 @@ HYDRA_FULL_ERROR=1 python3 main.py \
   "loader.dataset.dataset_infos.luna25.val_fold=[${val_fold}]" \
   "loader.dataset.dataset_infos.luna25.test_fold=[]" \
   "loader.dataset.dataset_infos.luna25.fold_key=${fold_key}" \
+  loader.dataset.size_px_xy=${patch_size} \
+  loader.dataset.size_px_z=${patch_size} \
+  loader.dataset.size_mm=${size_mm} \
   scheduler.scheduler_repr.max_lr=${LR} \
   trainer.max_epoch=${epoch} \
   trainer.fine_tune_info.enable=True \

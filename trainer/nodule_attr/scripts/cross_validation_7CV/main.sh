@@ -8,8 +8,8 @@ val_fold=${2:-0}
 model_num=7
 source /opt/challenge/trainer/common/model_config.sh ${model_num}
 
-patch_size=64  # 64, 72
-size_mm=70  # 70, 80, 90
+patch_size=64  # 64
+size_mm=70  # 70, 90
 model_name=cls_all_p${patch_size}_s${size_mm}_model_${model_num}_val_fold${val_fold}_7CV
 
 cd /opt/challenge/trainer/nodule_attr
@@ -25,5 +25,7 @@ HYDRA_FULL_ERROR=1 python3 main.py \
   criterion.entropy_criterion.loss_weight=${entropy_loss_weight} \
   "loader.dataset.dataset_info.pylidc.val_fold=[${val_fold}]" \
   "loader.dataset.dataset_info.pylidc.test_fold=[]" \
+  loader.dataset.patch_size=${patch_size} \
+  loader.dataset.size_mm=${size_mm} \
   trainer.gpus=${gpu_num} \
   +debug=False
