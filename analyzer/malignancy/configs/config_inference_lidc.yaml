@@ -4,7 +4,7 @@ defaults:
   - processor: default_lidc_lr
   - models: 5_0_5rc2.yaml
 
-run_name: "5_0_5rc2"
+run_name: "5_0_6rc2"
 run_modes:
   - test
 
