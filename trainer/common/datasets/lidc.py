@@ -44,93 +44,6 @@ def _get_normalized_tensor(
         return DicomWindowing(hu_range=hu_range)
 
 
-def patch_extract_3d_pylidc(
-    h5_path,
-    r_coord,
-    xy_size: int = 72,
-    z_size: int = 72,
-    center_shift_zyx: list = [0, 0, 0],
-    fill: float = 0,
-) -> np.ndarray:
-    """
-    Extract a 3D patch from the given CT volume.
-    Args:
-        h5_path
-        r_coord
-        xy_size
-        z_size
-        fill (float): constant value for np.pad
-        mode
-        index : TODO: hotfix for validation image translation
-    Returns:
-        np.ndarray: A 3D cube-shaped patch extracted from the given volume.
-    """
-    # Load cached data
-    hf_file = File(h5_path, "r")
-    patchsize = (z_size, xy_size, xy_size)
-    repr_center = [x + y for x, y in zip(r_coord, center_shift_zyx)]
-
-    file_shape = hf_file["dicom_pixels_resampled"].shape
-    rlower, rupper, dlower, dupper = get_patch_extract_3d_meta(file_shape, repr_center, patchsize=patchsize)
-
-    # Load ROI only
-    file = hf_file["dicom_pixels_resampled"][rlower[0] : rupper[0], rlower[1] : rupper[1], rlower[2] : rupper[2]]
-    mask = hf_file["mask_annotation_resampled"][rlower[0] : rupper[0], rlower[1] : rupper[1], rlower[2] : rupper[2]]
-
-    if file.shape != patchsize:
-        pad_width = [pair for pair in zip(dlower, dupper)]
-        file = np.pad(file, pad_width=pad_width, mode="constant", constant_values=fill)
-        mask = np.pad(mask, pad_width=pad_width, mode="constant", constant_values=0.0)
-
-    file = file.astype("float32")
-    mask = mask.astype("float32")
-
-    # FIXME: nested scope?
-    # with open() as hf_file:
-    #     with open() as hf_mask:
-    hf_file.close()
-
-    assert file.shape == (
-        z_size,
-        xy_size,
-        xy_size,
-    ), f"Sanity check failed: {file.shape} == ({z_size}, {xy_size}, {xy_size})"
-    assert mask.shape == (
-        z_size,
-        xy_size,
-        xy_size,
-    ), f"Sanity check failed: {mask.shape} == ({z_size}, {xy_size}, {xy_size})"
-    return file, mask
-
-
-def get_patch_extract_3d_meta(
-    image_shape=None,
-    center: Optional[Sequence[float]] = None,
-    patchsize: Union[int, Sequence[int]] = 72,
-):
-    # FIXME: This supports square patch size only
-    if isinstance(patchsize, int):
-        patchsize = (patchsize, patchsize, patchsize)
-
-    center = np.array(center)
-    patchsize = np.array(patchsize)
-
-    half = patchsize // 2
-    lower = np.rint(center - half).astype(int)
-    # lower = (center - half).astype(int)
-    upper = lower + patchsize
-
-    # real
-    rlower = np.maximum(lower, 0).astype(int).tolist()
-    rupper = np.minimum(upper, image_shape).astype(int).tolist()
-
-    # diff
-    dlower = np.maximum(-lower, 0)
-    dupper = np.maximum(upper - image_shape, 0)
-
-    return rlower, rupper, dlower, dupper
-
-
 def _get_meta_df(mode: RunMode, target_dataset: List, dataset_info: dict):
     target_dataset_infos = {dataset: dataset_info[dataset] for dataset in target_dataset}
     df = DatasetHandler().fetch_multiple_datasets(dataset_infos=target_dataset_infos, mode=mode)
@@ -143,6 +56,7 @@ class LctDataset(Dataset):
         self,
         mode: Union[str, RunMode],
         patch_size,
+        size_mm,
         dicom_window,
         buffer,
         augmentation,
@@ -153,13 +67,28 @@ class LctDataset(Dataset):
         use_weighted_sampler=None,
     ):
         self.mode: RunMode = RunMode(mode) if isinstance(mode, str) else mode
-        assert len(patch_size) == 3 and patch_size[1] == patch_size[2], f"patch_size is {patch_size}."
+        if isinstance(patch_size, int):
+            patch_size_list = [patch_size] * 3
+        elif isinstance(patch_size, (list, tuple)):
+            patch_size_list = list(patch_size)
+        else:
+            raise ValueError(f"Unsupported type for patch_size: {type(patch_size)}")
+        assert len(patch_size_list) == 3 and patch_size_list[1] == patch_size_list[2], f"patch_size is {patch_size_list}."
+
+        if isinstance(size_mm, int):
+            size_mm_list = [size_mm] * 3
+        elif isinstance(size_mm, (list, tuple)):
+            size_mm_list = list(size_mm)
+        else:
+            raise ValueError(f"Unsupported type for patch_size: {type(patch_size)}")
+
         self.use_weighted_sampler = use_weighted_sampler
 
         # set configuration
-        self.xy_size = patch_size[1]
-        self.z_size = patch_size[0]
-        self.patch_size = OmegaConf.to_container(patch_size, resolve=True)
+        self.xy_size = patch_size_list[1]
+        self.z_size = patch_size_list[0]
+        self.patch_size = patch_size_list
+        self.size_mm = size_mm_list
         self.dicom_window = OmegaConf.to_container(dicom_window, resolve=True)
         self.buffer = buffer
         self.dataset_size_scale_factor = dataset_size_scale_factor
@@ -179,12 +108,6 @@ class LctDataset(Dataset):
             self.transform = ComposeAugmentation(
                 transform=[
                     FlipXY(p=augmentation["flip_xy"]["aug_prob"]),
-                    RandomCrop3DDeprecated(
-                        p=augmentation["random_crop_3d"]["aug_prob"],
-                        xy_size=self.xy_size,
-                        z_size=self.z_size,
-                        buffer=self.buffer,
-                    ),
                     Flip3D(p=augmentation["flip_3d"]["aug_prob"]),
                     RandomRotate903D(p=augmentation["random_rotate_3d"]["aug_prob"]),
                     CoarseDropout3D(
