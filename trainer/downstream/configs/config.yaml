@@ -2,7 +2,7 @@
 defaults:
   - _self_
   - trainer: default
-  - loader: combined.yaml
+  - loader: default.yaml
   - criterion: default
   - model: unet_3d_MS_v2
   - optim: adamw

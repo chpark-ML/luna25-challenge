@@ -9,14 +9,12 @@ cd /opt/challenge/trainer/downstream
 # load model configs
 model_num=7
 source /opt/challenge/trainer/common/model_config.sh ${model_num}
-aux_loss_weight=0.0
-entropy_loss_weight=0.0
 
 patch_size=64  # 64
-size_mm=70  # 70, 90
+size_mm=90  # 70, 90
 run_name=cv_fine_p${patch_size}_s${size_mm}_model${model_num}_val_fold${val_fold}_7CV_phase2
 
-LR=1e-3
+LR=1e-4
 epoch=50
 #model_path=/team/team_blu3/lung/project/luna25/weights/nodulex-v5.0.2rc1/cv_fine_val_fold${val_fold}_7CV/model_auroc.pth
 model_path=/opt/challenge/trainer/downstream/outputs/default/cv_fine_p${patch_size}_s${size_mm}_model${model_num}_val_fold${val_fold}_7CV/model_auroc.pth

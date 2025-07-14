@@ -1,5 +1,6 @@
 from typing import Optional, Sequence, Union
 
+import hydra
 import numpy as np
 import pandas as pd
 import torch
@@ -11,7 +12,6 @@ from data_lake.constants import DB_ADDRESS, DataLakeKey, DEFAULT_RESAMPLED_SPACI
 from data_lake.lidc.constants import LOGISTIC_TASK_POSTFIX, RESAMPLED_FEATURE_POSTFIX, ClusterLevelInfo
 from shared_lib.constants import DataLakeKeyDict
 from shared_lib.enums import RunMode
-from trainer.common.constants import ATTR_ANNOTATION_KEY, INPUT_PATCH_KEY, SEG_ANNOTATION_KEY
 from trainer.common.datasets.lidc import LctDataset
 from trainer.downstream.datasets.constants import DataLoaderKeys
 
@@ -92,7 +92,7 @@ def patch_extract_3d_pylidc(
         if do_segmentation:
             mask = hf_file["mask_annotation_resampled"][
                    rlower[0]: rupper[0], rlower[1]: rupper[1], rlower[2]: rupper[2]]
-            mask = mask.astype(np.uint8)
+            mask = mask.astype(np.float32)
 
     # padding
     if any(dlower) or any(dupper):
@@ -106,7 +106,7 @@ def patch_extract_3d_pylidc(
     patch_resampled = zoom(patch, zoom=zoom_factors, order=1)
 
     if do_segmentation:
-        mask_resampled = zoom(mask, zoom=zoom_factors, order=0)
+        mask_resampled = zoom(mask, zoom=zoom_factors, order=1)
         return patch_resampled, mask_resampled
     else:
         return patch_resampled, None
@@ -117,6 +117,7 @@ class Dataset(LctDataset):
             self,
             mode: Union[str, RunMode],
             patch_size,
+            size_mm,
             dicom_window,
             buffer,
             augmentation,
@@ -131,6 +132,7 @@ class Dataset(LctDataset):
         super().__init__(
             mode,
             patch_size,
+            size_mm,
             dicom_window,
             buffer,
             augmentation,
@@ -158,12 +160,16 @@ class Dataset(LctDataset):
         if dataset == "pylidc":
             h5_path = elem[DataLakeKeyDict.HFILE_PATH]
             r_coord = elem[ClusterLevelInfo.R_COORD_ZYX]
-            center_shift_zyx = [0, 0, 0]
+            if self.mode == RunMode.TRAIN:
+                center_shift_zyx = np.random.uniform(low=-self.buffer, high=self.buffer, size=3).tolist()
+            else:
+                center_shift_zyx = [0, 0, 0]
             img, mask = patch_extract_3d_pylidc(
                 h5_path,
                 r_coord,
-                xy_size=self.xy_size + self.buffer,
-                z_size=self.z_size + self.buffer,
+                xy_size=self.xy_size,
+                z_size=self.z_size,
+                size_mm=self.size_mm,
                 center_shift_zyx=center_shift_zyx,
                 fill=-3024.0,
                 do_segmentation=self.do_segmentation,

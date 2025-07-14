@@ -7,7 +7,7 @@ dataset:
       mode: train
       mode_model: 3D
       data_dir: /team/team_blu3/lung/data/2_public/LUNA25_Original/luna25_nodule_blocks
-      fetch_from_patch: True
+      fetch_from_patch: False
       dicom_window: [ "BASE" ]
       translations: True
       rotations: ((-20, 20), (-20, 20), (-20, 20))
