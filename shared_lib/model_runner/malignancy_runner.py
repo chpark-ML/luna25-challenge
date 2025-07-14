@@ -3,7 +3,7 @@ from typing import Union
 
 import torch
 
-from shared_lib.model_runner.base_runner import ModelBaseTorchscript, ModelBaseTorchCheckpoint
+from shared_lib.model_runner.base_runner import ModelBaseTorchCheckpoint, ModelBaseTorchscript
 
 LOGIT_KEY = "logit"
 

@@ -28,11 +28,11 @@ _CLIENT = pymongo.MongoClient(DB_ADDRESS)
 class FailureCaseVisualizer:
     """Visualize failure cases for malignancy models"""
 
-    def __init__(self, df: pd.DataFrame, model_cols: List[str], ensemble_col: str = 'prob_ensemble'):
+    def __init__(self, df: pd.DataFrame, model_cols: List[str], ensemble_col: str = "prob_ensemble"):
         self.df = df
         self.model_cols = model_cols
         self.ensemble_col = ensemble_col
-        self.y_true = df['annotation'].astype(float)
+        self.y_true = df["annotation"].astype(float)
 
         # Calculate ensemble statistics
         self._calculate_ensemble_stats()
@@ -40,21 +40,20 @@ class FailureCaseVisualizer:
     def _calculate_ensemble_stats(self):
         """Calculate ensemble variance, entropy, and other statistics"""
         # Ensemble variance
-        self.df['ensemble_variance'] = self.df[self.model_cols].var(axis=1)
+        self.df["ensemble_variance"] = self.df[self.model_cols].var(axis=1)
 
         # Binary entropy for each model
         binary_entropies = []
         for _, row in self.df[self.model_cols].iterrows():
-            entropies = -(row.values * np.log2(row.values + 1e-10) +
-                         (1 - row.values) * np.log2(1 - row.values + 1e-10))
+            entropies = -(row.values * np.log2(row.values + 1e-10) + (1 - row.values) * np.log2(1 - row.values + 1e-10))
             binary_entropies.append(np.mean(entropies))
-        self.df['prob_entropy'] = binary_entropies
+        self.df["prob_entropy"] = binary_entropies
 
         # Model agreement (standard deviation)
-        self.df['model_std'] = self.df[self.model_cols].std(axis=1)
+        self.df["model_std"] = self.df[self.model_cols].std(axis=1)
 
         # Confidence score (distance from 0.5)
-        self.df['confidence'] = np.abs(self.df[self.ensemble_col] - 0.5)
+        self.df["confidence"] = np.abs(self.df[self.ensemble_col] - 0.5)
 
     def identify_failure_cases(self, threshold: float = 0.5, top_k: int = 20) -> Dict[str, pd.DataFrame]:
         """Identify different types of failure cases"""
@@ -64,49 +63,47 @@ class FailureCaseVisualizer:
         fp_mask = (self.y_true == 0.0) & (self.df[self.ensemble_col] > threshold)
         fp_df = self.df[fp_mask].copy()
         fp_df = fp_df.sort_values(by=self.ensemble_col, ascending=False).head(top_k)
-        fp_df['failure_type'] = 'False Positive'
-        failure_cases['false_positives'] = fp_df
+        fp_df["failure_type"] = "False Positive"
+        failure_cases["false_positives"] = fp_df
 
         # 2. False Negatives (Malignant predicted as Benign)
         fn_mask = (self.y_true == 1.0) & (self.df[self.ensemble_col] < threshold)
         fn_df = self.df[fn_mask].copy()
         fn_df = fn_df.sort_values(by=self.ensemble_col, ascending=True).head(top_k)
-        fn_df['failure_type'] = 'False Negative'
-        failure_cases['false_negatives'] = fn_df
+        fn_df["failure_type"] = "False Negative"
+        failure_cases["false_negatives"] = fn_df
 
         # 3. High Confidence Errors (very confident but wrong)
-        high_conf_error_mask = (
-            ((self.y_true == 0.0) & (self.df[self.ensemble_col] > 0.8)) |
-            ((self.y_true == 1.0) & (self.df[self.ensemble_col] < 0.2))
+        high_conf_error_mask = ((self.y_true == 0.0) & (self.df[self.ensemble_col] > 0.8)) | (
+            (self.y_true == 1.0) & (self.df[self.ensemble_col] < 0.2)
         )
         hce_df = self.df[high_conf_error_mask].copy()
-        hce_df = hce_df.sort_values(by='confidence', ascending=False).head(top_k)
-        hce_df['failure_type'] = 'High Confidence Error'
-        failure_cases['high_confidence_errors'] = hce_df
+        hce_df = hce_df.sort_values(by="confidence", ascending=False).head(top_k)
+        hce_df["failure_type"] = "High Confidence Error"
+        failure_cases["high_confidence_errors"] = hce_df
 
         # 4. High Ensemble Disagreement (models disagree a lot)
-        high_disagreement_mask = self.df['ensemble_variance'] > self.df['ensemble_variance'].quantile(0.95)
+        high_disagreement_mask = self.df["ensemble_variance"] > self.df["ensemble_variance"].quantile(0.95)
         hd_df = self.df[high_disagreement_mask].copy()
-        hd_df = hd_df.sort_values(by='ensemble_variance', ascending=False).head(top_k)
-        hd_df['failure_type'] = 'High Disagreement'
-        failure_cases['high_disagreement'] = hd_df
+        hd_df = hd_df.sort_values(by="ensemble_variance", ascending=False).head(top_k)
+        hd_df["failure_type"] = "High Disagreement"
+        failure_cases["high_disagreement"] = hd_df
 
         # 5. Low Confidence Correct (uncertain but correct)
         low_conf_correct_mask = (
-            ((self.y_true == 0.0) & (self.df[self.ensemble_col] < threshold) & (self.df[self.ensemble_col] > 0.3)) |
-            ((self.y_true == 1.0) & (self.df[self.ensemble_col] > threshold) & (self.df[self.ensemble_col] < 0.7))
-        )
+            (self.y_true == 0.0) & (self.df[self.ensemble_col] < threshold) & (self.df[self.ensemble_col] > 0.3)
+        ) | ((self.y_true == 1.0) & (self.df[self.ensemble_col] > threshold) & (self.df[self.ensemble_col] < 0.7))
         lcc_df = self.df[low_conf_correct_mask].copy()
-        lcc_df = lcc_df.sort_values(by='confidence', ascending=True).head(top_k)
-        lcc_df['failure_type'] = 'Low Confidence Correct'
-        failure_cases['low_confidence_correct'] = lcc_df
+        lcc_df = lcc_df.sort_values(by="confidence", ascending=True).head(top_k)
+        lcc_df["failure_type"] = "Low Confidence Correct"
+        failure_cases["low_confidence_correct"] = lcc_df
 
         # 6. Edge Cases (probability very close to threshold)
         edge_mask = np.abs(self.df[self.ensemble_col] - threshold) < 0.05
         edge_df = self.df[edge_mask].copy()
-        edge_df = edge_df.sort_values(by='ensemble_variance', ascending=False).head(top_k)
-        edge_df['failure_type'] = 'Edge Case'
-        failure_cases['edge_cases'] = edge_df
+        edge_df = edge_df.sort_values(by="ensemble_variance", ascending=False).head(top_k)
+        edge_df["failure_type"] = "Edge Case"
+        failure_cases["edge_cases"] = edge_df
 
         return failure_cases
 
@@ -117,12 +114,12 @@ class FailureCaseVisualizer:
         # 1. Failure case counts
         plt.figure(figsize=(12, 6))
         case_counts = {case_type: len(df) for case_type, df in failure_cases.items()}
-        plt.bar(case_counts.keys(), case_counts.values(), color='lightcoral')
-        plt.title('Number of Failure Cases by Type')
-        plt.ylabel('Count')
+        plt.bar(case_counts.keys(), case_counts.values(), color="lightcoral")
+        plt.title("Number of Failure Cases by Type")
+        plt.ylabel("Count")
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(f'{output_dir}/failure_case_counts.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f"{output_dir}/failure_case_counts.png", dpi=300, bbox_inches="tight")
         plt.close()
 
         # 2. Probability distribution for each failure type
@@ -131,35 +128,39 @@ class FailureCaseVisualizer:
 
         for i, (case_type, df) in enumerate(failure_cases.items()):
             if i < len(axes) and len(df) > 0:
-                axes[i].hist(df[self.ensemble_col], bins=20, alpha=0.7, color='lightcoral')
-                axes[i].axvline(x=0.5, color='red', linestyle='--', label='Threshold')
+                axes[i].hist(df[self.ensemble_col], bins=20, alpha=0.7, color="lightcoral")
+                axes[i].axvline(x=0.5, color="red", linestyle="--", label="Threshold")
                 axes[i].set_title(f'{case_type.replace("_", " ").title()}\n(n={len(df)})')
-                axes[i].set_xlabel('Ensemble Probability')
-                axes[i].set_ylabel('Count')
+                axes[i].set_xlabel("Ensemble Probability")
+                axes[i].set_ylabel("Count")
                 axes[i].legend()
 
         plt.tight_layout()
-        plt.savefig(f'{output_dir}/failure_case_distributions.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f"{output_dir}/failure_case_distributions.png", dpi=300, bbox_inches="tight")
         plt.close()
 
         # 3. Ensemble variance vs probability for failure cases
         plt.figure(figsize=(14, 10))
-        colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown']
+        colors = ["red", "blue", "green", "orange", "purple", "brown"]
 
         for i, (case_type, df) in enumerate(failure_cases.items()):
             if len(df) > 0:
-                plt.scatter(df['ensemble_variance'], df[self.ensemble_col],
-                          c=colors[i % len(colors)], alpha=0.6,
-                          label=f'{case_type.replace("_", " ").title()} (n={len(df)})',
-                          s=50)
+                plt.scatter(
+                    df["ensemble_variance"],
+                    df[self.ensemble_col],
+                    c=colors[i % len(colors)],
+                    alpha=0.6,
+                    label=f'{case_type.replace("_", " ").title()} (n={len(df)})',
+                    s=50,
+                )
 
-        plt.xlabel('Ensemble Variance')
-        plt.ylabel('Ensemble Probability')
-        plt.title('Ensemble Variance vs Probability for Failure Cases')
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.xlabel("Ensemble Variance")
+        plt.ylabel("Ensemble Probability")
+        plt.title("Ensemble Variance vs Probability for Failure Cases")
+        plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
-        plt.savefig(f'{output_dir}/variance_vs_probability.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f"{output_dir}/variance_vs_probability.png", dpi=300, bbox_inches="tight")
         plt.close()
 
         # 4. Model agreement heatmap for each failure type
@@ -170,12 +171,11 @@ class FailureCaseVisualizer:
             if i < len(axes) and len(df) > 0:
                 # Calculate correlation matrix for this failure type
                 corr_matrix = df[self.model_cols].corr()
-                sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', center=0,
-                           square=True, fmt='.2f', ax=axes[i])
+                sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", center=0, square=True, fmt=".2f", ax=axes[i])
                 axes[i].set_title(f'{case_type.replace("_", " ").title()}\nModel Correlations')
 
         plt.tight_layout()
-        plt.savefig(f'{output_dir}/model_correlations_by_failure_type.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f"{output_dir}/model_correlations_by_failure_type.png", dpi=300, bbox_inches="tight")
         plt.close()
 
     def save_failure_case_images(self, failure_cases: Dict[str, pd.DataFrame], output_dir: str):
@@ -207,7 +207,7 @@ class FailureCaseVisualizer:
             os.makedirs(failure_output_dir, exist_ok=True)
 
             # Get merged data for this failure type
-            failure_merged = merged_df[merged_df['failure_type'] == failure_df['failure_type'].iloc[0]]
+            failure_merged = merged_df[merged_df["failure_type"] == failure_df["failure_type"].iloc[0]]
 
             logger.info(f"Saving {len(failure_merged)} images for {failure_type}...")
             self._save_failure_images(failure_merged, failure_output_dir, failure_type)
@@ -331,8 +331,10 @@ class FailureCaseVisualizer:
                 report.append(f"- Top 5 cases by ensemble probability:")
                 top_cases = df.nlargest(5, self.ensemble_col)
                 for _, case in top_cases.iterrows():
-                    report.append(f"  - ID: {case['annot_ids']}, GT: {int(case['annotation'])}, "
-                                f"Pred: {case[self.ensemble_col]:.4f}, Var: {case['ensemble_variance']:.6f}")
+                    report.append(
+                        f"  - ID: {case['annot_ids']}, GT: {int(case['annotation'])}, "
+                        f"Pred: {case[self.ensemble_col]:.4f}, Var: {case['ensemble_variance']:.6f}"
+                    )
                 report.append("")
 
         # Model performance on failure cases
@@ -342,7 +344,7 @@ class FailureCaseVisualizer:
                 report.append(f"### {case_type.replace('_', ' ').title()}")
                 for col in self.model_cols:
                     if col in df.columns:
-                        auroc = roc_auc_score(df['annotation'], df[col]) if len(df['annotation'].unique()) > 1 else 0.5
+                        auroc = roc_auc_score(df["annotation"], df[col]) if len(df["annotation"].unique()) > 1 else 0.5
                         report.append(f"- {col}: AUROC = {auroc:.4f}, Mean Prob = {df[col].mean():.4f}")
                 report.append("")
 
@@ -365,8 +367,8 @@ class FailureCaseVisualizer:
 
         # Save report
         report_path = os.path.join(output_dir, "failure_case_analysis_report.md")
-        with open(report_path, 'w') as f:
-            f.write('\n'.join(report))
+        with open(report_path, "w") as f:
+            f.write("\n".join(report))
 
         return report_path
 
@@ -403,9 +405,9 @@ def main(config: DictConfig):
     os.makedirs(output_dir, exist_ok=True)
 
     # Print summary
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("FAILURE CASE ANALYSIS SUMMARY")
-    print("="*60)
+    print("=" * 60)
     for case_type, df in failure_cases.items():
         print(f"{case_type.replace('_', ' ').title()}: {len(df)} cases")
     # Generate summary visualizations

@@ -14,8 +14,15 @@ class MalignancyProcessorLIDC(BaseProcessor):
     Loads a chest CT scan, and predicts the malignancy around a nodule
     """
 
-    def __init__(self, models=None, mode="3D", device=torch.device("cuda:0"), suppress_logs=False,
-                 is_lr_weight=False, lr_weights_path=None):
+    def __init__(
+        self,
+        models=None,
+        mode="3D",
+        device=torch.device("cuda:0"),
+        suppress_logs=False,
+        is_lr_weight=False,
+        lr_weights_path=None,
+    ):
         super().__init__(models=models, mode=mode, device=device, suppress_logs=suppress_logs)
 
         # Initialize LR weights
@@ -27,18 +34,20 @@ class MalignancyProcessorLIDC(BaseProcessor):
             if lr_weights_path and os.path.exists(lr_weights_path):
                 self.load_lr_weights(lr_weights_path)
             else:
-                print("="*100)
-                print(f"Warning: is_lr_weight is True but weights file not found at {lr_weights_path}. Using simple averaging.")
-                print("="*100)
+                print("=" * 100)
+                print(
+                    f"Warning: is_lr_weight is True but weights file not found at {lr_weights_path}. Using simple averaging."
+                )
+                print("=" * 100)
                 self.is_lr_weight = False
 
     def load_lr_weights(self, weights_path: str):
         """Load logistic regression weights from JSON file"""
-        with open(weights_path, 'r') as f:
+        with open(weights_path, "r") as f:
             weights_data = json.load(f)
 
-        self.lr_weights = np.array(weights_data['weights'])
-        self.lr_intercept = weights_data['intercept']
+        self.lr_weights = np.array(weights_data["weights"])
+        self.lr_intercept = weights_data["intercept"]
 
         if not self.suppress_logs:
             print(f"Loaded LR weights from {weights_path}")

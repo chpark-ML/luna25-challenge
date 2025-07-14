@@ -8,7 +8,7 @@ from h5py import File
 from scipy.ndimage import zoom
 from sklearn.utils import resample
 
-from data_lake.constants import DB_ADDRESS, DataLakeKey, DEFAULT_RESAMPLED_SPACING
+from data_lake.constants import DB_ADDRESS, DEFAULT_RESAMPLED_SPACING, DataLakeKey
 from data_lake.lidc.constants import LOGISTIC_TASK_POSTFIX, RESAMPLED_FEATURE_POSTFIX, ClusterLevelInfo
 from shared_lib.constants import DataLakeKeyDict
 from shared_lib.enums import RunMode
@@ -42,9 +42,9 @@ def _get_balanced_df(df, target_attr_to_train: list):
 
 
 def get_patch_extract_3d_meta(
-        image_shape=None,
-        center: Optional[Sequence[float]] = None,
-        patchsize: Union[int, Sequence[int]] = 72,
+    image_shape=None,
+    center: Optional[Sequence[float]] = None,
+    patchsize: Union[int, Sequence[int]] = 72,
 ):
     # FIXME: This supports square patch size only
     if isinstance(patchsize, int):
@@ -70,14 +70,14 @@ def get_patch_extract_3d_meta(
 
 
 def patch_extract_3d_pylidc(
-        h5_path,
-        r_coord,
-        xy_size: int = 72,
-        z_size: int = 72,
-        size_mm: list = (70, 70, 70),
-        center_shift_zyx: list = [0, 0, 0],
-        fill: float = 0,
-        do_segmentation: bool = False,
+    h5_path,
+    r_coord,
+    xy_size: int = 72,
+    z_size: int = 72,
+    size_mm: list = (70, 70, 70),
+    center_shift_zyx: list = [0, 0, 0],
+    fill: float = 0,
+    do_segmentation: bool = False,
 ) -> np.ndarray:
     raw_voxels = [int(round(size_mm[i] / DEFAULT_RESAMPLED_SPACING[i])) for i in range(3)]
     patch_size = (z_size, xy_size, xy_size)
@@ -87,10 +87,12 @@ def patch_extract_3d_pylidc(
         file_shape = hf_file["dicom_pixels_resampled"].shape
         rlower, rupper, dlower, dupper = get_patch_extract_3d_meta(file_shape, repr_center, patchsize=raw_voxels)
 
-        patch = hf_file["dicom_pixels_resampled"][rlower[0]: rupper[0], rlower[1]: rupper[1], rlower[2]: rupper[2]]
+        patch = hf_file["dicom_pixels_resampled"][rlower[0] : rupper[0], rlower[1] : rupper[1], rlower[2] : rupper[2]]
         patch = patch.astype(np.float32)
         if do_segmentation:
-            mask = hf_file["mask_annotation_resampled"][rlower[0]: rupper[0], rlower[1]: rupper[1], rlower[2]: rupper[2]]
+            mask = hf_file["mask_annotation_resampled"][
+                rlower[0] : rupper[0], rlower[1] : rupper[1], rlower[2] : rupper[2]
+            ]
             mask = mask.astype(np.float32)
 
     # padding
@@ -113,20 +115,20 @@ def patch_extract_3d_pylidc(
 
 class Dataset(LctDataset):
     def __init__(
-            self,
-            mode: Union[str, RunMode],
-            patch_size,
-            size_mm,
-            dicom_window,
-            buffer,
-            augmentation,
-            dataset_size_scale_factor=None,
-            do_random_balanced_sampling=None,
-            do_segmentation=False,
-            target_dataset=None,
-            dataset_info=None,
-            use_weighted_sampler=None,
-            annotation_prefix="",
+        self,
+        mode: Union[str, RunMode],
+        patch_size,
+        size_mm,
+        dicom_window,
+        buffer,
+        augmentation,
+        dataset_size_scale_factor=None,
+        do_random_balanced_sampling=None,
+        do_segmentation=False,
+        target_dataset=None,
+        dataset_info=None,
+        use_weighted_sampler=None,
+        annotation_prefix="",
     ):
         super().__init__(
             mode,

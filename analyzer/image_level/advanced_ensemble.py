@@ -22,11 +22,13 @@ logger = logging.getLogger(__name__)
 class AdvancedEnsembleAnalyzer:
     """Advanced ensemble analysis with multiple methods and optimization"""
 
-    def __init__(self, df: pd.DataFrame, model_cols: List[str], ensemble_col: str = 'prob_ensemble', val_df: pd.DataFrame = None):
+    def __init__(
+        self, df: pd.DataFrame, model_cols: List[str], ensemble_col: str = "prob_ensemble", val_df: pd.DataFrame = None
+    ):
         self.df = df
         self.model_cols = model_cols
         self.ensemble_col = ensemble_col
-        self.y_true = df['annotation']
+        self.y_true = df["annotation"]
         self.val_df = val_df
 
     def logistic_regression_ensemble(self) -> Dict:
@@ -36,7 +38,7 @@ class AdvancedEnsembleAnalyzer:
 
         # Prepare training data (val)
         X_train = self.val_df[self.model_cols].values
-        y_train = self.val_df['annotation'].values
+        y_train = self.val_df["annotation"].values
 
         # Prepare test data
         X_test = self.df[self.model_cols].values
@@ -50,10 +52,10 @@ class AdvancedEnsembleAnalyzer:
         lr_probs = lr.predict_proba(X_test)[:, 1]
 
         return {
-            'probs': lr_probs,
-            'weights': lr.coef_[0],
-            'intercept': lr.intercept_[0],
-            'auroc': roc_auc_score(y_test, lr_probs)
+            "probs": lr_probs,
+            "weights": lr.coef_[0],
+            "intercept": lr.intercept_[0],
+            "auroc": roc_auc_score(y_test, lr_probs),
         }
 
     def random_forest_ensemble(self) -> Dict:
@@ -63,7 +65,7 @@ class AdvancedEnsembleAnalyzer:
 
         # Prepare training data (val)
         X_train = self.val_df[self.model_cols].values
-        y_train = self.val_df['annotation'].values
+        y_train = self.val_df["annotation"].values
 
         # Prepare test data
         X_test = self.df[self.model_cols].values
@@ -77,9 +79,9 @@ class AdvancedEnsembleAnalyzer:
         rf_probs = rf.predict_proba(X_test)[:, 1]
 
         return {
-            'probs': rf_probs,
-            'feature_importance': rf.feature_importances_,
-            'auroc': roc_auc_score(y_test, rf_probs)
+            "probs": rf_probs,
+            "feature_importance": rf.feature_importances_,
+            "auroc": roc_auc_score(y_test, rf_probs),
         }
 
     def optimize_weights_gradient(self) -> Dict:
@@ -89,7 +91,7 @@ class AdvancedEnsembleAnalyzer:
 
         # Use val data for optimization
         X_val = self.val_df[self.model_cols].values
-        y_val = self.val_df['annotation'].values
+        y_val = self.val_df["annotation"].values
 
         def objective(weights):
             # Normalize weights
@@ -108,7 +110,7 @@ class AdvancedEnsembleAnalyzer:
         initial_weights = np.ones(len(self.model_cols)) / len(self.model_cols)
 
         # Optimize on val data
-        result = minimize(objective, initial_weights, method='L-BFGS-B')
+        result = minimize(objective, initial_weights, method="L-BFGS-B")
 
         # Get final weights and predictions on test data
         optimal_weights = np.abs(result.x)
@@ -119,10 +121,10 @@ class AdvancedEnsembleAnalyzer:
             ensemble_probs += optimal_weights[i] * self.df[col].values
 
         return {
-            'probs': ensemble_probs,
-            'weights': optimal_weights,
-            'auroc': roc_auc_score(self.y_true, ensemble_probs),
-            'optimization_success': result.success
+            "probs": ensemble_probs,
+            "weights": optimal_weights,
+            "auroc": roc_auc_score(self.y_true, ensemble_probs),
+            "optimization_success": result.success,
         }
 
     def bayesian_ensemble(self, alpha: float = 1.0, beta: float = 1.0) -> Dict:
@@ -151,10 +153,10 @@ class AdvancedEnsembleAnalyzer:
         final_probs = 0.7 * ensemble_probs + 0.3 * bayesian_probs
 
         return {
-            'probs': final_probs,
-            'weights': weights,
-            'bayesian_prob': bayesian_probs,
-            'auroc': roc_auc_score(self.y_true, final_probs)
+            "probs": final_probs,
+            "weights": weights,
+            "bayesian_prob": bayesian_probs,
+            "auroc": roc_auc_score(self.y_true, final_probs),
         }
 
     def dynamic_ensemble(self, confidence_threshold: float = 0.1) -> Dict:
@@ -179,17 +181,15 @@ class AdvancedEnsembleAnalyzer:
             total_weights += weights
 
         # Normalize
-        dynamic_probs = np.where(total_weights > 0,
-                               dynamic_probs / total_weights,
-                               self.df[self.ensemble_col].values)
+        dynamic_probs = np.where(total_weights > 0, dynamic_probs / total_weights, self.df[self.ensemble_col].values)
 
         return {
-            'probs': dynamic_probs,
-            'confidence_threshold': confidence_threshold,
-            'auroc': roc_auc_score(self.y_true, dynamic_probs)
+            "probs": dynamic_probs,
+            "confidence_threshold": confidence_threshold,
+            "auroc": roc_auc_score(self.y_true, dynamic_probs),
         }
 
-    def optimize_threshold_comprehensive(self, method: str = 'f1') -> Dict:
+    def optimize_threshold_comprehensive(self, method: str = "f1") -> Dict:
         """Comprehensive threshold optimization for different metrics"""
         thresholds = {}
 
@@ -197,7 +197,7 @@ class AdvancedEnsembleAnalyzer:
             fpr, tpr, thresh = roc_curve(self.y_true, self.df[col])
 
             # Different optimization criteria
-            if method == 'f1':
+            if method == "f1":
                 # F1 score optimization
                 best_score = 0
                 best_threshold = 0.5
@@ -209,7 +209,7 @@ class AdvancedEnsembleAnalyzer:
                         best_threshold = t
                 thresholds[col] = best_threshold
 
-            elif method == 'precision':
+            elif method == "precision":
                 # Precision optimization
                 best_score = 0
                 best_threshold = 0.5
@@ -222,7 +222,7 @@ class AdvancedEnsembleAnalyzer:
                             best_threshold = t
                 thresholds[col] = best_threshold
 
-            elif method == 'recall':
+            elif method == "recall":
                 # Recall optimization
                 best_score = 0
                 best_threshold = 0.5
@@ -234,7 +234,7 @@ class AdvancedEnsembleAnalyzer:
                         best_threshold = t
                 thresholds[col] = best_threshold
 
-            elif method == 'balanced_accuracy':
+            elif method == "balanced_accuracy":
                 # Balanced accuracy optimization
                 best_score = 0
                 best_threshold = 0.5
@@ -256,9 +256,9 @@ class AdvancedEnsembleAnalyzer:
         methods = {}
 
         # Basic methods
-        methods['average'] = {
-            'probs': self.df[self.ensemble_col],
-            'auroc': roc_auc_score(self.y_true, self.df[self.ensemble_col])
+        methods["average"] = {
+            "probs": self.df[self.ensemble_col],
+            "auroc": roc_auc_score(self.y_true, self.df[self.ensemble_col]),
         }
 
         # Weighted by AUROC
@@ -267,18 +267,18 @@ class AdvancedEnsembleAnalyzer:
         weighted_probs = np.zeros(len(self.df))
         for i, col in enumerate(self.model_cols):
             weighted_probs += weights[i] * self.df[col].values
-        methods['weighted_auroc'] = {
-            'probs': weighted_probs,
-            'auroc': roc_auc_score(self.y_true, weighted_probs),
-            'weights': weights
+        methods["weighted_auroc"] = {
+            "probs": weighted_probs,
+            "auroc": roc_auc_score(self.y_true, weighted_probs),
+            "weights": weights,
         }
 
         # Advanced methods
-        methods['logistic_regression'] = self.logistic_regression_ensemble()
-        methods['random_forest'] = self.random_forest_ensemble()
-        methods['gradient_optimization'] = self.optimize_weights_gradient()
-        methods['bayesian'] = self.bayesian_ensemble()
-        methods['dynamic'] = self.dynamic_ensemble()
+        methods["logistic_regression"] = self.logistic_regression_ensemble()
+        methods["random_forest"] = self.random_forest_ensemble()
+        methods["gradient_optimization"] = self.optimize_weights_gradient()
+        methods["bayesian"] = self.bayesian_ensemble()
+        methods["dynamic"] = self.dynamic_ensemble()
 
         return methods
 
@@ -294,44 +294,49 @@ class AdvancedEnsembleAnalyzer:
         colors = plt.cm.Set3(np.linspace(0, 1, len(methods)))
 
         for i, (method_name, method_result) in enumerate(methods.items()):
-            fpr, tpr, _ = roc_curve(self.y_true, method_result['probs'])
-            auroc = method_result['auroc']
-            plt.plot(fpr, tpr, label=f'{method_name} (AUROC = {auroc:.4f})',
-                    color=colors[i], linewidth=2)
+            fpr, tpr, _ = roc_curve(self.y_true, method_result["probs"])
+            auroc = method_result["auroc"]
+            plt.plot(fpr, tpr, label=f"{method_name} (AUROC = {auroc:.4f})", color=colors[i], linewidth=2)
 
-        plt.plot([0, 1], [0, 1], 'k--', alpha=0.5)
-        plt.xlabel('False Positive Rate', fontsize=14)
-        plt.ylabel('True Positive Rate', fontsize=14)
-        plt.title('ROC Curves - All Ensemble Methods', fontsize=16)
-        plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.plot([0, 1], [0, 1], "k--", alpha=0.5)
+        plt.xlabel("False Positive Rate", fontsize=14)
+        plt.ylabel("True Positive Rate", fontsize=14)
+        plt.title("ROC Curves - All Ensemble Methods", fontsize=16)
+        plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
-        plt.savefig(f'{output_dir}/all_methods_roc.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f"{output_dir}/all_methods_roc.png", dpi=300, bbox_inches="tight")
         plt.close()
 
         # 2. AUROC comparison bar plot
         plt.figure(figsize=(12, 8))
         method_names = list(methods.keys())
-        aurocs = [methods[name]['auroc'] for name in method_names]
+        aurocs = [methods[name]["auroc"] for name in method_names]
 
-        bars = plt.bar(method_names, aurocs, color=colors[:len(method_names)])
-        plt.xlabel('Ensemble Method', fontsize=14)
-        plt.ylabel('AUROC', fontsize=14)
-        plt.title('AUROC Comparison - All Ensemble Methods', fontsize=16)
-        plt.xticks(rotation=45, ha='right')
+        bars = plt.bar(method_names, aurocs, color=colors[: len(method_names)])
+        plt.xlabel("Ensemble Method", fontsize=14)
+        plt.ylabel("AUROC", fontsize=14)
+        plt.title("AUROC Comparison - All Ensemble Methods", fontsize=16)
+        plt.xticks(rotation=45, ha="right")
         plt.ylim(0.8, 0.95)
 
         # Add value labels on bars
         for bar, auroc in zip(bars, aurocs):
-            plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.005,
-                    f'{auroc:.4f}', ha='center', va='bottom', fontsize=10)
+            plt.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + 0.005,
+                f"{auroc:.4f}",
+                ha="center",
+                va="bottom",
+                fontsize=10,
+            )
 
         plt.tight_layout()
-        plt.savefig(f'{output_dir}/auroc_comparison.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f"{output_dir}/auroc_comparison.png", dpi=300, bbox_inches="tight")
         plt.close()
 
         # 3. Threshold optimization comparison
-        threshold_methods = ['f1', 'precision', 'recall', 'balanced_accuracy']
+        threshold_methods = ["f1", "precision", "recall", "balanced_accuracy"]
         threshold_results = {}
 
         for method in threshold_methods:
@@ -340,22 +345,22 @@ class AdvancedEnsembleAnalyzer:
 
         # Create threshold comparison plot
         plt.figure(figsize=(15, 8))
-        models = list(threshold_results['f1'].keys())
+        models = list(threshold_results["f1"].keys())
         x = np.arange(len(models))
         width = 0.2
 
         for i, (thresh_method, thresh_dict) in enumerate(threshold_results.items()):
             values = [thresh_dict[model] for model in models]
-            plt.bar(x + i*width, values, width, label=thresh_method, alpha=0.8)
+            plt.bar(x + i * width, values, width, label=thresh_method, alpha=0.8)
 
-        plt.xlabel('Models', fontsize=14)
-        plt.ylabel('Optimal Threshold', fontsize=14)
-        plt.title('Optimal Thresholds by Optimization Method', fontsize=16)
-        plt.xticks(x + width*1.5, models, rotation=45, ha='right')
+        plt.xlabel("Models", fontsize=14)
+        plt.ylabel("Optimal Threshold", fontsize=14)
+        plt.title("Optimal Thresholds by Optimization Method", fontsize=16)
+        plt.xticks(x + width * 1.5, models, rotation=45, ha="right")
         plt.legend()
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
-        plt.savefig(f'{output_dir}/threshold_optimization.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f"{output_dir}/threshold_optimization.png", dpi=300, bbox_inches="tight")
         plt.close()
 
         # 4. Model correlation and weights
@@ -363,41 +368,38 @@ class AdvancedEnsembleAnalyzer:
 
         # Correlation matrix
         corr_matrix = self.df[self.model_cols + [self.ensemble_col]].corr()
-        sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', center=0,
-                   square=True, fmt='.3f', ax=axes[0,0])
-        axes[0,0].set_title('Model Correlation Matrix')
+        sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", center=0, square=True, fmt=".3f", ax=axes[0, 0])
+        axes[0, 0].set_title("Model Correlation Matrix")
 
         # Individual AUROC comparison
         individual_aurocs = [roc_auc_score(self.y_true, self.df[col]) for col in self.model_cols]
-        axes[0,1].bar(self.model_cols, individual_aurocs, color='skyblue')
-        axes[0,1].set_title('Individual Model AUROC')
-        axes[0,1].set_ylabel('AUROC')
-        axes[0,1].tick_params(axis='x', rotation=45)
+        axes[0, 1].bar(self.model_cols, individual_aurocs, color="skyblue")
+        axes[0, 1].set_title("Individual Model AUROC")
+        axes[0, 1].set_ylabel("AUROC")
+        axes[0, 1].tick_params(axis="x", rotation=45)
 
         # Weight comparison for different methods
-        methods_with_weights = ['weighted_auroc', 'logistic_regression', 'gradient_optimization']
+        methods_with_weights = ["weighted_auroc", "logistic_regression", "gradient_optimization"]
         for i, method in enumerate(methods_with_weights):
-            if 'weights' in methods[method]:
-                weights = methods[method]['weights']
-                axes[1,0].bar([f'{method}_{j}' for j in range(len(weights))],
-                             weights, alpha=0.7, label=method)
-        axes[1,0].set_title('Model Weights by Method')
-        axes[1,0].set_ylabel('Weight')
-        axes[1,0].legend()
-        axes[1,0].tick_params(axis='x', rotation=45)
+            if "weights" in methods[method]:
+                weights = methods[method]["weights"]
+                axes[1, 0].bar([f"{method}_{j}" for j in range(len(weights))], weights, alpha=0.7, label=method)
+        axes[1, 0].set_title("Model Weights by Method")
+        axes[1, 0].set_ylabel("Weight")
+        axes[1, 0].legend()
+        axes[1, 0].tick_params(axis="x", rotation=45)
 
         # Probability distribution comparison
         for method_name, method_result in methods.items():
-            if 'probs' in method_result:
-                axes[1,1].hist(method_result['probs'], bins=50, alpha=0.5,
-                              label=method_name, density=True)
-        axes[1,1].set_title('Probability Distribution Comparison')
-        axes[1,1].set_xlabel('Probability')
-        axes[1,1].set_ylabel('Density')
-        axes[1,1].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+            if "probs" in method_result:
+                axes[1, 1].hist(method_result["probs"], bins=50, alpha=0.5, label=method_name, density=True)
+        axes[1, 1].set_title("Probability Distribution Comparison")
+        axes[1, 1].set_xlabel("Probability")
+        axes[1, 1].set_ylabel("Density")
+        axes[1, 1].legend(bbox_to_anchor=(1.05, 1), loc="upper left")
 
         plt.tight_layout()
-        plt.savefig(f'{output_dir}/comprehensive_analysis.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f"{output_dir}/comprehensive_analysis.png", dpi=300, bbox_inches="tight")
         plt.close()
 
     def generate_advanced_report(self, output_dir: str) -> str:
@@ -413,25 +415,25 @@ class AdvancedEnsembleAnalyzer:
         report.append("|--------|-------|-------------|")
 
         method_descriptions = {
-            'average': 'Simple average of all models',
-            'weighted_auroc': 'Weighted average based on individual AUROC',
-            'logistic_regression': 'Logistic regression as meta-learner',
-            'random_forest': 'Random Forest as meta-learner',
-            'gradient_optimization': 'Gradient-based weight optimization',
-            'bayesian': 'Bayesian ensemble with Beta prior',
-            'dynamic': 'Dynamic ensemble based on confidence'
+            "average": "Simple average of all models",
+            "weighted_auroc": "Weighted average based on individual AUROC",
+            "logistic_regression": "Logistic regression as meta-learner",
+            "random_forest": "Random Forest as meta-learner",
+            "gradient_optimization": "Gradient-based weight optimization",
+            "bayesian": "Bayesian ensemble with Beta prior",
+            "dynamic": "Dynamic ensemble based on confidence",
         }
 
         for method_name, method_result in methods.items():
-            auroc = method_result['auroc']
-            desc = method_descriptions.get(method_name, 'Advanced ensemble method')
+            auroc = method_result["auroc"]
+            desc = method_descriptions.get(method_name, "Advanced ensemble method")
             report.append(f"| {method_name} | {auroc:.4f} | {desc} |")
 
         report.append("")
 
         # Threshold optimization results
         report.append("## 2. Threshold Optimization Results\n")
-        threshold_methods = ['f1', 'precision', 'recall', 'balanced_accuracy']
+        threshold_methods = ["f1", "precision", "recall", "balanced_accuracy"]
 
         for thresh_method in threshold_methods:
             thresholds = self.optimize_threshold_comprehensive(thresh_method)
@@ -441,20 +443,20 @@ class AdvancedEnsembleAnalyzer:
             report.append("")
 
         # Detailed analysis of best method
-        best_method = max(methods.items(), key=lambda x: x[1]['auroc'])
+        best_method = max(methods.items(), key=lambda x: x[1]["auroc"])
         report.append(f"## 3. Best Method Analysis: {best_method[0]}\n")
         report.append(f"- AUROC: {best_method[1]['auroc']:.4f}\n")
 
-        if 'weights' in best_method[1]:
+        if "weights" in best_method[1]:
             report.append("### Model Weights:\n")
             for i, col in enumerate(self.model_cols):
-                weight = best_method[1]['weights'][i]
+                weight = best_method[1]["weights"][i]
                 report.append(f"- {col}: {weight:.4f}\n")
 
         # Save report
         report_path = f"{output_dir}/advanced_ensemble_report.md"
-        with open(report_path, 'w') as f:
-            f.write('\n'.join(report))
+        with open(report_path, "w") as f:
+            f.write("\n".join(report))
 
         return report_path
 
@@ -498,22 +500,22 @@ def main(config: DictConfig):
     # Print summary
     methods = analyzer.compare_all_methods()
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("ADVANCED ENSEMBLE ANALYSIS SUMMARY")
-    print("="*60)
+    print("=" * 60)
 
     print("\n🏆 Method Performance Ranking:")
-    sorted_methods = sorted(methods.items(), key=lambda x: x[1]['auroc'], reverse=True)
+    sorted_methods = sorted(methods.items(), key=lambda x: x[1]["auroc"], reverse=True)
     for i, (method_name, method_result) in enumerate(sorted_methods, 1):
         print(f"  {i}. {method_name}: AUROC = {method_result['auroc']:.4f}")
 
     best_method = sorted_methods[0]
     print(f"\n🥇 Best Method: {best_method[0]} (AUROC = {best_method[1]['auroc']:.4f})")
 
-    if 'weights' in best_method[1]:
+    if "weights" in best_method[1]:
         print("\n📊 Model Weights:")
         for i, col in enumerate(model_cols):
-            weight = best_method[1]['weights'][i]
+            weight = best_method[1]["weights"][i]
             print(f"  {col}: {weight:.4f}")
 
     print(f"\n📄 Detailed report saved to: {report_path}")

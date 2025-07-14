@@ -52,18 +52,18 @@ class Trainer(comm_train.Trainer):
     """Trainer to train model"""
 
     def __init__(
-            self,
-            model,
-            optimizer,
-            scheduler,
-            criterion,
-            thresholding_mode_representative,
-            thresholding_mode,
-            grad_clip_max_norm,
-            target_attr_total,
-            target_attr_to_train,
-            target_attr_downstream,
-            **kwargs,
+        self,
+        model,
+        optimizer,
+        scheduler,
+        criterion,
+        thresholding_mode_representative,
+        thresholding_mode,
+        grad_clip_max_norm,
+        target_attr_total,
+        target_attr_to_train,
+        target_attr_downstream,
+        **kwargs,
     ) -> None:
         self.repr_model_name = ModelName.REPRESENTATIVE
         super().__init__(model, optimizer, scheduler, criterion, **kwargs)
@@ -74,7 +74,7 @@ class Trainer(comm_train.Trainer):
 
     @classmethod
     def instantiate_trainer(
-            cls, config: omegaconf.DictConfig, loaders, logging_tool, optuna_trial=None
+        cls, config: omegaconf.DictConfig, loaders, logging_tool, optuna_trial=None
     ) -> comm_train.Trainer:
         # Init model
         models = dict()
@@ -155,8 +155,16 @@ class Trainer(comm_train.Trainer):
             # forward propagation
             with torch.autocast(device_type=self.device.type, enabled=self.use_amp):
                 output = self.model[ModelName.REPRESENTATIVE](patch_image)
-                dict_loss = self.criterion(output, annots, seg_annot=None, epoch=epoch, total_epoch=self.max_epoch - 1,
-                                           attr_mask=None, is_logit=True, is_logistic=True)
+                dict_loss = self.criterion(
+                    output,
+                    annots,
+                    seg_annot=None,
+                    epoch=epoch,
+                    total_epoch=self.max_epoch - 1,
+                    attr_mask=None,
+                    is_logit=True,
+                    is_logistic=True,
+                )
                 loss = dict_loss[LossKey.total]
                 train_losses.append(loss.detach())
 
@@ -270,10 +278,10 @@ class Trainer(comm_train.Trainer):
 
     @staticmethod
     def get_binary_classification_metrics(
-            prob: torch.Tensor,
-            annot: torch.Tensor,
-            threshold: dict,
-            threshold_mode: ThresholdMode = ThresholdMode.YOUDEN,
+        prob: torch.Tensor,
+        annot: torch.Tensor,
+        threshold: dict,
+        threshold_mode: ThresholdMode = ThresholdMode.YOUDEN,
     ):
         assert type(prob) == type(annot)
         result_dict = dict()
@@ -346,10 +354,7 @@ class Trainer(comm_train.Trainer):
         if best_loss is None or (val_loss is not None and val_loss < best_loss):
             found_better = True
             model_path = f"model_loss.pth"
-            logger.info(
-                f"loss improved to {val_metrics.loss:4f}, "
-                f"saving model to {model_path}."
-            )
+            logger.info(f"loss improved to {val_metrics.loss:4f}, " f"saving model to {model_path}.")
             self.best_metrics[BaseBestModelStandard.REPRESENTATIVE] = val_metrics
             self.path_best_model[BaseBestModelStandard.REPRESENTATIVE] = model_path
             self.epoch_best_model[BaseBestModelStandard.REPRESENTATIVE] = epoch
@@ -361,10 +366,7 @@ class Trainer(comm_train.Trainer):
         best_auroc = best_metric.eval_metrics.get("auroc", None) if best_metric is not None else None
         if best_auroc is None or (val_auroc is not None and val_auroc > best_auroc):
             model_path = f"model_auroc.pth"
-            logger.info(
-                f"AUROC improved to {val_metrics.eval_metrics['auroc']:4f}, "
-                f"saving model to {model_path}."
-            )
+            logger.info(f"AUROC improved to {val_metrics.eval_metrics['auroc']:4f}, " f"saving model to {model_path}.")
             self.best_metrics[BaseBestModelStandard.AUROC] = val_metrics
             self.path_best_model[BaseBestModelStandard.AUROC] = model_path
             self.epoch_best_model[BaseBestModelStandard.AUROC] = epoch

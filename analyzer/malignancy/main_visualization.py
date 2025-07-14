@@ -78,8 +78,10 @@ def _fn_save_fig(df, processor, output_dir, gate_levels):
         )  # (1, 48, 72, 72)
         patch = patch.astype(np.float32)
         HU_WINDOW = (-300, 1400)
-        hu_range = (HU_WINDOW[0] - HU_WINDOW[1] // 2,
-                    HU_WINDOW[0] + HU_WINDOW[1] // 2,)
+        hu_range = (
+            HU_WINDOW[0] - HU_WINDOW[1] // 2,
+            HU_WINDOW[0] + HU_WINDOW[1] // 2,
+        )
         patch = DicomWindowing(hu_range=hu_range)(patch)
         patch = np.concatenate(patch, axis=0)  # (48, 72, 72)
 
@@ -94,10 +96,7 @@ def _fn_save_fig(df, processor, output_dir, gate_levels):
 
             # Resample to match the patch size (spatial dimensions only)
             gate_logit_resampled = F.interpolate(
-                gate_logit_tensor,
-                size=patch.size()[2:],  # (D, H, W)
-                mode="trilinear",
-                align_corners=True
+                gate_logit_tensor, size=patch.size()[2:], mode="trilinear", align_corners=True  # (D, H, W)
             )
             resampled_logits.append(gate_logit_resampled)
 

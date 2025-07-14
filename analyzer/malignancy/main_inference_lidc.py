@@ -41,7 +41,7 @@ def main(config: DictConfig):
         for mode in run_modes
     }
 
-     # Initialize an empty list to store all results
+    # Initialize an empty list to store all results
     all_results = []
 
     # get inference results

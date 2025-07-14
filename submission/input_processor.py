@@ -107,7 +107,9 @@ class ImageProcessor:
         malignancy_risks = []
         for i in range(len(coords)):
             if self.do_tta_by_size:
-                malignancy_risk = self.malignancy_processor.predict(numpy_image, header, coords[i], size_mm=[40, 50, 60])
+                malignancy_risk = self.malignancy_processor.predict(
+                    numpy_image, header, coords[i], size_mm=[40, 50, 60]
+                )
             else:
                 malignancy_risk = self.malignancy_processor.predict(numpy_image, header, coords[i])
             malignancy_risk = np.array(malignancy_risk).reshape(-1)[0]

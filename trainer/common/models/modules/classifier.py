@@ -320,7 +320,9 @@ class MultiScaleAttnClassifierV2(nn.Module):
                         CE = CE * gate
                         local_interest = torch.sum(gate, dim=(2, 3, 4), keepdim=True)
                         local_interest = torch.clamp(local_interest, min=eps)
-                        logits_multi_scale[idx_fmap][i_attr] = torch.sum(CE, dim=(2, 3, 4), keepdim=True) / local_interest
+                        logits_multi_scale[idx_fmap][i_attr] = (
+                            torch.sum(CE, dim=(2, 3, 4), keepdim=True) / local_interest
+                        )
                     else:
                         CE = classifier[i_attr](x)
                         logits_multi_scale[idx_fmap][i_attr] = torch.mean(CE, dim=(2, 3, 4), keepdim=True)

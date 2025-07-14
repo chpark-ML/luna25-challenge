@@ -73,7 +73,9 @@ class LctDataset(Dataset):
             patch_size_list = list(patch_size)
         else:
             raise ValueError(f"Unsupported type for patch_size: {type(patch_size)}")
-        assert len(patch_size_list) == 3 and patch_size_list[1] == patch_size_list[2], f"patch_size is {patch_size_list}."
+        assert (
+            len(patch_size_list) == 3 and patch_size_list[1] == patch_size_list[2]
+        ), f"patch_size is {patch_size_list}."
 
         if isinstance(size_mm, int):
             size_mm_list = [size_mm] * 3

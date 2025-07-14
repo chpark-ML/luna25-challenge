@@ -17,8 +17,9 @@ class MalignancyProcessor(BaseProcessor):
     Loads a chest CT scan, and predicts the malignancy around a nodule
     """
 
-    def __init__(self, models=None, mode="3D", device=torch.device("cuda:0"), suppress_logs=False,
-                 lr_weights_path=None):
+    def __init__(
+        self, models=None, mode="3D", device=torch.device("cuda:0"), suppress_logs=False, lr_weights_path=None
+    ):
         super().__init__(models=models, mode=mode, device=device, suppress_logs=suppress_logs)
 
         # Load logistic regression weights if provided
@@ -32,12 +33,12 @@ class MalignancyProcessor(BaseProcessor):
     def load_lr_weights(self, weights_path: str):
         """Load logistic regression weights from JSON file"""
         try:
-            with open(weights_path, 'r') as f:
+            with open(weights_path, "r") as f:
                 weights_dict = json.load(f)
 
-            self.lr_weights = weights_dict['weights']
-            self.lr_intercept = weights_dict['intercept']
-            self.model_order = weights_dict.get('model_order', [])
+            self.lr_weights = weights_dict["weights"]
+            self.lr_intercept = weights_dict["intercept"]
+            self.model_order = weights_dict.get("model_order", [])
 
             if not self.suppress_logs:
                 print(f"Loaded LR weights from: {weights_path}")
@@ -109,7 +110,7 @@ class MalignancyProcessor(BaseProcessor):
         final_results = {
             LOGIT_KEY: np.mean(np.stack(logits_all_models, axis=0), axis=0),
             GATE_KEY: {},
-            GATED_LOGIT_KEY: {}
+            GATED_LOGIT_KEY: {},
         }
 
         for i in gate_levels:
@@ -127,12 +128,7 @@ class MalignancyProcessor(BaseProcessor):
         new_H = int(H * scale_factor)
         new_D = int(D * scale_factor)
 
-        x = torch.nn.functional.interpolate(
-            image,
-            size=(new_W, new_H, new_D),
-            mode='trilinear',
-            align_corners=True
-        )
+        x = torch.nn.functional.interpolate(image, size=(new_W, new_H, new_D), mode="trilinear", align_corners=True)
 
         # Determine padding or cropping
         diff_W = tgt_W - new_W
@@ -142,21 +138,21 @@ class MalignancyProcessor(BaseProcessor):
         if diff_W > 0 or diff_H > 0 or diff_D > 0:
             # Pad if any dimension is smaller
             pad = [
-                max(diff_D // 2, 0), max(diff_D - diff_D // 2, 0),
-                max(diff_H // 2, 0), max(diff_H - diff_H // 2, 0),
-                max(diff_W // 2, 0), max(diff_W - diff_W // 2, 0),
+                max(diff_D // 2, 0),
+                max(diff_D - diff_D // 2, 0),
+                max(diff_H // 2, 0),
+                max(diff_H - diff_H // 2, 0),
+                max(diff_W // 2, 0),
+                max(diff_W - diff_W // 2, 0),
             ]
-            x = torch.nn.functional.pad(x, pad, mode='constant', value=0)
+            x = torch.nn.functional.pad(x, pad, mode="constant", value=0)
 
         if x.shape[2] > tgt_W or x.shape[3] > tgt_H or x.shape[4] > tgt_D:
             # Crop if any dimension is larger
             start_w = (x.shape[2] - tgt_W) // 2
             start_h = (x.shape[3] - tgt_H) // 2
             start_d = (x.shape[4] - tgt_D) // 2
-            x = x[:, :,
-                start_w:start_w + tgt_W,
-                start_h:start_h + tgt_H,
-                start_d:start_d + tgt_D]
+            x = x[:, :, start_w : start_w + tgt_W, start_h : start_h + tgt_H, start_d : start_d + tgt_D]
 
         return x
 

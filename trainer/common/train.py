@@ -110,24 +110,24 @@ class Metrics(ABC):
 
 class Trainer(ABC):
     def __init__(
-            self,
-            model,
-            optimizer,
-            scheduler,
-            criterion,
-            logging_tool,
-            gpus,
-            fast_dev_run,
-            max_epoch,
-            log_every_n_steps=1,
-            test_epoch_start=0,
-            resume_from_checkpoint=False,
-            benchmark=False,
-            deterministic=True,
-            fine_tune_info=None,
-            early_stop_patience: int = None,
-            use_amp: bool = True,
-            optuna_trial: optuna.Trial = None,
+        self,
+        model,
+        optimizer,
+        scheduler,
+        criterion,
+        logging_tool,
+        gpus,
+        fast_dev_run,
+        max_epoch,
+        log_every_n_steps=1,
+        test_epoch_start=0,
+        resume_from_checkpoint=False,
+        benchmark=False,
+        deterministic=True,
+        fine_tune_info=None,
+        early_stop_patience: int = None,
+        use_amp: bool = True,
+        optuna_trial: optuna.Trial = None,
     ):
         self.model = model
         if not hasattr(self, "repr_model_name"):
@@ -355,10 +355,10 @@ class Trainer(ABC):
 
     @abstractmethod
     def save_best_metrics(
-            self,
-            val_metrics: Union[object, dict],
-            best_model_metrics: Union[object, dict],
-            epoch,
+        self,
+        val_metrics: Union[object, dict],
+        best_model_metrics: Union[object, dict],
+        epoch,
     ) -> (object, bool):
         """Save best metrics and return best metrics and whether it better metrics was found"""
 
@@ -430,8 +430,8 @@ class Trainer(ABC):
         patience = 0
         best_model_metrics = self.get_initial_model_metric()
         for epoch in range(
-                self.resume_epoch,
-                self.resume_epoch + 2 if self.fast_dev_run else self.max_epoch,
+            self.resume_epoch,
+            self.resume_epoch + 2 if self.fast_dev_run else self.max_epoch,
         ):
             best_model_metrics, found_better = self.run_epoch(
                 epoch,
@@ -472,13 +472,13 @@ class Trainer(ABC):
                     self.log_metrics(f"checkpoint_test_{standard.value}", None, best_model_test_metrics)
 
     def log_metrics(
-            self,
-            run_mode_str: str,
-            step,
-            metrics: object,
-            log_prefix="",
-            mlflow_log_prefix="",
-            duration=None,
+        self,
+        run_mode_str: str,
+        step,
+        metrics: object,
+        log_prefix="",
+        mlflow_log_prefix="",
+        duration=None,
     ):
         """Log the metrics to logger and to mlflow if mlflow is used. Metrics could be None if learning isn't
         performed for the epoch."""

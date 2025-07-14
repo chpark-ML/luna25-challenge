@@ -20,11 +20,11 @@ logger = logging.getLogger(__name__)
 class FailureAnalyzer:
     """Comprehensive failure analysis for image level models"""
 
-    def __init__(self, df: pd.DataFrame, model_cols: List[str], ensemble_col: str = 'prob_ensemble'):
+    def __init__(self, df: pd.DataFrame, model_cols: List[str], ensemble_col: str = "prob_ensemble"):
         self.df = df
         self.model_cols = model_cols
         self.ensemble_col = ensemble_col
-        self.y_true = df['annotation']
+        self.y_true = df["annotation"]
 
     def analyze_basic_metrics(self) -> Dict:
         """Calculate basic performance metrics for all models"""
@@ -61,14 +61,14 @@ class FailureAnalyzer:
             specificity_95 = max(1 - fpr[sensitivity_95_idx]) if len(sensitivity_95_idx) > 0 else 0.0
 
             metrics[col] = {
-                'auroc': auroc,
-                'youden_threshold': youden_threshold,
-                'best_f1_threshold': best_f1_threshold,
-                'sensitivity_95_specificity': sensitivity_95,
-                'specificity_95_sensitivity': specificity_95,
-                'fpr': fpr,
-                'tpr': tpr,
-                'thresholds': thresholds
+                "auroc": auroc,
+                "youden_threshold": youden_threshold,
+                "best_f1_threshold": best_f1_threshold,
+                "sensitivity_95_specificity": sensitivity_95,
+                "specificity_95_sensitivity": specificity_95,
+                "fpr": fpr,
+                "tpr": tpr,
+                "thresholds": thresholds,
             }
 
         return metrics
@@ -76,74 +76,84 @@ class FailureAnalyzer:
     def identify_failure_cases(self, threshold: float = 0.5) -> Dict:
         """Identify different types of failure cases"""
         failures = {
-            'false_positives': [],
-            'false_negatives': [],
-            'high_confidence_errors': [],
-            'low_confidence_correct': [],
-            'ensemble_disagreement': []
+            "false_positives": [],
+            "false_negatives": [],
+            "high_confidence_errors": [],
+            "low_confidence_correct": [],
+            "ensemble_disagreement": [],
         }
 
         # Calculate ensemble variance
-        self.df['ensemble_variance'] = self.df[self.model_cols].var(axis=1)
-        self.df['ensemble_entropy'] = self.df[self.model_cols].apply(
-            lambda x: entropy([x.mean(), 1-x.mean()]), axis=1
+        self.df["ensemble_variance"] = self.df[self.model_cols].var(axis=1)
+        self.df["ensemble_entropy"] = self.df[self.model_cols].apply(
+            lambda x: entropy([x.mean(), 1 - x.mean()]), axis=1
         )
 
         for idx, row in self.df.iterrows():
-            y_true = float(row['annotation'])  # Convert to float first
+            y_true = float(row["annotation"])  # Convert to float first
             y_pred_ensemble = 1 if row[self.ensemble_col] > threshold else 0  # Fix the conversion
 
             # False positives
             if y_true == 0.0 and y_pred_ensemble == 1:
-                failures['false_positives'].append({
-                    'idx': idx,
-                    'prob_ensemble': row[self.ensemble_col],
-                    'probs_individual': {col: row[col] for col in self.model_cols},
-                    'variance': row['ensemble_variance'],
-                    'entropy': row['ensemble_entropy']
-                })
+                failures["false_positives"].append(
+                    {
+                        "idx": idx,
+                        "prob_ensemble": row[self.ensemble_col],
+                        "probs_individual": {col: row[col] for col in self.model_cols},
+                        "variance": row["ensemble_variance"],
+                        "entropy": row["ensemble_entropy"],
+                    }
+                )
 
             # False negatives
             elif y_true == 1.0 and y_pred_ensemble == 0:
-                failures['false_negatives'].append({
-                    'idx': idx,
-                    'prob_ensemble': row[self.ensemble_col],
-                    'probs_individual': {col: row[col] for col in self.model_cols},
-                    'variance': row['ensemble_variance'],
-                    'entropy': row['ensemble_entropy']
-                })
+                failures["false_negatives"].append(
+                    {
+                        "idx": idx,
+                        "prob_ensemble": row[self.ensemble_col],
+                        "probs_individual": {col: row[col] for col in self.model_cols},
+                        "variance": row["ensemble_variance"],
+                        "entropy": row["ensemble_entropy"],
+                    }
+                )
 
             # High confidence errors (ensemble prob > 0.8 for wrong prediction)
-            if ((y_true == 0.0 and row[self.ensemble_col] > 0.8) or
-                (y_true == 1.0 and row[self.ensemble_col] < 0.2)):
-                failures['high_confidence_errors'].append({
-                    'idx': idx,
-                    'prob_ensemble': row[self.ensemble_col],
-                    'probs_individual': {col: row[col] for col in self.model_cols},
-                    'variance': row['ensemble_variance'],
-                    'entropy': row['ensemble_entropy']
-                })
+            if (y_true == 0.0 and row[self.ensemble_col] > 0.8) or (y_true == 1.0 and row[self.ensemble_col] < 0.2):
+                failures["high_confidence_errors"].append(
+                    {
+                        "idx": idx,
+                        "prob_ensemble": row[self.ensemble_col],
+                        "probs_individual": {col: row[col] for col in self.model_cols},
+                        "variance": row["ensemble_variance"],
+                        "entropy": row["ensemble_entropy"],
+                    }
+                )
 
             # Low confidence correct (ensemble prob between 0.4-0.6 for correct prediction)
-            if ((y_true == 0.0 and 0.4 <= row[self.ensemble_col] <= 0.6) or
-                (y_true == 1.0 and 0.4 <= row[self.ensemble_col] <= 0.6)):
-                failures['low_confidence_correct'].append({
-                    'idx': idx,
-                    'prob_ensemble': row[self.ensemble_col],
-                    'probs_individual': {col: row[col] for col in self.model_cols},
-                    'variance': row['ensemble_variance'],
-                    'entropy': row['ensemble_entropy']
-                })
+            if (y_true == 0.0 and 0.4 <= row[self.ensemble_col] <= 0.6) or (
+                y_true == 1.0 and 0.4 <= row[self.ensemble_col] <= 0.6
+            ):
+                failures["low_confidence_correct"].append(
+                    {
+                        "idx": idx,
+                        "prob_ensemble": row[self.ensemble_col],
+                        "probs_individual": {col: row[col] for col in self.model_cols},
+                        "variance": row["ensemble_variance"],
+                        "entropy": row["ensemble_entropy"],
+                    }
+                )
 
             # High ensemble disagreement (variance > 0.01)
-            if row['ensemble_variance'] > 0.01:
-                failures['ensemble_disagreement'].append({
-                    'idx': idx,
-                    'prob_ensemble': row[self.ensemble_col],
-                    'probs_individual': {col: row[col] for col in self.model_cols},
-                    'variance': row['ensemble_variance'],
-                    'entropy': row['ensemble_entropy']
-                })
+            if row["ensemble_variance"] > 0.01:
+                failures["ensemble_disagreement"].append(
+                    {
+                        "idx": idx,
+                        "prob_ensemble": row[self.ensemble_col],
+                        "probs_individual": {col: row[col] for col in self.model_cols},
+                        "variance": row["ensemble_variance"],
+                        "entropy": row["ensemble_entropy"],
+                    }
+                )
 
         return failures
 
@@ -152,9 +162,9 @@ class FailureAnalyzer:
         ensemble_methods = {}
 
         # Current average ensemble
-        ensemble_methods['average'] = {
-            'probs': self.df[self.ensemble_col],
-            'auroc': roc_auc_score(self.y_true, self.df[self.ensemble_col])
+        ensemble_methods["average"] = {
+            "probs": self.df[self.ensemble_col],
+            "auroc": roc_auc_score(self.y_true, self.df[self.ensemble_col]),
         }
 
         # Weighted average (based on individual AUROC)
@@ -163,39 +173,27 @@ class FailureAnalyzer:
         weighted_probs = np.zeros(len(self.df))
         for i, col in enumerate(self.model_cols):
             weighted_probs += weights[i] * self.df[col].values
-        ensemble_methods['weighted'] = {
-            'probs': weighted_probs,
-            'auroc': roc_auc_score(self.y_true, weighted_probs),
-            'weights': weights
+        ensemble_methods["weighted"] = {
+            "probs": weighted_probs,
+            "auroc": roc_auc_score(self.y_true, weighted_probs),
+            "weights": weights,
         }
 
         # Geometric mean
         geometric_probs = np.exp(np.mean(np.log(self.df[self.model_cols] + 1e-10), axis=1))
-        ensemble_methods['geometric'] = {
-            'probs': geometric_probs,
-            'auroc': roc_auc_score(self.y_true, geometric_probs)
-        }
+        ensemble_methods["geometric"] = {"probs": geometric_probs, "auroc": roc_auc_score(self.y_true, geometric_probs)}
 
         # Median
         median_probs = self.df[self.model_cols].median(axis=1)
-        ensemble_methods['median'] = {
-            'probs': median_probs,
-            'auroc': roc_auc_score(self.y_true, median_probs)
-        }
+        ensemble_methods["median"] = {"probs": median_probs, "auroc": roc_auc_score(self.y_true, median_probs)}
 
         # Max probability
         max_probs = self.df[self.model_cols].max(axis=1)
-        ensemble_methods['max'] = {
-            'probs': max_probs,
-            'auroc': roc_auc_score(self.y_true, max_probs)
-        }
+        ensemble_methods["max"] = {"probs": max_probs, "auroc": roc_auc_score(self.y_true, max_probs)}
 
         # Min probability
         min_probs = self.df[self.model_cols].min(axis=1)
-        ensemble_methods['min'] = {
-            'probs': min_probs,
-            'auroc': roc_auc_score(self.y_true, min_probs)
-        }
+        ensemble_methods["min"] = {"probs": min_probs, "auroc": roc_auc_score(self.y_true, min_probs)}
 
         return ensemble_methods
 
@@ -209,7 +207,7 @@ class FailureAnalyzer:
             # Youden's J statistic
             J = tpr - fpr
             youden_idx = np.argmax(J)
-            thresholds[f'{col}_youden'] = thresh[youden_idx]
+            thresholds[f"{col}_youden"] = thresh[youden_idx]
 
             # F1 score optimization
             best_f1 = 0
@@ -220,17 +218,17 @@ class FailureAnalyzer:
                 if f1 > best_f1:
                     best_f1 = f1
                     best_thresh = t
-            thresholds[f'{col}_f1'] = best_thresh
+            thresholds[f"{col}_f1"] = best_thresh
 
             # Sensitivity at 95% specificity
             specificity_95_idx = np.where(1 - fpr >= 0.95)[0]
             if len(specificity_95_idx) > 0:
-                thresholds[f'{col}_sens95'] = thresh[specificity_95_idx[0]]
+                thresholds[f"{col}_sens95"] = thresh[specificity_95_idx[0]]
 
             # Specificity at 95% sensitivity
             sensitivity_95_idx = np.where(tpr >= 0.95)[0]
             if len(sensitivity_95_idx) > 0:
-                thresholds[f'{col}_spec95'] = thresh[sensitivity_95_idx[0]]
+                thresholds[f"{col}_spec95"] = thresh[sensitivity_95_idx[0]]
 
         return thresholds
 
@@ -243,15 +241,15 @@ class FailureAnalyzer:
         for col in self.model_cols + [self.ensemble_col]:
             fpr, tpr, _ = roc_curve(self.y_true, self.df[col])
             auroc = roc_auc_score(self.y_true, self.df[col])
-            plt.plot(fpr, tpr, label=f'{col} (AUROC = {auroc:.4f})', linewidth=2)
+            plt.plot(fpr, tpr, label=f"{col} (AUROC = {auroc:.4f})", linewidth=2)
 
-        plt.plot([0, 1], [0, 1], 'k--', alpha=0.5)
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title('ROC Curves Comparison')
+        plt.plot([0, 1], [0, 1], "k--", alpha=0.5)
+        plt.xlabel("False Positive Rate")
+        plt.ylabel("True Positive Rate")
+        plt.title("ROC Curves Comparison")
         plt.legend()
         plt.grid(True, alpha=0.3)
-        plt.savefig(f'{output_dir}/roc_curves.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f"{output_dir}/roc_curves.png", dpi=300, bbox_inches="tight")
         plt.close()
 
         # 2. Probability distributions
@@ -260,37 +258,39 @@ class FailureAnalyzer:
 
         for i, col in enumerate(self.model_cols + [self.ensemble_col]):
             if i < len(axes):
-                axes[i].hist(self.df[self.df['annotation'] == 0][col],
-                           bins=50, alpha=0.7, label='Negative', density=True)
-                axes[i].hist(self.df[self.df['annotation'] == 1][col],
-                           bins=50, alpha=0.7, label='Positive', density=True)
-                axes[i].set_title(f'{col} Distribution')
-                axes[i].set_xlabel('Probability')
-                axes[i].set_ylabel('Density')
+                axes[i].hist(
+                    self.df[self.df["annotation"] == 0][col], bins=50, alpha=0.7, label="Negative", density=True
+                )
+                axes[i].hist(
+                    self.df[self.df["annotation"] == 1][col], bins=50, alpha=0.7, label="Positive", density=True
+                )
+                axes[i].set_title(f"{col} Distribution")
+                axes[i].set_xlabel("Probability")
+                axes[i].set_ylabel("Density")
                 axes[i].legend()
 
         plt.tight_layout()
-        plt.savefig(f'{output_dir}/probability_distributions.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f"{output_dir}/probability_distributions.png", dpi=300, bbox_inches="tight")
         plt.close()
 
         # 3. Ensemble variance analysis
         plt.figure(figsize=(12, 8))
-        plt.scatter(self.df['ensemble_variance'], self.df[self.ensemble_col],
-                   c=self.df['annotation'], alpha=0.6, cmap='viridis')
-        plt.xlabel('Ensemble Variance')
-        plt.ylabel('Ensemble Probability')
-        plt.title('Ensemble Variance vs Probability')
-        plt.colorbar(label='True Label')
-        plt.savefig(f'{output_dir}/ensemble_variance.png', dpi=300, bbox_inches='tight')
+        plt.scatter(
+            self.df["ensemble_variance"], self.df[self.ensemble_col], c=self.df["annotation"], alpha=0.6, cmap="viridis"
+        )
+        plt.xlabel("Ensemble Variance")
+        plt.ylabel("Ensemble Probability")
+        plt.title("Ensemble Variance vs Probability")
+        plt.colorbar(label="True Label")
+        plt.savefig(f"{output_dir}/ensemble_variance.png", dpi=300, bbox_inches="tight")
         plt.close()
 
         # 4. Model correlation heatmap
         corr_matrix = self.df[self.model_cols + [self.ensemble_col]].corr()
         plt.figure(figsize=(10, 8))
-        sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', center=0,
-                   square=True, fmt='.3f')
-        plt.title('Model Correlation Matrix')
-        plt.savefig(f'{output_dir}/correlation_matrix.png', dpi=300, bbox_inches='tight')
+        sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", center=0, square=True, fmt=".3f")
+        plt.title("Model Correlation Matrix")
+        plt.savefig(f"{output_dir}/correlation_matrix.png", dpi=300, bbox_inches="tight")
         plt.close()
 
     def generate_report(self, output_dir: str) -> str:
@@ -323,7 +323,7 @@ class FailureAnalyzer:
         report.append("## 3. Ensemble Methods Comparison\n")
         for method, result in ensemble_methods.items():
             report.append(f"- {method.capitalize()}: AUROC = {result['auroc']:.4f}")
-            if 'weights' in result:
+            if "weights" in result:
                 report.append(f"  - Weights: {result['weights']}")
         report.append("")
 
@@ -335,8 +335,8 @@ class FailureAnalyzer:
 
         # Save report
         report_path = f"{output_dir}/failure_analysis_report.md"
-        with open(report_path, 'w') as f:
-            f.write('\n'.join(report))
+        with open(report_path, "w") as f:
+            f.write("\n".join(report))
 
         return report_path
 
@@ -378,9 +378,9 @@ def main(config: DictConfig):
     metrics = analyzer.analyze_basic_metrics()
     ensemble_methods = analyzer.analyze_ensemble_methods()
 
-    print("\n" + "="*50)
+    print("\n" + "=" * 50)
     print("FAILURE ANALYSIS SUMMARY")
-    print("="*50)
+    print("=" * 50)
 
     print("\n📊 Model Performance:")
     for model, metric in metrics.items():

@@ -11,7 +11,17 @@ class AttrLoss(nn.Module):
         self.aux_criterion = aux_criterion
         self.seg_criterion = seg_criterion
 
-    def forward(self, outputs, attr_annot, seg_annot=None, epoch=None, total_epoch=None, attr_mask=None, is_logit=True, is_logistic=True):
+    def forward(
+        self,
+        outputs,
+        attr_annot,
+        seg_annot=None,
+        epoch=None,
+        total_epoch=None,
+        attr_mask=None,
+        is_logit=True,
+        is_logistic=True,
+    ):
         losses = list()
 
         # cls loss
