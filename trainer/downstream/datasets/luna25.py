@@ -14,6 +14,7 @@ from data_lake.constants import DataLakeKey, DBKey, H5DataKey
 from data_lake.dataset_handler import DatasetHandler
 from shared_lib.enums import RunMode
 from shared_lib.tools.image_parser import extract_patch
+from shared_lib.utils.utils_vis import save_plot
 from trainer.common.augmentation.coarse_drop import CoarseDropout3D
 from trainer.common.augmentation.compose import ComposeAugmentation
 from trainer.common.augmentation.flip_rotate import Flip3D, FlipXY
@@ -112,7 +113,7 @@ class CTCaseDataset(data.Dataset):
         mode: Union[str, RunMode],
         mode_model: str = "2D",
         data_dir: str = None,
-        fetch_from_patch: bool = True,
+        fetch_from_patch: bool = False,
         dicom_window: list = None,
         translations: bool = None,
         rotations: tuple = None,
@@ -293,9 +294,30 @@ class CTCaseDataset(data.Dataset):
 if __name__ == "__main__":
     with hydra.initialize_config_module(config_module="trainer.downstream.configs", version_base=None):
         config = hydra.compose(config_name="config")
+        config.loader.num_workers = 0
+        config.loader.prefetch_factor = None
 
     run_modes = [RunMode(m) for m in config.run_modes] if "run_modes" in config else [x for x in RunMode]
     loaders = {
         mode: hydra.utils.instantiate(config.loader, dataset={"mode": mode}, drop_last=False, shuffle=False)
         for mode in run_modes
     }
+
+    first_mode, first_loader = next(iter(loaders.items()))
+    first_batch = next(iter(first_loader))
+    img = first_batch[DataLoaderKeys.IMAGE]
+
+    # save visualization result
+    figure_title = ""
+    attr = {}
+    save_plot(
+        img.detach().cpu().numpy()[0, 0],
+        mask_image=None,
+        nodule_zyx=None,
+        patch_size=None,
+        figure_title=figure_title,
+        meta=attr,
+        use_norm=False,
+        save_dir=str("./test.png"),
+        dpi=60,
+    )

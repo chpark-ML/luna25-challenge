@@ -1,5 +1,6 @@
 from typing import Optional, Sequence, Union
 
+import hydra
 import numpy as np
 import pandas as pd
 import torch
@@ -11,6 +12,7 @@ from data_lake.constants import DB_ADDRESS, DataLakeKey, DEFAULT_RESAMPLED_SPACI
 from data_lake.lidc.constants import LOGISTIC_TASK_POSTFIX, RESAMPLED_FEATURE_POSTFIX, ClusterLevelInfo
 from shared_lib.constants import DataLakeKeyDict
 from shared_lib.enums import RunMode
+from shared_lib.utils.utils_vis import save_plot
 from trainer.common.constants import ATTR_ANNOTATION_KEY, INPUT_PATCH_KEY, SEG_ANNOTATION_KEY
 from trainer.common.datasets.lidc import LctDataset
 
@@ -89,7 +91,7 @@ def patch_extract_3d_pylidc(
         patch = patch.astype(np.float32)
         if do_segmentation:
             mask = hf_file["mask_annotation_resampled"][rlower[0]: rupper[0], rlower[1]: rupper[1], rlower[2]: rupper[2]]
-            mask = mask.astype(np.uint8)
+            mask = mask.astype(np.float32)
 
     # padding
     if any(dlower) or any(dupper):
@@ -103,7 +105,7 @@ def patch_extract_3d_pylidc(
     patch_resampled = zoom(patch, zoom=zoom_factors, order=1)
 
     if do_segmentation:
-        mask_resampled = zoom(mask, zoom=zoom_factors, order=0)
+        mask_resampled = zoom(mask, zoom=zoom_factors, order=1)
         return patch_resampled, mask_resampled
     else:
         return patch_resampled, None
@@ -214,3 +216,36 @@ class Dataset(LctDataset):
     def random_balanced_sampling(self):
         if len(self.target_attr_to_train) == 1:
             self.meta_df = _get_balanced_df(self.meta_df, self.target_attr_to_train)
+
+
+if __name__ == "__main__":
+    with hydra.initialize_config_module(config_module="trainer.nodule_attr.configs", version_base=None):
+        config = hydra.compose(config_name="config")
+        config.loader.num_workers = 0
+        config.loader.prefetch_factor = None
+
+    run_modes = [RunMode(m) for m in config.run_modes] if "run_modes" in config else [x for x in RunMode]
+    loaders = {
+        mode: hydra.utils.instantiate(config.loader, dataset={"mode": mode}, drop_last=False, shuffle=False)
+        for mode in run_modes
+    }
+
+    first_mode, first_loader = next(iter(loaders.items()))
+    first_batch = next(iter(first_loader))
+    img = first_batch[INPUT_PATCH_KEY]
+    mask = first_batch[SEG_ANNOTATION_KEY]
+
+    # save visualization result
+    figure_title = ""
+    attr = {}
+    save_plot(
+        img.detach().cpu().numpy()[0, 0],
+        mask_image=mask.detach().cpu().numpy()[0, 0],
+        nodule_zyx=None,
+        patch_size=None,
+        figure_title=figure_title,
+        meta=attr,
+        use_norm=False,
+        save_dir=str("./test.png"),
+        dpi=60,
+    )

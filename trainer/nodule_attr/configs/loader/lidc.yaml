@@ -40,7 +40,7 @@ dataset:
     flip_xy:
       aug_prob: 1.0
     flip_3d:
-      aug_prob: 1.0
+      aug_prob: 0.0
     random_rotate_3d:
       aug_prob: 1.0
     coarse_dropout_3d:

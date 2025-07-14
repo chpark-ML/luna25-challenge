@@ -17,7 +17,7 @@ run_name=cv_fine_p${patch_size}_s${size_mm}_model${model_num}_val_fold${val_fold
 # args
 LR=1e-3
 epoch=100
-model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_logistic_fmaps48_p${patch_size}_s${size_mm}_model7_7CV/cls_all_p${patch_size}_s${size_mm}_model_${model_num}_val_fold${val_fold}_7CV/model_loss.pth
+model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_p${patch_size}_s${size_mm}/cls_all_p${patch_size}_s${size_mm}_model_${model_num}_val_fold${val_fold}_7CV/model_loss.pth
 
 fold_key=fold
 all_folds=(0 1 2 3 4 5 6)
@@ -32,6 +32,7 @@ HYDRA_FULL_ERROR=1 python3 main.py \
   model.model_repr.classifier.use_fusion=${use_fusion} \
   criterion.aux_criterion.loss_weight=${aux_loss_weight} \
   criterion.entropy_criterion.loss_weight=${entropy_loss_weight} \
+  loader=combined \
   "loader.dataset.datasets.0.dataset_infos.luna25.total_fold=${all_fold_str}" \
   "loader.dataset.datasets.0.dataset_infos.luna25.val_fold=[${val_fold}]" \
   "loader.dataset.datasets.0.dataset_infos.luna25.test_fold=[]" \

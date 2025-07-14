@@ -61,11 +61,11 @@ case ${model_num} in
     ;;
   7)
     num_features=3
-    aux_loss_weight=0.01
+    aux_loss_weight=0.1
     use_gate=True
     use_coord=True
     use_fusion=True
-    entropy_loss_weight=0.01
+    entropy_loss_weight=0.1
     ;;
   *)
     echo "잘못된 model_num: ${model_num}"

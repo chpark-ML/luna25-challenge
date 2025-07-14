@@ -9,7 +9,7 @@ model_num=7
 source /opt/challenge/trainer/common/model_config.sh ${model_num}
 
 patch_size=64  # 64
-size_mm=70  # 70, 90
+size_mm=90  # 70, 90
 model_name=cls_all_p${patch_size}_s${size_mm}_model_${model_num}_val_fold${val_fold}_7CV
 
 cd /opt/challenge/trainer/nodule_attr
