@@ -14,7 +14,7 @@ entropy_loss_weight=0.0
 
 run_name=cv_fine_model${model_num}_val_fold${val_fold}_7CV_phase2
 
-LR=1e-4
+LR=1e-3
 epoch=50
 model_path=/opt/challenge/trainer/downstream/outputs/default/cv_fine_model${model_num}_val_fold${val_fold}_7CV/model_auroc.pth
 
