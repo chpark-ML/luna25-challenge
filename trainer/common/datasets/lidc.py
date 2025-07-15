@@ -2,6 +2,7 @@ import os
 from typing import List, Optional, Sequence, Union
 
 import numpy as np
+import omegaconf
 import pandas as pd
 import pymongo
 from h5py import File
@@ -71,6 +72,8 @@ class LctDataset(Dataset):
             patch_size_list = [patch_size] * 3
         elif isinstance(patch_size, (list, tuple)):
             patch_size_list = list(patch_size)
+        elif isinstance(patch_size, omegaconf.listconfig.ListConfig):
+            patch_size_list = OmegaConf.to_container(patch_size, resolve=True)
         else:
             raise ValueError(f"Unsupported type for patch_size: {type(patch_size)}")
         assert (

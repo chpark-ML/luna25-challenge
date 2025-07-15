@@ -7,8 +7,8 @@ dataset:
 
   # optimal size for unet_3d was 72 x 72 x 72
   # swin-t needs the size to be a multiple of 32
-  patch_size: 64
-  size_mm: 70
+  patch_size: [48, 72, 72]
+  size_mm: 50
   dicom_window: [ "BASE" ]  # "PROPOSED", "LUNG", "MEDIASTINAL", "BONE"
 
   # preprocessing
@@ -21,7 +21,7 @@ dataset:
   # augmentation
   augmentation:
     dicom_windowing:
-      aug_prob: 0.0
+      aug_prob: 0.2
       level_shift:
         min: -100.0
         max: 100.0
@@ -29,18 +29,16 @@ dataset:
         min: 0.9
         max: 1.1
     flip_xy:
-      aug_prob: 1.0
+      aug_prob: 0.2
     flip_3d:
-      aug_prob: 0.0
-    random_crop_3d:
-      aug_prob: 1.0
+      aug_prob: 0.2
     random_rotate_3d:
-      aug_prob: 1.0
+      aug_prob: 0.0
     coarse_dropout_3d:
-      aug_prob: 1.0
+      aug_prob: 0.2
       max_holes: 12
     rescale_image_3d:
-      aug_prob: 0.0
+      aug_prob: 0.2
       is_same_across_axes: True
       scale_factor:
         min: 0.8

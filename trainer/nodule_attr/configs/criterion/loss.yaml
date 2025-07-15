@@ -11,7 +11,7 @@ cls_criterion:
 
 entropy_criterion:
   _target_: trainer.common.criterions.losses.EntropyLoss
-  loss_weight: 0.01
+  loss_weight: 0.1
 
 aux_criterion:
   _target_: trainer.common.criterions.cls_loss.ClsLoss
@@ -21,7 +21,7 @@ aux_criterion:
   target_threshold_gte:
   target_attr_total: ${trainer.target_attr_total}
   target_attr_to_train: ${trainer.target_attr_to_train}
-  loss_weight: 0.01
+  loss_weight: 0.1
 
 seg_criterion:
   _target_: monai.losses.DiceFocalLoss

@@ -5,10 +5,10 @@ dataset:
   mode: train
   mode_model: 3D
   data_dir: /team/team_blu3/lung/data/2_public/LUNA25_Original/luna25_nodule_blocks
-  fetch_from_patch: False
+  fetch_from_patch: True
   dicom_window: [ "BASE" ]
   translations: True
-  rotations: ((-20, 20), (-20, 20), (-20, 20))  # originally, it was ((-20, 20), (-20, 20), (-20, 20)).
+  rotations: ((0, 1), (0, 1), (-20, 20))  # originally, it was ((-20, 20), (-20, 20), (-20, 20)).
   size_xy: 128
   size_z: 64
   size_mm: 50

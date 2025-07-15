@@ -12,7 +12,7 @@ model_patch_level:
     f_maps: ${model.model_patch_level.f_maps}
     num_levels: ${model.model_patch_level.num_levels}
     num_features: 3
-    drop_prob: 0.05
+    drop_prob: 0.2
     pyramid_channels: 128
     num_fpn_layers: 2
     target_attr_total: [ 'c_subtlety_logistic', 'c_sphericity_logistic', 'c_lobulation_logistic', 'c_spiculation_logistic',

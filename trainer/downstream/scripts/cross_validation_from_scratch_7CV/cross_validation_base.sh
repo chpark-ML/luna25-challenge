@@ -9,14 +9,13 @@ cd /opt/challenge/trainer/downstream
 # load model configs
 model_num=7
 source /opt/challenge/trainer/common/model_config.sh ${model_num}
-aux_loss_weight=0.0
-entropy_loss_weight=0.0
 
-run_name=cv_fine_model${model_num}_val_fold${val_fold}_7CV_phase2
+patch_size=72  # 64
+size_mm=50  # 70, 90
+run_name=cv_from_scratch_p${patch_size}_s${size_mm}_model${model_num}_val_fold${val_fold}_7CV
 
-LR=1e-4
-epoch=50
-model_path=/opt/challenge/trainer/downstream/outputs/default/cv_fine_model${model_num}_val_fold${val_fold}_7CV/model_auroc.pth
+LR=1e-3
+epoch=100
 
 fold_key=fold
 all_folds=(0 1 2 3 4 5 6)
@@ -36,10 +35,10 @@ HYDRA_FULL_ERROR=1 python3 main.py \
   "loader.dataset.dataset_infos.luna25.val_fold=[${val_fold}]" \
   "loader.dataset.dataset_infos.luna25.test_fold=[]" \
   "loader.dataset.dataset_infos.luna25.fold_key=${fold_key}" \
+  loader.dataset.size_px_xy=${patch_size} \
+  loader.dataset.size_px_z=48 \
+  loader.dataset.size_mm=${size_mm} \
   scheduler.scheduler_repr.max_lr=${LR} \
   trainer.max_epoch=${epoch} \
-  trainer.fine_tune_info.enable=True \
-  trainer.fine_tune_info.freeze_encoder=False \
-  trainer.fine_tune_info.pretrained_weight_path=${model_path} \
   trainer.gpus=${gpu_num} \
   trainer.fast_dev_run=False

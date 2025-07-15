@@ -7,22 +7,22 @@ dataset:
       mode: train
       mode_model: 3D
       data_dir: /team/team_blu3/lung/data/2_public/LUNA25_Original/luna25_nodule_blocks
-      fetch_from_patch: False
+      fetch_from_patch: True
       dicom_window: [ "BASE" ]
       translations: True
-      rotations: ((-20, 20), (-20, 20), (-20, 20))
+      rotations: ((0, 1), (0, 1), (-20, 20))  # not to augmentation applied on z-axis, use ((0, 1), (0, 1), (-20, 20)).
       size_xy: 128
-      size_z: 128
-      size_mm: 70
-      size_px_xy: 64
-      size_px_z: 64
+      size_z: 64
+      size_mm: 50
+      size_px_xy: 72
+      size_px_z: 48
       use_weighted_sampler: true
       interpolate_order: 1
 
       # augmentation
       augmentation:
         dicom_windowing:
-          aug_prob: 0.5
+          aug_prob: 0.2
           level_shift:
             min: -100.0
             max: 100.0
@@ -30,14 +30,16 @@ dataset:
             min: 0.9
             max: 1.1
         flip_xy:
-          aug_prob: 0.5
+          aug_prob: 0.2
         flip_3d:
-          aug_prob: 0.5
+          aug_prob: 0.2
+        random_rotate_3d:
+          aug_prob: 0.0
         coarse_dropout_3d:
           aug_prob: 0.2
           max_holes: 12
         rescale_image_3d:
-          aug_prob: 0.0
+          aug_prob: 0.2
           is_same_across_axes: True
           scale_factor:
             min: 0.8
@@ -72,8 +74,8 @@ dataset:
 
       # optimal size for unet_3d was 72 x 72 x 72
       # swin-t needs the size to be a multiple of 32
-      patch_size: 64
-      size_mm: 70
+      patch_size: [48, 72, 72]
+      size_mm: 50
       dicom_window: [ "BASE" ]  # "PROPOSED", "LUNG", "MEDIASTINAL", "BONE"
 
       # preprocessing
@@ -86,7 +88,7 @@ dataset:
       # augmentation
       augmentation:
         dicom_windowing:
-          aug_prob: 0.5
+          aug_prob: 0.2
           level_shift:
             min: -100.0
             max: 100.0
@@ -94,18 +96,16 @@ dataset:
             min: 0.9
             max: 1.1
         flip_xy:
-          aug_prob: 1.0
+          aug_prob: 0.2
         flip_3d:
-          aug_prob: 0.0
-        random_crop_3d:
-          aug_prob: 1.0
+          aug_prob: 0.2
         random_rotate_3d:
-          aug_prob: 1.0
+          aug_prob: 0.0
         coarse_dropout_3d:
-          aug_prob: 1.0
+          aug_prob: 0.2
           max_holes: 12
         rescale_image_3d:
-          aug_prob: 0.0
+          aug_prob: 0.2
           is_same_across_axes: True
           scale_factor:
             min: 0.8

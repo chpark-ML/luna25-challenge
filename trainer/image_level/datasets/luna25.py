@@ -118,7 +118,7 @@ class CTCaseDataset(data.Dataset):
         mode: Union[str, RunMode],
         mode_model: str = "2D",
         data_dir: str = None,
-        fetch_from_patch: bool = False,
+        fetch_from_patch: True,
         dicom_window: list = None,
         translations: bool = None,
         rotations: tuple = None,

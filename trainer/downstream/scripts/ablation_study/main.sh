@@ -10,8 +10,6 @@ cd /opt/challenge/trainer/downstream
 # load model configs
 model_num=7
 source /opt/challenge/trainer/common/model_config.sh ${model_num}
-aux_loss_weight=0.0
-entropy_loss_weight=0.0
 
 run_name=size_mm_${param}
 
