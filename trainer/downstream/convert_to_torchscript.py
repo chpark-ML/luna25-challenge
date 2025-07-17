@@ -47,6 +47,8 @@ def main() -> None:
         for path_to_load_weight in path_to_load_weights:
             path_to_load_weight = Path(path_to_load_weight)
             ckpt_name = path_to_load_weight.stem
+
+            # TODO: currently only auroc ckpt is converted.
             if _LOSS_CHECKPOINT_POSTFIX in ckpt_name or _FINAL_CHECKPOINT_POSTFIX in ckpt_name:
                 continue
 

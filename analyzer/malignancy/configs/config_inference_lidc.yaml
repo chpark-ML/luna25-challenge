@@ -1,23 +1,21 @@
 # specify default configuration
 defaults:
   - loader: lidc
-  - processor: default_lidc_lr
-  - models: 5_0_5rc2.yaml
+  - processor: default
+  - models: 5_0_8rc2.yaml
 
-run_name: "5_0_6rc2"
+run_name: "5_0_8rc2"
 run_modes:
   - test
 
 sanity_check: False
 
 # LR weights configuration
-is_lr_weight: false #default is false
+is_lr_weight: false  # default is false
 lr_weights_path: "/opt/challenge/analyzer/malignancy/outputs/inference_results/5_0_2rc2/outputs/lr_ensemble_weights_5_0_2rc2.json"
-
-result_csv_path: "/opt/challenge/analyzer/malignancy/outputs/inference_results_lidc/5_0_2rc2/result_5_0_2rc2.csv"
 
 hydra:
   run:
-    dir: ./outputs/inference_results_lidc/5_0_2rc2
+    dir: ./outputs/inference_results_lidc
   job:
     chdir: True  # keep hydra = 1.1 change directory behavior

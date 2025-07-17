@@ -137,7 +137,7 @@ dataset:
             dicom_series_info.slice_thickness:
               "$lte": 3.5
             num_mask:
-              "$gte": 2
+              "$gte": 3
             "$or": [
               { "c_malignancy_logistic": { "$gte": 0.7 } },
               { "c_malignancy_logistic": { "$lte": 0.3 } },

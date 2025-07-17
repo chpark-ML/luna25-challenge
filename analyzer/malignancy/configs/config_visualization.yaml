@@ -1,9 +1,9 @@
 defaults:
   - loader: default
   - processor: default
-  - models: 5_0_6rc2_ckpt.yaml
+  - models: 5_0_8rc1_ckpt.yaml
 
-result_csv_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v5.0.6rc2/result_5_0_6rc2.csv  # result_{run_name}.csv
+result_csv_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v5.0.8rc1/result_5_0_8rc1.csv  # result_{run_name}.csv
 sort_criterion: prob_ensemble
 
 hydra:
