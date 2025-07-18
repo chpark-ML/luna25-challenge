@@ -1,7 +1,0 @@
-_target_: trainer.multi_modal.criterion.ClsLoss
-cls_criterion:
-  _target_: trainer.common.criterions.focal_loss.FocalLoss
-  gamma: 2
-  alpha: 0.25
-  smoothing: 0.01
-  target_threshold_gte: 0.5

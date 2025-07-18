@@ -1,6 +1,0 @@
-_target_: shared_lib.processor.malignancy_processor.MalignancyProcessor
-models:
-mode: 3D
-device: 0
-suppress_logs: False
-lr_weights_path: /opt/app/shared_lib/processor/lr_ensemble_weights_5_0_5rc2.json
