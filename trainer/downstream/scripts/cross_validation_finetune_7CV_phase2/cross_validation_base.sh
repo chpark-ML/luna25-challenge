@@ -9,12 +9,9 @@ cd /opt/challenge/trainer/downstream
 # load model configs
 model_num=7
 source /opt/challenge/trainer/common/model_config.sh ${model_num}
-aux_loss_weight=0.0
-entropy_loss_weight=0.0
 
 run_name=cv_fine_model${model_num}_val_fold${val_fold}_7CV_phase2
 
-LR=1e-4
 epoch=100
 batch_size=32
 freeze_encoder=False
@@ -44,7 +41,7 @@ HYDRA_FULL_ERROR=1 python3 main.py \
   "loader.dataset.dataset_infos.luna25.test_fold=[]" \
   "loader.dataset.dataset_infos.luna25.fold_key=${fold_key}" \
   loader.batch_size=${batch_size} \
-  scheduler.scheduler_repr.max_lr=${LR} \
+  scheduler=reduce_on_plateau \
   trainer.max_epoch=${epoch} \
   trainer.fine_tune_info.enable=True \
   trainer.fine_tune_info.freeze_encoder=${freeze_encoder} \

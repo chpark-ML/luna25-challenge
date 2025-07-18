@@ -1,0 +1,9 @@
+scheduler_repr:
+  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  mode: 'max'  # AUROC is used in trian.py
+  factor: 0.1
+  patience: 5
+  threshold: 1e-04
+  threshold_mode: 'rel'  # abs or rel
+  cooldown: 0
+  min_lr: 0

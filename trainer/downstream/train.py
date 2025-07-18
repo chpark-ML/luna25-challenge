@@ -424,7 +424,7 @@ class Trainer(comm_train.Trainer):
         self.set_threshold(probs, annots, mode=self.thresholding_mode)
         loss, dict_metrics = self.get_metrics(logits, probs, annots)
 
-        self.scheduler[ModelName.REPRESENTATIVE].step("epoch_val", loss)
+        self.scheduler[ModelName.REPRESENTATIVE].step("epoch_val", dict_metrics["auroc"])
 
         return Metrics(loss, dict_metrics, self.dict_threshold)
 
