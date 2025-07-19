@@ -206,7 +206,7 @@ def main(config: DictConfig):
     # Visualization
     for gate_levels in [[0], [1], [2], [0, 1, 2]]:
         gate_str = "_".join(map(str, gate_levels))
-        output_dir = f"fig_volume/{sort_criterion}/gate_{gate_str}"
+        output_dir = f"{config.run_name}/{sort_criterion}/gate_{gate_str}"
         _fn_save_fig(merged_df, processor, output_dir=output_dir, gate_levels=gate_levels)
 
 
