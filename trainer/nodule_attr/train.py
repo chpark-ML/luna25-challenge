@@ -583,8 +583,16 @@ class Trainer(comm_train.Trainer):
             dict_logits, dict_probs, dict_annots, seg_logits, seg_annots
         )
 
+        # set scheduler input
+        scheduler_criteria = None
+        if isinstance(self.scheduler[ModelName.REPRESENTATIVE].scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+            if self.scheduler[ModelName.REPRESENTATIVE].scheduler.mode == "min":
+                scheduler_criteria = loss_cls
+            else:
+                scheduler_criteria = dict_metrics["auroc"]
+
         # update scheduler
-        self.scheduler[ModelName.REPRESENTATIVE].step("epoch_val", loss_cls)
+        self.scheduler[ModelName.REPRESENTATIVE].step("epoch_val", scheduler_criteria)
 
         return Metrics(
             loss_cls + loss_seg,  # total

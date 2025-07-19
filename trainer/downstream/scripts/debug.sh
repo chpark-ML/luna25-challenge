@@ -16,4 +16,3 @@ HYDRA_FULL_ERROR=1 python3 main.py \
   loader.num_workers=0 \
   loader.prefetch_factor=null \
   +debug=True
-

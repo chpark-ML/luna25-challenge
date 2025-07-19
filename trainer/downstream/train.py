@@ -424,7 +424,14 @@ class Trainer(comm_train.Trainer):
         self.set_threshold(probs, annots, mode=self.thresholding_mode)
         loss, dict_metrics = self.get_metrics(logits, probs, annots)
 
-        self.scheduler[ModelName.REPRESENTATIVE].step("epoch_val", dict_metrics["auroc"])
+        # set scheduler input
+        scheduler_criteria = None
+        if isinstance(self.scheduler[ModelName.REPRESENTATIVE].scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+            if self.scheduler[ModelName.REPRESENTATIVE].scheduler.mode == "min":
+                scheduler_criteria = loss
+            else:
+                scheduler_criteria = dict_metrics[f"auroc_{self.target_attr_downstream}"]
+        self.scheduler[ModelName.REPRESENTATIVE].step("epoch_val", scheduler_criteria)
 
         return Metrics(loss, dict_metrics, self.dict_threshold)
 
