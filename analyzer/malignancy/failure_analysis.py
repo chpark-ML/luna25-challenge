@@ -339,7 +339,7 @@ class MalignancyFailureAnalyzer:
         return report_path
 
 
-@hydra.main(version_base="1.2", config_path="configs", config_name="config_inference")
+@hydra.main(version_base="1.2", config_path="configs", config_name="config_failure")
 def main(config: DictConfig):
     print_config(config, resolve=True)
     set_seed()
@@ -361,7 +361,7 @@ def main(config: DictConfig):
     analyzer = MalignancyFailureAnalyzer(df, model_cols, ensemble_col)
 
     # Create output directory
-    output_dir = "malignancy_failure_analysis_output"
+    output_dir = f"malignancy_failure_analysis_output/{config.run_name}"
     os.makedirs(output_dir, exist_ok=True)
 
     # Generate analysis
@@ -376,22 +376,20 @@ def main(config: DictConfig):
     metrics = analyzer.analyze_basic_metrics()
     ensemble_methods = analyzer.analyze_ensemble_methods()
 
-    print("\n" + "=" * 50)
-    print("MALIGNANCY FAILURE ANALYSIS SUMMARY")
-    print("=" * 50)
+    logger.info("\n" + "=" * 50)
+    logger.info("MALIGNANCY FAILURE ANALYSIS SUMMARY")
+    logger.info("=" * 50)
 
-    print("\n📊 Model Performance:")
+    logger.info("\n📊 Model Performance:")
     for model, metric in metrics.items():
-        print(f"  {model}: AUROC = {metric['auroc']:.4f}")
+        logger.info(f"  {model}: AUROC = {metric['auroc']:.4f}")
 
-    print("\n🔧 Ensemble Methods:")
+    logger.info("\n🔧 Ensemble Methods:")
     for method, result in ensemble_methods.items():
-        print(f"  {method.capitalize()}: AUROC = {result['auroc']:.4f}")
+        logger.info(f"  {method.capitalize()}: AUROC = {result['auroc']:.4f}")
 
-    print(f"\n📄 Detailed report saved to: {report_path}")
-    print(f"📊 Visualizations saved to: {output_dir}/")
-
-    return 0
+    logger.info(f"\n📄 Detailed report saved to: {report_path}")
+    logger.info(f"📊 Visualizations saved to: {output_dir}/")
 
 
 if __name__ == "__main__":

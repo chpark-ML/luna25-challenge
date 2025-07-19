@@ -373,7 +373,7 @@ class FailureCaseVisualizer:
         return report_path
 
 
-@hydra.main(version_base="1.2", config_path="configs", config_name="config_visualization")
+@hydra.main(version_base="1.2", config_path="configs", config_name="config_failure")
 def main(config: DictConfig):
     print_config(config, resolve=True)
     set_seed()
@@ -401,15 +401,15 @@ def main(config: DictConfig):
     failure_cases = visualizer.identify_failure_cases(threshold=0.5, top_k=20)
 
     # Create output directory
-    output_dir = "failure_case_visualization_output"
+    output_dir = f"failure_case_visualization_output/{config.run_name}"
     os.makedirs(output_dir, exist_ok=True)
 
     # Print summary
-    print("\n" + "=" * 60)
-    print("FAILURE CASE ANALYSIS SUMMARY")
-    print("=" * 60)
+    logger.info("\n" + "=" * 60)
+    logger.info("FAILURE CASE ANALYSIS SUMMARY")
+    logger.info("=" * 60)
     for case_type, df in failure_cases.items():
-        print(f"{case_type.replace('_', ' ').title()}: {len(df)} cases")
+        logger.info(f"{case_type.replace('_', ' ').title()}: {len(df)} cases")
     # Generate summary visualizations
     logger.info("Creating summary visualizations...")
     visualizer.create_summary_visualization(failure_cases, output_dir)
@@ -422,11 +422,9 @@ def main(config: DictConfig):
     logger.info("Saving failure case images...")
     visualizer.save_failure_case_images(failure_cases, output_dir)
 
-    print(f"\n📊 Summary visualizations saved to: {output_dir}/")
-    print(f"📄 Detailed report saved to: {report_path}")
-    print(f"🖼️  Failure case images saved to: {output_dir}/[failure_type]/")
-
-    return 0
+    logger.info(f"\n📊 Summary visualizations saved to: {output_dir}/")
+    logger.info(f"📄 Detailed report saved to: {report_path}")
+    logger.info(f"🖼️  Failure case images saved to: {output_dir}/[failure_type]/")
 
 
 if __name__ == "__main__":
