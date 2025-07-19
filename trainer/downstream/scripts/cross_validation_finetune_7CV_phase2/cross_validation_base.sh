@@ -15,7 +15,7 @@ entropy_loss_weight=0.0
 run_name=cv_fine_model${model_num}_val_fold${val_fold}_7CV_phase2
 
 epoch=100
-batch_size=64
+batch_size=32
 freeze_encoder=False
 use_alpha=False  # since "use_weighted_sampler" is ture.
 smoothing=0.01

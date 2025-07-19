@@ -589,7 +589,7 @@ class Trainer(comm_train.Trainer):
             if self.scheduler[ModelName.REPRESENTATIVE].scheduler.mode == "min":
                 scheduler_criteria = loss_cls
             else:
-                scheduler_criteria = dict_metrics["auroc"]
+                scheduler_criteria = dict_metrics[f"auroc_{self.target_attr_downstream}"]
 
         # update scheduler
         self.scheduler[ModelName.REPRESENTATIVE].step("epoch_val", scheduler_criteria)
