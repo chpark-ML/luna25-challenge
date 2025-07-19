@@ -3,6 +3,6 @@ result_csv_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v5.0.9rc3/r
 
 hydra:
   run:
-    dir: ./outputs/visualization_result
+    dir: ./outputs/failure_analysis_result
   job:
     chdir: True  # keep hydra = 1.1 change directory behavior
