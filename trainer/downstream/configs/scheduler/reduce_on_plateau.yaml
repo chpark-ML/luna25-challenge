@@ -1,7 +1,7 @@
 scheduler_repr:
   _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
   mode: 'max'  # AUROC is used in train.py
-  factor: 0.1
+  factor: 0.2
   patience: 5
   threshold: 1e-04
   threshold_mode: 'rel'  # abs or rel
