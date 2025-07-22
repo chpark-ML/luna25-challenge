@@ -37,8 +37,8 @@ def get_merged_csv(best_csv, compare_csv, mode="luna25"):
         best["row_idx"] = best.index
         compare["row_idx"] = compare.index
         merged = best[["row_idx", "annotation", "prob_ensemble"]].copy()
-        merged['prob_ensemble_compare'] = compare['prob_ensemble']
-        merged['prob_ensemble_best'] = best['prob_ensemble']
+        merged["prob_ensemble_compare"] = compare["prob_ensemble"]
+        merged["prob_ensemble_best"] = best["prob_ensemble"]
 
     else:
         assert False

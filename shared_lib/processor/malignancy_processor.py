@@ -14,9 +14,7 @@ class MalignancyProcessor(BaseProcessor):
     Loads a chest CT scan, and predicts the malignancy around a nodule
     """
 
-    def __init__(
-        self, models=None, mode="3D", device=torch.device("cuda:0"), suppress_logs=False
-    ):
+    def __init__(self, models=None, mode="3D", device=torch.device("cuda:0"), suppress_logs=False):
         super().__init__(models=models, mode=mode, device=device, suppress_logs=suppress_logs)
 
         if any(model.weight is None for model in models.values()):
@@ -28,10 +26,7 @@ class MalignancyProcessor(BaseProcessor):
                     raise ValueError(f"Invalid weight for {name}: {w}. Must be between 0 and 1.")
 
             total_weight = sum(model.weight for model in models.values())
-            self.model_weights = {
-                name: model.weight / total_weight
-                for name, model in models.items()
-            }
+            self.model_weights = {name: model.weight / total_weight for name, model in models.items()}
 
     def predict(self, numpy_image, header, coord, size_mm=None):
         """
@@ -48,9 +43,7 @@ class MalignancyProcessor(BaseProcessor):
                 logits = model.get_prediction(patch)
                 logits = logits.data.cpu().numpy()
                 if self.model_weights is not None:
-                    probs.append(
-                        torch.sigmoid(torch.from_numpy(logits)).numpy() * self.model_weights[model_name]
-                    )
+                    probs.append(torch.sigmoid(torch.from_numpy(logits)).numpy() * self.model_weights[model_name])
                 else:
                     probs.append(torch.sigmoid(torch.from_numpy(logits)).numpy())
 
