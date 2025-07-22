@@ -16,41 +16,45 @@ from trainer.downstream.datasets.luna25 import extract_patch_dicom_space
 
 _CLIENT = pymongo.MongoClient(DB_ADDRESS)
 
+
 def load_and_merge_csv_luna25(best_csv, compare_csv):
     best = pd.read_csv(best_csv)
     compare = pd.read_csv(compare_csv)
-    best = best[best['mode'] == 'test'].reset_index(drop=True)
-    compare = compare[compare['mode'] == 'test'].reset_index(drop=True)
-    merged = best[['annot_ids', 'annotation', 'prob_ensemble']].merge(
-        compare[['annot_ids', 'prob_ensemble']], on='annot_ids', suffixes=('_best', '_compare')
+    best = best[best["mode"] == "test"].reset_index(drop=True)
+    compare = compare[compare["mode"] == "test"].reset_index(drop=True)
+    merged = best[["annot_ids", "annotation", "prob_ensemble"]].merge(
+        compare[["annot_ids", "prob_ensemble"]], on="annot_ids", suffixes=("_best", "_compare")
     )
-    merged['prob_diff'] = np.abs(merged['prob_ensemble_best'] - merged['prob_ensemble_compare'])
+    merged["prob_diff"] = np.abs(merged["prob_ensemble_best"] - merged["prob_ensemble_compare"])
     return merged
+
 
 def load_and_merge_csv_lidc(best_csv, compare_csv):
     best = pd.read_csv(best_csv)
     compare = pd.read_csv(compare_csv)
-    best = best[best['mode'] == 'test'].reset_index(drop=True)
-    compare = compare[compare['mode'] == 'test'].reset_index(drop=True)
-    best['row_idx'] = best.index
-    compare['row_idx'] = compare.index
-    merged = best[['row_idx', 'annotation', 'prob_ensemble']].copy()
-    merged['prob_ensemble_compare'] = compare['prob_ensemble']
-    merged['prob_diff'] = np.abs(merged['prob_ensemble'] - merged['prob_ensemble_compare'])
+    best = best[best["mode"] == "test"].reset_index(drop=True)
+    compare = compare[compare["mode"] == "test"].reset_index(drop=True)
+    best["row_idx"] = best.index
+    compare["row_idx"] = compare.index
+    merged = best[["row_idx", "annotation", "prob_ensemble"]].copy()
+    merged["prob_ensemble_compare"] = compare["prob_ensemble"]
+    merged["prob_diff"] = np.abs(merged["prob_ensemble"] - merged["prob_ensemble_compare"])
     return merged
 
-def get_topk_diff_samples(merged, k=10, mode='luna25'):
-    if 'annot_ids' in merged.columns:
-        if mode == 'luna25':
+
+def get_topk_diff_samples(merged, k=10, mode="luna25"):
+    if "annot_ids" in merged.columns:
+        if mode == "luna25":
             # luna25: annot_ids가 "숫자_숫자_숫자" 형태
-            mask = merged['annot_ids'].astype(str).str.contains(r'^\d+_\d+_\d+$', na=False)
+            mask = merged["annot_ids"].astype(str).str.contains(r"^\d+_\d+_\d+$", na=False)
         else:
             # lidc: luna25 패턴이 아닌 모든 것
-            mask = ~merged['annot_ids'].astype(str).str.contains(r'^\d+_\d+_\d+$', na=False)
+            mask = ~merged["annot_ids"].astype(str).str.contains(r"^\d+_\d+_\d+$", na=False)
         filtered = merged[mask].copy()
     else:
         filtered = merged.copy()
-    return filtered.sort_values('prob_diff', ascending=False).head(k)
+    return filtered.sort_values("prob_diff", ascending=False).head(k)
+
 
 def fetch_db_info(annotation_ids):
     query = {"annotation_id": {"$in": annotation_ids}}
@@ -59,10 +63,11 @@ def fetch_db_info(annotation_ids):
     db_df = pd.DataFrame(nodule_candidates)
     return db_df
 
+
 def visualize_samples_luna25(df, output_dir, processor, gate_levels):
     for _, row in tqdm(df.iterrows(), total=len(df)):
-        annotation = row['annotation']
-        annot_ids = row['annot_ids']
+        annotation = row["annotation"]
+        annot_ids = row["annot_ids"]
         save_dir = Path(os.path.join(output_dir, f"{annotation}/{annot_ids}.png"))
         os.makedirs(save_dir.parents[0], exist_ok=True)
         h5_path = row[DBKey.H5_PATH_NFS]
@@ -102,9 +107,9 @@ def visualize_samples_luna25(df, output_dir, processor, gate_levels):
         attr = {
             "annot_ids": annot_ids,
             "annotation": annotation,
-            "prob_ensemble_best": row['prob_ensemble_best'],
-            "prob_ensemble_compare": row['prob_ensemble_compare'],
-            "prob_diff": row['prob_diff'],
+            "prob_ensemble_best": row["prob_ensemble_best"],
+            "prob_ensemble_compare": row["prob_ensemble_compare"],
+            "prob_diff": row["prob_diff"],
         }
         save_plot(
             input_image=patch.squeeze().detach().cpu().numpy(),
@@ -119,49 +124,63 @@ def visualize_samples_luna25(df, output_dir, processor, gate_levels):
             dpi=60,
         )
 
+
 def visualize_samples_lidc(df, output_dir):
     for _, row in tqdm(df.iterrows(), total=len(df)):
-        annotation = row['annotation']
-        row_idx = row['row_idx']
+        annotation = row["annotation"]
+        row_idx = row["row_idx"]
         save_dir = Path(os.path.join(output_dir, f"{annotation}/{row_idx}.png"))
         os.makedirs(save_dir.parents[0], exist_ok=True)
         import matplotlib.pyplot as plt
+
         fig, ax = plt.subplots(figsize=(4, 4))
-        ax.axis('off')
+        ax.axis("off")
         text = f"best: {row['prob_ensemble_best']:.3f}\ncompare: {row['prob_ensemble_compare']:.3f}\ndiff: {row['prob_diff']:.3f}"
-        ax.text(0.5, 0.5, text, fontsize=14, ha='center', va='center')
+        ax.text(0.5, 0.5, text, fontsize=14, ha="center", va="center")
         plt.tight_layout()
         fig.savefig(str(save_dir), dpi=60)
         plt.close(fig)
 
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--best_csv', type=str, default='/team/team_blu3/lung/project/luna25/analysis/inference_results_combined/result_5_0_8rc2.csv')
-    parser.add_argument('--compare_csv', type=str, default='/team/team_blu3/lung/project/luna25/analysis/inference_results_combined/result_5_0_9rc8.csv')
-    parser.add_argument('--output_dir', type=str, default='./output/visualization_diff')
-    parser.add_argument('--mode', type=str, choices=['luna25', 'lidc'], required=True)
+    parser.add_argument(
+        "--best_csv",
+        type=str,
+        default="/team/team_blu3/lung/project/luna25/analysis/inference_results_combined/result_5_0_8rc2.csv",
+    )
+    parser.add_argument(
+        "--compare_csv",
+        type=str,
+        default="/team/team_blu3/lung/project/luna25/analysis/inference_results_combined/result_5_0_9rc8.csv",
+    )
+    parser.add_argument("--output_dir", type=str, default="./output/visualization_diff")
+    parser.add_argument("--mode", type=str, choices=["luna25", "lidc"], required=True)
     args = parser.parse_args()
-    if args.mode == 'luna25':
+    if args.mode == "luna25":
         merged = load_and_merge_csv_luna25(args.best_csv, args.compare_csv)
-        topk = get_topk_diff_samples(merged, k=10, mode='luna25')
+        topk = get_topk_diff_samples(merged, k=10, mode="luna25")
 
         # MongoDB에서 patch 정보 가져오기
-        annotation_ids = topk['annot_ids'].tolist()
+        annotation_ids = topk["annot_ids"].tolist()
         db_df = fetch_db_info(annotation_ids)
 
         # annot_ids <-> annotation_id로 merge
-        merged_with_db = topk.merge(db_df, left_on='annot_ids', right_on='annotation_id', how='left')
+        merged_with_db = topk.merge(db_df, left_on="annot_ids", right_on="annotation_id", how="left")
 
         # DB 정보 없는 row는 제외
-        merged_with_db = merged_with_db.dropna(subset=[DBKey.H5_PATH_NFS, DBKey.D_COORD_ZYX, DBKey.ORIGIN, DBKey.TRANSFORM, DBKey.SPACING])
+        merged_with_db = merged_with_db.dropna(
+            subset=[DBKey.H5_PATH_NFS, DBKey.D_COORD_ZYX, DBKey.ORIGIN, DBKey.TRANSFORM, DBKey.SPACING]
+        )
 
         processor = None
         gate_levels = [0, 1, 2]
         visualize_samples_luna25(merged_with_db, args.output_dir, processor, gate_levels)
     else:
         merged = load_and_merge_csv_lidc(args.best_csv, args.compare_csv)
-        topk = get_topk_diff_samples(merged, k=10, mode='lidc')
+        topk = get_topk_diff_samples(merged, k=10, mode="lidc")
         visualize_samples_lidc(topk, args.output_dir)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
