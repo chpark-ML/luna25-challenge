@@ -1,6 +1,6 @@
-best_csv: "/team/team_blu3/lung/project/luna25/analysis/inference_results_combined/result_5_0_8rc2.csv"
-compare_csv: "/team/team_blu3/lung/project/luna25/analysis/inference_results_combined/result_5_0_9rc8.csv"
-mode: luna25  # one of { luna25, lidc }
+csv_path: "/team/team_blu3/lung/project/luna25/analysis/inference_results_combined"
+best_csv: "result_5_0_8rc2.csv"
+compare_csv: "result_5_0_9rc8.csv"
 topk_num_sample: 20
 
 hydra:
