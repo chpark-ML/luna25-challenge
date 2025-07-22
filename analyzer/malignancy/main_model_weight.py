@@ -1,8 +1,8 @@
 import json
 import logging
 import os
-import warnings
 import shutil
+import warnings
 from typing import Dict, List
 
 import hydra
@@ -63,7 +63,9 @@ class MalignancyAdvancedEnsembleAnalyzer:
             # X_train = self.df[train_cols]
             y_train = self.y_true.values
 
-            logistic_regressor = LogisticRegression(penalty='l2', C=0.1, random_state=42, max_iter=1000, fit_intercept=False)
+            logistic_regressor = LogisticRegression(
+                penalty="l2", C=0.1, random_state=42, max_iter=1000, fit_intercept=False
+            )
             logistic_regressor.fit(X_train, y_train)
 
             weights = np.array(logistic_regressor.coef_).flatten()

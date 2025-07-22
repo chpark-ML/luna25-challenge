@@ -1,5 +1,6 @@
-import yaml
 import json
+
+import yaml
 
 
 def main():
@@ -7,7 +8,6 @@ def main():
     input_yaml_path = "configs/models/5_1_0.yaml"
     weights_json_path = "model_weights/5_0_8rc2/model_weights.json"
     output_yaml_path = "configs/models/5_1_0.yaml"
-
 
     # JSON 로드
     with open(weights_json_path, "r") as f:
