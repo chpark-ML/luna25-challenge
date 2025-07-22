@@ -1,5 +1,0 @@
-name: mlflow
-enable: True
-experiment_name: lct-malignancy-mm
-run_group: default
-run_name: default
