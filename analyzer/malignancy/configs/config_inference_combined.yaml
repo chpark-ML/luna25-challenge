@@ -2,9 +2,9 @@
 defaults:
   - loader: combined.yaml
   - processor: default
-  - models: 5_0_9rc9.yaml
+  - models: 5_0_9rc8_weighted.yaml
 
-run_name: "5_0_9rc9"
+run_name: "5_0_9rc8_weighted"
 run_modes:
   - test
 

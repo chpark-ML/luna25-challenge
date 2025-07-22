@@ -9,9 +9,10 @@ LOGIT_KEY = "logit"
 
 
 class MalignancyRunner(ModelBaseTorchscript):
-    def __init__(self, root_path, exp_name, file_name, device: Union[str, torch.device] = None):
+    def __init__(self, root_path, exp_name, file_name, device: Union[str, torch.device] = None, weight=None):
         checkpoint_path = Path(root_path) / exp_name / file_name
         super().__init__(checkpoint_path=checkpoint_path, device=device)
+        self.weight = weight
 
     @torch.no_grad()
     def get_prediction(self, input_tensor) -> torch.Tensor:

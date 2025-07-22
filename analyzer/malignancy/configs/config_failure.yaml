@@ -1,5 +1,5 @@
-run_name: "5_0_9rc3"
-result_csv_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v5.0.9rc3/result_5_0_9rc3.csv  # result_{run_name}.csv
+run_name: "5_0_9rc8"
+result_csv_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v5.0.9rc8/result_5_0_9rc8.csv  # result_{run_name}.csv
 
 hydra:
   run:

@@ -2,17 +2,13 @@
 defaults:
   - loader: lidc
   - processor: default
-  - models: 5_0_9rc9.yaml
+  - models: 5_0_9rc8_weighted.yaml
 
-run_name: "5_0_9rc9"
+run_name: "5_0_9rc8_weighted"
 run_modes:
   - test
 
 sanity_check: False
-
-# LR weights configuration
-is_lr_weight: false  # default is false
-lr_weights_path: "/opt/challenge/analyzer/malignancy/outputs/inference_results/5_0_2rc2/outputs/lr_ensemble_weights_5_0_2rc2.json"
 
 hydra:
   run:
