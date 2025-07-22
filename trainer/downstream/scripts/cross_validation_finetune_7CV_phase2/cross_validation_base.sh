@@ -19,7 +19,7 @@ batch_size=32
 freeze_encoder=False
 use_alpha=False  # since "use_weighted_sampler" is ture.
 smoothing=0.01
-LR=1e-4
+LR=1e-3
 
 model_path=/team/team_blu3/lung/project/luna25/weights/nodulex-v5.0.8rc1/cv_fine_model7_val_fold${val_fold}_7CV/model_auroc.pth
 
