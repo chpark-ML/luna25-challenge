@@ -4,9 +4,10 @@ import json
 
 def main():
     # 원본 YAML 파일 경로
-    input_yaml_path = "configs/models/5_0_9rc8.yaml"
-    weights_json_path = "outputs/model_weights/5_0_9rc8/model_weights.json"
-    output_yaml_path = "configs/models/5_0_9rc8_weighted.yaml"
+    model_name = "5_0_8rc2"
+    input_yaml_path = f"configs/models/{model_name}.yaml"
+    weights_json_path = f"outputs/model_weights/{model_name}/model_weights.json"
+    output_yaml_path = f"configs/models/{model_name}_weighted.yaml"
 
 
     # JSON 로드

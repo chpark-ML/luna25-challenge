@@ -1,10 +1,10 @@
 # specify default configuration
 defaults:
-  - loader: lidc
+  - loader: lidc_mask2
   - processor: default
-  - models: 5_0_9rc8_weighted.yaml
+  - models: 5_0_8rc2_weighted.yaml
 
-run_name: "5_0_9rc8_weighted"
+run_name: "5_0_8rc2_weighted"
 run_modes:
   - test
 
