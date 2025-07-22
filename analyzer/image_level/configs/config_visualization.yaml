@@ -1,8 +1,0 @@
-result_csv_path: /team/team_blu3/lung/project/luna25/weights/image_level/result_image_level.csv  # result_{run_name}.csv
-sort_criterion: prob_ensemble
-
-hydra:
-  run:
-    dir: ./outputs/visualization_result
-  job:
-    chdir: True  # keep hydra = 1.1 change directory behavior
