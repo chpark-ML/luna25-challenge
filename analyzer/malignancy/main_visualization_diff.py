@@ -1,11 +1,13 @@
-import argparse
 import os
 from pathlib import Path
 
+import hydra
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pymongo
 import torch
+from omegaconf import DictConfig
 from tqdm import tqdm
 
 from data_lake.constants import DB_ADDRESS, TARGET_COLLECTION, TARGET_DB, DBKey
@@ -64,11 +66,11 @@ def fetch_db_info(annotation_ids):
     return db_df
 
 
-def visualize_samples_luna25(df, output_dir, processor, gate_levels):
+def visualize_samples_luna25(df):
     for _, row in tqdm(df.iterrows(), total=len(df)):
         annotation = row["annotation"]
         annot_ids = row["annot_ids"]
-        save_dir = Path(os.path.join(output_dir, f"{annotation}/{annot_ids}.png"))
+        save_dir = Path(os.path.join(f"{annotation}/{annot_ids}.png"))
         os.makedirs(save_dir.parents[0], exist_ok=True)
         h5_path = row[DBKey.H5_PATH_NFS]
         d_coord_zyx = row[DBKey.D_COORD_ZYX]
@@ -125,13 +127,12 @@ def visualize_samples_luna25(df, output_dir, processor, gate_levels):
         )
 
 
-def visualize_samples_lidc(df, output_dir):
+def visualize_samples_lidc(df):
     for _, row in tqdm(df.iterrows(), total=len(df)):
         annotation = row["annotation"]
         row_idx = row["row_idx"]
-        save_dir = Path(os.path.join(output_dir, f"{annotation}/{row_idx}.png"))
+        save_dir = Path(os.path.join(f"{annotation}/{row_idx}.png"))
         os.makedirs(save_dir.parents[0], exist_ok=True)
-        import matplotlib.pyplot as plt
 
         fig, ax = plt.subplots(figsize=(4, 4))
         ax.axis("off")
@@ -142,24 +143,17 @@ def visualize_samples_lidc(df, output_dir):
         plt.close(fig)
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--best_csv",
-        type=str,
-        default="/team/team_blu3/lung/project/luna25/analysis/inference_results_combined/result_5_0_8rc2.csv",
-    )
-    parser.add_argument(
-        "--compare_csv",
-        type=str,
-        default="/team/team_blu3/lung/project/luna25/analysis/inference_results_combined/result_5_0_9rc8.csv",
-    )
-    parser.add_argument("--output_dir", type=str, default="./output/visualization_diff")
-    parser.add_argument("--mode", type=str, choices=["luna25", "lidc"], required=True)
-    args = parser.parse_args()
-    if args.mode == "luna25":
-        merged = load_and_merge_csv_luna25(args.best_csv, args.compare_csv)
-        topk = get_topk_diff_samples(merged, k=10, mode="luna25")
+@hydra.main(version_base="1.2", config_path="configs", config_name="config_visualization_diff")
+def main(config: DictConfig):
+    best_csv = config.best_csv
+    compare_csv = config.compare_csv
+    topk_num_sample = config.topk_num_sample
+    mode = config.mode
+    assert mode in ("luna25", "lidc"), f"Invalid mode: {mode}"
+
+    if mode == "luna25":
+        merged = load_and_merge_csv_luna25(best_csv, compare_csv)
+        topk = get_topk_diff_samples(merged, k=topk_num_sample, mode="luna25")
 
         # MongoDB에서 patch 정보 가져오기
         annotation_ids = topk["annot_ids"].tolist()
@@ -172,14 +166,11 @@ def main():
         merged_with_db = merged_with_db.dropna(
             subset=[DBKey.H5_PATH_NFS, DBKey.D_COORD_ZYX, DBKey.ORIGIN, DBKey.TRANSFORM, DBKey.SPACING]
         )
-
-        processor = None
-        gate_levels = [0, 1, 2]
-        visualize_samples_luna25(merged_with_db, args.output_dir, processor, gate_levels)
+        visualize_samples_luna25(merged_with_db)
     else:
-        merged = load_and_merge_csv_lidc(args.best_csv, args.compare_csv)
+        merged = load_and_merge_csv_lidc(best_csv, compare_csv)
         topk = get_topk_diff_samples(merged, k=10, mode="lidc")
-        visualize_samples_lidc(topk, args.output_dir)
+        visualize_samples_lidc(topk)
 
 
 if __name__ == "__main__":
