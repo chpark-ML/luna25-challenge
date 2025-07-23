@@ -39,7 +39,7 @@ def get_most_frequent(data):
 
 
 def one_hot_encode(lst, num_class=6):
-    encoded = [0] * num_class  # 최댓값 + 1 크기의 리스트를 생성하고 초기화
+    encoded = [0] * num_class  # Create and initialize a list of size (max value + 1)
     for i in range(num_class):
         encoded[i] = lst.count(i + 1) / len(lst)
     return encoded
@@ -79,7 +79,7 @@ def update_docs(collection, nodule_cluster_docs):
         for i_attr in _TARGET_FIELD_REGRESSION:
             averaged = np.mean(doc[i_attr])
 
-            # axial의 resampled space에서 diameter / 3D resampled space에서 volume 업데이트
+            # Update diameter in axial resampled space / update volume in 3D resampled space
             _orig_spacing_mm = [1.0, 1.0, 1.0]
             spacing_ratio = np.divide(_orig_spacing_mm, DEFAULT_RESAMPLED_SPACING)
             if i_attr == ClusterLevelInfo.DIAMETER:

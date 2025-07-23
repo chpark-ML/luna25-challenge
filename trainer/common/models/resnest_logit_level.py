@@ -80,10 +80,10 @@ class LogitLevelFusionModel(nn.Module):
                 image_x3 = image_x3.unsqueeze(-1).unsqueeze(-1)
             elif image_x3.dim() == 4:
                 image_x3 = image_x3.unsqueeze(-1)
-            # 이제 [B, C, 1, 1, 1] 보장
+            # Now [B, C, 1, 1, 1] is guaranteed
             image_logit = self.image_classifier(image_x3)  # [B, 1, 1, 1, 1]
             image_logit = image_logit.squeeze(-1).squeeze(-1).squeeze(-1)  # [B, 1]
-            adjusted_image_logits = image_logit  # 추가 zero conv 없음
+            adjusted_image_logits = image_logit  # No additional zero conv
         else:
             # Use Classifier
             image_logits = self.image_classifier([image_x3])

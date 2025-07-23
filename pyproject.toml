@@ -1,47 +1,46 @@
-# Black 설정 섹션
+# Black configuration section
 [tool.black]
-# 최대 줄 길이 설정 (기본값: 88)
+# Set maximum line length (default: 88)
 line-length = 120
-# 지원하는 Python 버전 지정 (여러 버전 가능)
+# Specify supported Python versions (multiple versions possible)
 target-version = ['py37', 'py38', 'py39']
-# 포함할 파일 패턴 (정규식)
+# File pattern to include (regex)
 include = '\.pyi?$'
-# 제외할 파일 패턴 (정규식)
+# File pattern to exclude (regex)
 exclude = '''
 /(
-    \.git         # Git 디렉터리
-  | \.hg          # Mercurial 디렉터리
-  | \.mypy_cache  # MyPy 캐시 디렉터리
-  | \.pytest_cache # pytest 캐시 디렉터리
-  | \.vscode      # VS Code 설정 디렉터리
-  | \.idea        # IntelliJ IDEA 설정 디렉터리
-  | \.venv        # 가상 환경 디렉터리
-  | _build        # 빌드 디렉터리
-  | buck-out      # Buck 아웃풋 디렉터리
-  | build         # 빌드 디렉터리
-  | dist          # 배포 디렉터리
-)/
-'''
+    \.git         # Git directory
+  | \.hg          # Mercurial directory
+  | \.mypy_cache  # MyPy cache directory
+  | \.pytest_cache # pytest cache directory
+  | \.vscode      # VS Code settings directory
+  | \.idea        # IntelliJ IDEA settings directory
+  | \.venv        # Virtual environment directory
+  | _build        # Build directory
+  | buck-out      # Buck output directory
+  | build         # Build directory
+  | dist          # Distribution directory
+)/'''
 
-# isort 설정 섹션
+# isort configuration section
 [tool.isort]
-# Black과 호환되도록 프로파일 설정
+# Set profile for compatibility with Black
 profile = "black"
-# 최대 줄 길이 설정 (Black과 동일하게 맞춤)
+# Set maximum line length (match Black)
 line_length = 120
-# 여러 줄 출력 형식 (3: 수직 정렬)
+# Multi-line output format (3: vertical alignment)
 multi_line_output = 3
-# 트레일링 콤마 포함 여부 설정
+# Whether to include trailing commas
 include_trailing_comma = true
-# 첫 번째 파티 모듈 지정 (프로젝트의 첫 번째 파티 모듈 이름)
+# Specify first-party module (name of your project)
 known_first_party = ["your_project"]
-# 세 번째 파티 모듈 지정
+# Specify third-party modules
 known_third_party = ["django", "flask", "requests"]
-# 기본 섹션 설정 (THIRDPARTY: 세 번째 파티 모듈)
+# Default section (THIRDPARTY: third-party modules)
 default_section = "THIRDPARTY"
-# 무시할 디렉터리 목록
+# List of directories to skip
 skip = ["migrations", "node_modules", "venv"]
-# 무시할 파일 패턴 (글로벌 패턴)
+# File pattern to skip (global pattern)
 skip_glob = ["*/migrations/*"]
-# 'as' 키워드를 사용하는 import 문을 결합할지 여부
+# Whether to combine import statements using 'as' keyword
 combine_as_imports = true

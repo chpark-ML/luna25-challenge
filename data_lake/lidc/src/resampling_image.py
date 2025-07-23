@@ -1,7 +1,5 @@
-"""
-개별 spacing 정보를 받아서 cupy interpolation을 통해서 dicom_pixels와 mask의 spacing 정보를
-일관되게 (1, 0.67, 0.67)로 프로세싱하고 저장합니다.
-"""
+# Receives individual spacing information and uses cupy interpolation to process and save spacing information of dicom_pixels and mask
+# Consistently processes and saves as (1, 0.67, 0.67)
 
 import argparse
 import logging

@@ -1,6 +1,6 @@
 class SchedulerTool:
     """
-    scheduler의 종류에 따라 호출되는 방법이 다르기 때문에, 해당 툴을 활용하여 핸들링합니다.
+    The way it is called depends on the type of scheduler, so this tool is used for handling.
     """
 
     def __init__(self, scheduler):

@@ -1,8 +1,8 @@
 """
-pylidc에서 제공하는 consensus bbox 및 mask를 database에 격납합니다.
+Stores consensus bbox and mask provided by pylidc into the database.
 
 1. database: lct / collection: pylidc-image / pylidc-nodule / pylidc-nodule-cluster
-2. whole CT image는 nvme1에 저장 / array는 list로 저장 / slice object는 dictionary로 저장
+2. The whole CT image is stored in nvme1 / arrays are stored as lists / slice objects are stored as dictionaries
 """
 
 import argparse
@@ -147,8 +147,8 @@ def _process(input_index, inputs, df_meta_data, is_sanity=False, do_save_h5=Fals
                 features[NoduleLevelInfo.DIAMETER] = getattr(ann, NoduleLevelInfo.DIAMETER)
                 features[NoduleLevelInfo.VOLUME] = getattr(ann, NoduleLevelInfo.VOLUME)
 
-                # axial의 resampled space에서 diameter / 3D resampled space에서 volume 업데이트
-                # diameter, volume의 단위는 각각 mm, mm^3.
+                # Update diameter in axial resampled space / update volume in 3D resampled space
+                # The units of diameter and volume are mm and mm^3, respectively.
                 _orig_spacing_mm = [1.0, 1.0, 1.0]
                 spacing_ratio = np.divide(_orig_spacing_mm, DEFAULT_RESAMPLED_SPACING)
                 features[NoduleLevelInfo.DIAMETER_RESAMPLED] = features[NoduleLevelInfo.DIAMETER] * np.prod(

@@ -6,7 +6,7 @@ _THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 
 def setup_logger(save_path=None):
     # init root logger
-    # 특정 라이브러리(e.g., albumentations)가 root 로거에 핸들러를 추가한 경우, 이를 제거하고 새로운 설정을 적용
+    # If a specific library (e.g., albumentations) has added handlers to the root logger, remove them and apply new settings
     root_logger = logging.getLogger("")
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)

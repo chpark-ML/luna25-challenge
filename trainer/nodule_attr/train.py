@@ -429,7 +429,7 @@ class Trainer(comm_train.Trainer):
                     dict_threshold[f"threshold_{ThresholdMode.YOUDEN.value}_{i_attr}"] = best_thresh
 
                 if mode == ThresholdMode.F1 or mode == ThresholdMode.ALL:
-                    # 다양한 threshold 값을 시도해보고 가장 높은 F1 스코어를 찾습니다.
+                    # Try various threshold values and find the one with the highest F1 score.
                     for threshold in np.arange(0.0, 1.0, 0.01):
                         y_pred = (dict_probs[i_attr].detach().cpu().numpy() > threshold).astype(int)
                         # y_true = dict_annots[i_attr].detach().cpu().numpy()

@@ -4,34 +4,34 @@ import yaml
 
 
 def main():
-    # 원본 YAML 파일 경로
+    # Path to the original YAML file
     model_name = "5_0_8rc2"
     input_yaml_path = f"configs/models/{model_name}.yaml"
     weights_json_path = f"outputs/model_weights/{model_name}/model_weights.json"
     output_yaml_path = f"configs/models/{model_name}_weighted.yaml"
 
-    # JSON 로드
+    # Load JSON
     with open(weights_json_path, "r") as f:
         weights_data = json.load(f)
 
-    # model_order에서 model_x 키 추출 후 mapping 생성
+    # Extract model_x keys from model_order and create mapping
     order_to_weight = {
         f"model_{int(name.split('_')[-1])}": weight
         for name, weight in zip(weights_data["model_order"], weights_data["weights"])
     }
 
-    # YAML 로드
+    # Load YAML
     with open(input_yaml_path, "r") as f:
         config = yaml.safe_load(f)
 
-    # 각 모델에 weight 추가
+    # Add weight to each model
     for model_key in config:
         if model_key in order_to_weight:
             config[model_key]["weight"] = order_to_weight[model_key]
         else:
             print(f"Warning: No weight found for {model_key}")
 
-    # 결과 저장
+    # Save the result
     with open(output_yaml_path, "w") as f:
         yaml.dump(config, f, sort_keys=False)
 

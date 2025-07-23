@@ -1,7 +1,7 @@
 """
-pylidc에서 획득한 3D volume과 segmentation annotation을 학습 데이터로 변환하고 격납하기 위한 코드입니다.
+This code converts 3D volumes and segmentation annotations obtained from pylidc into training data and stores them.
 input: mongoDB (pylidc-image, pylidc-nodule-cluster)
-output: h5 files(mask annotation), updated pylidc-image
+output: h5 files (mask annotation), updated pylidc-image
 """
 
 import argparse

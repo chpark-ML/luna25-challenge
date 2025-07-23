@@ -88,7 +88,7 @@ def split_fold(df: pd.DataFrame, n_splits: list = [7, 10, 15], random_state: int
             malignancy=(ColumnKey.Label, lambda x: (x == 0).sum()),
             benign=(ColumnKey.Label, lambda x: (x == 1).sum()),
             Age_at_StudyDate=(ColumnKey.AgeAtStudy, lambda x: x.mode()[0]),
-            Gender=(ColumnKey.Gender, lambda x: x.mode()[0]),  # 최빈값(가장 많이 등장한 성별)
+            Gender=(ColumnKey.Gender, lambda x: x.mode()[0]),  # Most frequent value (most common gender)
             z_spacing_min=(ColumnKeyAppend.Spacing, lambda x: min(v[0] for v in x)),
             z_spacing_max=(ColumnKeyAppend.Spacing, lambda x: max(v[0] for v in x)),
         )

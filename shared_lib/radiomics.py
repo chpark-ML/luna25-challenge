@@ -7,85 +7,85 @@ class RadiomicsFeatureKeys:
     # Shape-based features (3D morphological characteristics)
     shape: List[str] = field(
         default_factory=lambda: [
-            "original_shape_Sphericity",  # 구형에 가까울수록 높은 값
-            "original_shape_Elongation",  # 길쭉한 정도
-            "original_shape_SurfaceVolumeRatio",  # 표면적 대비 부피, 불규칙성 판단
-            "original_shape_MeshVolume",  # 삼각형 메시로 계산한 부피
-            "original_shape_MajorAxisLength",  # 주축 길이
-            "original_shape_MinorAxisLength",  # 부축 길이
-            "original_shape_Flatness",  # 평평한 정도
-            "original_shape_Maximum3DDiameter",  # 3D 최대 직경
-            "original_shape_VoxelVolume",  # 복셀 기반 계산 부피
+            "original_shape_Sphericity",  # Higher value means more spherical
+            "original_shape_Elongation",  # Degree of elongation
+            "original_shape_SurfaceVolumeRatio",  # Surface area to volume ratio, used to assess irregularity
+            "original_shape_MeshVolume",  # Volume calculated by triangular mesh
+            "original_shape_MajorAxisLength",  # Major axis length
+            "original_shape_MinorAxisLength",  # Minor axis length
+            "original_shape_Flatness",  # Degree of flatness
+            "original_shape_Maximum3DDiameter",  # Maximum 3D diameter
+            "original_shape_VoxelVolume",  # Volume calculated based on voxels
         ]
     )
 
     # First-order statistics (intensity distribution)
     firstorder: List[str] = field(
         default_factory=lambda: [
-            "original_firstorder_Entropy",  # 강도 분포의 무질서도 (정보량)
-            "original_firstorder_Skewness",  # 비대칭성 (음수: 좌측 꼬리, 양수: 우측 꼬리)
-            "original_firstorder_Kurtosis",  # 분포의 뾰족함
-            "original_firstorder_Mean",  # 평균 강도
-            "original_firstorder_Median",  # 중앙값 강도
-            # "original_firstorder_Uniformity",  # 균일도 (높을수록 값이 균일)
-            "original_firstorder_Energy",  # 강도 값의 제곱합
-            "original_firstorder_TotalEnergy",  # 모든 복셀의 에너지 총합
+            "original_firstorder_Entropy",  # Disorder of intensity distribution (amount of information)
+            "original_firstorder_Skewness",  # Asymmetry (negative: left tail, positive: right tail)
+            "original_firstorder_Kurtosis",  # Peakedness of the distribution
+            "original_firstorder_Mean",  # Mean intensity
+            "original_firstorder_Median",  # Median intensity
+            # "original_firstorder_Uniformity",  # Uniformity (higher means more uniform)
+            "original_firstorder_Energy",  # Sum of squares of intensity values
+            "original_firstorder_TotalEnergy",  # Total energy of all voxels
         ]
     )
 
     # GLCM (Gray-Level Co-occurrence Matrix) - texture features
     glcm: List[str] = field(
         default_factory=lambda: [
-            # "original_glcm_Contrast",  # 픽셀 강도 차이의 지역적 변화량
-            # "original_glcm_Correlation",  # 픽셀 간 선형 관계
-            # "original_glcm_DifferenceEntropy",  # 차이 행렬의 엔트로피
-            # "original_glcm_ClusterTendency",  # 강도 유사 픽셀의 집합 경향
-            # "original_glcm_ClusterShade",  # 비대칭성, 양/음 skewness
-            # "original_glcm_Id",  # 동일성 (Identity, 높은 값: 유사한 픽셀)
-            # "original_glcm_Idn",  # 정규화된 동일성
-            # "original_glcm_Imc1"  # 정보 상호의존도 (Information Measure of Correlation)
+            # "original_glcm_Contrast",  # Local variation of pixel intensity differences
+            # "original_glcm_Correlation",  # Linear relationship between pixels
+            # "original_glcm_DifferenceEntropy",  # Entropy of the difference matrix
+            # "original_glcm_ClusterTendency",  # Tendency of similar pixel clusters
+            # "original_glcm_ClusterShade",  # Asymmetry, positive/negative skewness
+            # "original_glcm_Id",  # Identity (higher value: similar pixels)
+            # "original_glcm_Idn",  # Normalized identity
+            # "original_glcm_Imc1"  # Information measure of correlation
         ]
     )
 
     # GLRLM (Gray Level Run Length Matrix) - run-length texture
     glrlm: List[str] = field(
         default_factory=lambda: [
-            "original_glrlm_ShortRunEmphasis",  # 짧은 연속의 강조
-            "original_glrlm_LongRunEmphasis",  # 긴 연속의 강조
-            "original_glrlm_RunEntropy",  # run 길이의 엔트로피
-            "original_glrlm_RunLengthNonUniformity",  # run 길이 불균일도
-            "original_glrlm_LongRunHighGrayLevelEmphasis",  # 긴 run + 높은 강도 강조
+            "original_glrlm_ShortRunEmphasis",  # Emphasis on short runs
+            "original_glrlm_LongRunEmphasis",  # Emphasis on long runs
+            "original_glrlm_RunEntropy",  # Entropy of run lengths
+            "original_glrlm_RunLengthNonUniformity",  # Non-uniformity of run lengths
+            "original_glrlm_LongRunHighGrayLevelEmphasis",  # Emphasis on long runs + high intensity
         ]
     )
 
     # GLSZM (Gray Level Size Zone Matrix) - zone-based texture
     glszm: List[str] = field(
         default_factory=lambda: [
-            "original_glszm_SmallAreaEmphasis",  # 작은 영역 강조
-            "original_glszm_LargeAreaEmphasis",  # 큰 영역 강조
-            "original_glszm_GrayLevelNonUniformity",  # 회색 강도 불균일도
-            "original_glszm_ZoneEntropy",  # zone 분포의 엔트로피
+            "original_glszm_SmallAreaEmphasis",  # Emphasis on small areas
+            "original_glszm_LargeAreaEmphasis",  # Emphasis on large areas
+            "original_glszm_GrayLevelNonUniformity",  # Non-uniformity of gray levels
+            "original_glszm_ZoneEntropy",  # Entropy of zone distribution
         ]
     )
 
     # GLDM (Gray Level Dependence Matrix) - local gray-level dependency
     gldm: List[str] = field(
         default_factory=lambda: [
-            "original_gldm_SmallDependenceEmphasis",  # 짧은 의존성 강조
-            "original_gldm_LargeDependenceEmphasis",  # 긴 의존성 강조
-            "original_gldm_DependenceNonUniformity",  # 의존성 불균일도
-            "original_gldm_DependenceEntropy",  # 의존성의 엔트로피
+            "original_gldm_SmallDependenceEmphasis",  # Emphasis on short dependence
+            "original_gldm_LargeDependenceEmphasis",  # Emphasis on long dependence
+            "original_gldm_DependenceNonUniformity",  # Non-uniformity of dependence
+            "original_gldm_DependenceEntropy",  # Entropy of dependence
         ]
     )
 
     # NGTDM (Neighbourhood Gray-Tone Difference Matrix)
     ngtdm: List[str] = field(
         default_factory=lambda: [
-            # "original_ngtdm_Busyness",  # 주변 대비의 빠른 변화
-            # "original_ngtdm_Coarseness",  # 질감의 거칠기 (높을수록 덜 세밀함)
-            # "original_ngtdm_Complexity",  # 회색조 차이의 복잡성
-            # "original_ngtdm_Contrast",  # 회색조 대비
-            # "original_ngtdm_Strength"  # 픽셀 사이 강도 차이의 강도
+            # "original_ngtdm_Busyness",  # Rapid change in contrast
+            # "original_ngtdm_Coarseness",  # Roughness of texture (higher means less detailed)
+            # "original_ngtdm_Complexity",  # Complexity of gray-level differences
+            # "original_ngtdm_Contrast",  # Contrast of gray-level differences
+            # "original_ngtdm_Strength"  # Strength of intensity differences between pixels
         ]
     )
 
@@ -97,4 +97,4 @@ if __name__ == "__main__":
 
     features = RadiomicsFeatureKeys()
     total = sum(len(getattr(features, field)) for field in features.__dataclass_fields__)
-    print(f"총 feature 개수: {total}")  # 43
+    print(f"Total feature count: {total}")  # 43

@@ -30,7 +30,7 @@ class FocalLoss(nn.Module):
             target = target.contiguous().view(-1, target.size(2))  # (B * N, C)
         target = target.view(-1, 1)  # (B * N, C)
 
-        # (B * N, 1) # smooth target을 고려해서 round 연산
+        # (B * N, 1) # Consider smooth target, so use round operation
         if isinstance(self.target_threshold_gte, float):
             target_int = (target >= self.target_threshold_gte).long()
             target = target_int

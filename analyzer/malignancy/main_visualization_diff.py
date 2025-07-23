@@ -51,10 +51,10 @@ def get_merged_csv(best_csv, compare_csv, mode="luna25"):
 def get_topk_diff_samples(merged, k=10, mode="luna25"):
     if "annot_ids" in merged.columns:
         if mode == "luna25":
-            # luna25: annot_ids가 "숫자_숫자_숫자" 형태
+            # luna25: annot_ids are in the form "number_number_number"
             mask = merged["annot_ids"].astype(str).str.contains(r"^\d+_\d+_\d+$", na=False)
         else:
-            # lidc: luna25 패턴이 아닌 모든 것
+            # lidc: everything that is not the luna25 pattern
             mask = ~merged["annot_ids"].astype(str).str.contains(r"^\d+_\d+_\d+$", na=False)
         filtered = merged[mask].copy()
     else:
@@ -168,7 +168,7 @@ def main(config: DictConfig):
             db_df = fetch_db_info(annotation_ids)
             merged_with_db = topk.merge(db_df, left_on="annot_ids", right_on="annotation_id", how="left")
 
-            # DB 정보 없는 row는 제외
+            # Exclude rows without DB information
             num_bef = len(merged_with_db)
             merged_with_db = merged_with_db.dropna(
                 subset=[DBKey.H5_PATH_NFS, DBKey.D_COORD_ZYX, DBKey.ORIGIN, DBKey.TRANSFORM, DBKey.SPACING]

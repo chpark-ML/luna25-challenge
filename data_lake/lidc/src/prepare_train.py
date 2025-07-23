@@ -124,7 +124,7 @@ def split_features(
 
 
 def split_fold(df, n_splits=7) -> pd.DataFrame:
-    ## Dataframe을 적어도 하나의 노듈이 있는 patient와 아닌 patient로 나눠서 작업을 수행
+    ## Split the dataframe into patients with at least one nodule and those without, and perform operations separately
     df_with_nodule = df.dropna().copy()
     df_with_no_nodule = df.drop(index=df_with_nodule.index).copy()
     df_with_nodule = df_with_nodule.copy().reset_index(drop=True)
