@@ -1,6 +1,5 @@
 from trainer.common.enums import DicomMode
 
-
 TARGET_DB = "lct"
 INPUT_PATCH_KEY = "image"
 SEG_ANNOTATION_KEY = "mask"
