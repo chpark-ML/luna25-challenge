@@ -1,3 +1,5 @@
+import os
+
 from trainer.common.utils.utils_mlflow import get_mlflow_cv_summary, save_table_as_image, set_mlflow_tracking_uri
 
 # Mapping of MLflow metric names to readable names
@@ -10,7 +12,7 @@ METRIC_NAME_MAPPER = {
 
 if __name__ == "__main__":
     # Set MLflow tracking server URL (Update with your actual MLflow server URL)
-    mlflow_url = "http://172.31.10.111:18002"
+    mlflow_url = os.environ["MLFLOW_ADDRESS"]
     set_mlflow_tracking_uri(mlflow_url)
 
     # List of run names (latest versions will be selected if duplicates exist)

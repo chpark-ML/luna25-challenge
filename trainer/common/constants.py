@@ -1,6 +1,6 @@
 from trainer.common.enums import DicomMode
 
-DB_ADDRESS = "mongodb://172.31.10.111:27017"
+
 TARGET_DB = "lct"
 INPUT_PATCH_KEY = "image"
 SEG_ANNOTATION_KEY = "mask"

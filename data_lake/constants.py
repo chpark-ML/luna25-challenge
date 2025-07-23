@@ -1,4 +1,6 @@
-DB_ADDRESS = "mongodb://172.31.10.111:27017"
+import os
+
+DB_ADDRESS = os.getenv("DB_ADDRESS")
 TARGET_DB = "lct"
 TARGET_COLLECTION = "LUNA25-Malignancy"
 TARGET_COLLECTION_FEATURE = "LUNA25-Malignancy-Feature"

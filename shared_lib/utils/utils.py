@@ -106,7 +106,13 @@ def set_config(config: OmegaConf) -> OmegaConf:
 
     if default_config_path:
         # Values from 'config' will override those from 'default_config_path' if keys overlap.
-        config = OmegaConf.merge(OmegaConf.load(default_config_path), config)
+        default_config = OmegaConf.load(default_config_path)
+
+        # set mlflow experiment logger server uri using ENV
+        if default_config.experiment_tool.name == "mlflow":
+            default_config.experiment_tool.server_uri = os.environ["MLFLOW_ADDRESS"]
+
+        config = OmegaConf.merge(default_config, config)
 
     # Enable adding new keys to config
     OmegaConf.set_struct(config, False)

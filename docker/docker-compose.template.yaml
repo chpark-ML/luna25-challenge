@@ -49,6 +49,8 @@ services:
   ${SERVICE_NAME_RESEARCH}:
     hostname: ${SERVICE_NAME_RESEARCH}-research
     image: ${IMAGE_NAME_RESEARCH}
+    env_file:
+      - .env
     container_name: ${CONTAINER_NAME_RESEARCH}
     extra_hosts:
       - ${SERVICE_NAME_RESEARCH}-research:127.0.1.1
