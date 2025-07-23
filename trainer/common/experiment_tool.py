@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def _log_params_from_omegaconf_dict(params: omegaconf.dictconfig.DictConfig, logging_tool):
     def remove_chars(input_string):
-        # mlflow parameter logging에 활용될 수 있는 특수문자가 제한적. dataset query 작성에 빈번히 활용 되는 '$' 제거.
+        # Special characters that can be used for mlflow parameter logging are limited. Remove '$', which is frequently used in dataset queries.
         _EXCLUDE_CHAR = ["$"]
         for char in _EXCLUDE_CHAR:
             input_string = input_string.replace(char, "")

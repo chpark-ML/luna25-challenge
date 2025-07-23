@@ -19,8 +19,8 @@ from trainer.downstream.datasets.constants import DataLoaderKeys
 # disable PyRadiomics logger
 for logger_name in ["radiomics", "radiomics.featureextractor", "radiomics.glcm"]:
     logger = logging.getLogger(logger_name)
-    logger.setLevel(logging.CRITICAL + 1)  # 모든 로그 레벨 무시
-    logger.propagate = False  # 부모 logger로 전달 차단
+    logger.setLevel(logging.CRITICAL + 1)  # Ignore all log levels
+    logger.propagate = False  # Block propagation to parent logger
     for handler in logger.handlers:
         logger.removeHandler(handler)
 
@@ -108,7 +108,7 @@ def main(config: DictConfig):
                             image_sitk.SetSpacing(spacing[::-1])
                             mask_sitk.SetSpacing(spacing[::-1])
 
-                            # PyRadiomics extractor 초기화 (원하면 YAML config 가능)
+                            # PyRadiomics extractor initialization (YAML config is possible)
                             extractor = featureextractor.RadiomicsFeatureExtractor()
 
                             # Calculate radiomics

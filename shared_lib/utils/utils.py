@@ -49,9 +49,9 @@ def get_torch_device_string(gpus):
          set.
     """
     if gpus == "auto":
-        # GPU 사양에 따라 maxLoad, maxMemory의 적정값이 바뀔 수 있음.
-        # GPUtil계열 package는 신형 GPU가 나올때마다 호환성 이슈가 빈번히 발생: 3090, 3080, RTX TITAN 세 군데에서 작동함,
-        # 향후 새로운 GPU가 추가되면 (40xx?) 에러가 날 수 있음
+        # The appropriate values for maxLoad and maxMemory may vary depending on the GPU specifications.
+        # GPUtil-related packages often have compatibility issues with new GPUs: works on 3090, 3080, RTX TITAN,
+        # If new GPUs (e.g., 40xx series) are added in the future, errors may occur
         device_ids = GPUtil.getAvailable(order="memory", limit=1, maxLoad=0.5, maxMemory=0.5)
         return f"cuda:{device_ids[0]}" if device_ids else "cpu"
     elif isinstance(gpus, int):

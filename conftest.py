@@ -19,8 +19,7 @@ def setenv():
     else:
         logger.warning("There's no available GPU at this moment.")
 
-    # torch script 모델의 GPU mode 에서 deterministic 연산 결과를 보장하기 위한 환경 변수 추가.
-    # torch script 모델의 CPU mode 에서는 필요하지 않음.
+    # Add environment variable to ensure deterministic operations in torch script model's GPU mode. Not needed in CPU mode.
     os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
     # Make execution deterministic.

@@ -14,11 +14,11 @@ def fn_save_histograms(
 ):
     def get_axes(axes, row_idx, col_idx):
         """
-        axes가 2차원 배열인지 확인하고, 1차원 배열일 경우 해당 인덱스를 반환하는 함수.
+        Checks if axes is a 2D array, and if it is a 1D array, returns the corresponding index.
         """
-        if len(axes.shape) == 1:  # axes가 1차원 배열인 경우
+        if len(axes.shape) == 1:  # If axes is a 1D array
             return axes[col_idx]
-        else:  # axes가 2차원 배열인 경우
+        else:  # If axes is a 2D array
             return axes[row_idx, col_idx]
 
     nrows = num_fold if num_fold else 1
@@ -30,7 +30,7 @@ def fn_save_histograms(
                 _df = df[df[DBKey.FOLD] == row_idx].sort_values(by=column_name)
             else:
                 _df = df.sort_values(by=column_name)
-            ax = get_axes(axes, row_idx, col_idx)  # 0행 1열의 axes를 가져옵니다.
+            ax = get_axes(axes, row_idx, col_idx)  # Get axes at row 0, column 1
             g = sns.histplot(x=column_name, data=_df, kde=True, bins=50, ax=ax)
             g.set_xticklabels(g.get_xticklabels(), rotation=30, horizontalalignment="right")
             ax.tick_params(axis="both", labelsize="xx-large")
