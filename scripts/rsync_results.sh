@@ -1,7 +1,4 @@
+source "config.sh"
+
 # copy from server to local
-rsync -rP changhyun.park@172.31.10.41:~/luna25-challenge/analyzer/malignancy/outputs/visualization_result/5_0_9rc8 ~/Downloads/works
-
-rsync -rP changhyun.park@172.31.10.41:~/luna25-challenge/analyzer/malignancy/outputs/model_weight/outputs ~/Downloads/works
-
-/opt/challenge/analyzer/malignancy/outputs/model_weight/outputs
-/opt/challenge/analyzer/malignancy/outputs/visualization_result/failure_case_visualization_output
+rsync -rP ${SERVER_UID}@${SERVER_ADDRESS}:~/luna25-challenge/analyzer/malignancy/outputs ~/Downloads/works
