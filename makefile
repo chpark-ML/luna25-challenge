@@ -62,8 +62,8 @@ USR = $(shell id -un)
 USR_WO_DOT = $(shell id -un | sed 's/\./-/g')
 
 # Get tool's address
-DB_ADDRESS = mongodb://172.31.10.111:27017
-MLFLOW_ADDRESS = http://172.31.10.111:18002
+DB_ADDRESS = mongodb://172.31.10.111:27017  # mongodb://localhost:27017
+MLFLOW_ADDRESS = http://172.31.10.111:18002  # http://localhost:5000
 
 # Get docker image name
 IMAGE_NAME_BASE = ${SERVICE_NAME_BASE}:1.0.0
