@@ -1,10 +1,10 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: 24.8.0  # black의 최신 릴리스를 사용하도록 갱신하세요.
+    rev: 24.8.0
     hooks:
       - id: black
 
   - repo: https://github.com/pycqa/isort
-    rev: 5.13.2  # isort의 최신 릴리스를 사용하도록 갱신하세요.
+    rev: 5.13.2
     hooks:
       - id: isort
