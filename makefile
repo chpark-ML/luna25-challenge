@@ -61,6 +61,10 @@ GRP = $(shell id -gn)
 USR = $(shell id -un)
 USR_WO_DOT = $(shell id -un | sed 's/\./-/g')
 
+# Get tool's address
+DB_ADDRESS = mongodb://172.31.10.111:27017
+MLFLOW_ADDRESS = http://172.31.10.111:18002
+
 # Get docker image name
 IMAGE_NAME_BASE = ${SERVICE_NAME_BASE}:1.0.0
 IMAGE_NAME_RESEARCH = ${SERVICE_NAME_RESEARCH}-${USR_WO_DOT}:1.0.0
@@ -129,6 +133,8 @@ ENV_TEXT = $\
 	CONDA_URL=${CONDA_URL}\n$\
 	COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}\n$\
 	MLFLOW_SAVE_PATH=${MLFLOW_SAVE_PATH}\n$\
+	MLFLOW_ADDRESS=${MLFLOW_ADDRESS}\n$\
+	DB_ADDRESS=${DB_ADDRESS}\n$\
 
 # Set enviornments
 OVERRIDE_TEXT = $\
