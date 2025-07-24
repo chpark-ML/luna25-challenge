@@ -48,6 +48,7 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
         # the default blue is unreadable on a dark terminal.
         echo "zmodload zsh/nearcolor"; \
         echo "zstyle :prompt:pure:path color cyan"; \
+        echo "zstyle :prompt:pure:git:branch color magenta"; \
         echo "prompt pure"; \
     } >> ${ZDOTDIR}/.zshrc && \
     # Add autosuggestions from terminal history. May be somewhat distracting.
