@@ -60,6 +60,8 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
     } >> ${ZDOTDIR}/.zshrc && \
     # Syntax highlighting must be activated at the end of the `.zshrc` file.
     echo "source ${ZSHS_PATH}/zsh-syntax-highlighting.zsh" >> ${ZDOTDIR}/.zshrc && \
+    echo "ZSH_HIGHLIGHT_STYLES[single-quoted-argument]='fg=green'" >> ${ZDOTDIR}/.zshrc && \
+    echo "ZSH_HIGHLIGHT_STYLES[double-quoted-argument]='fg=green'" >> ${ZDOTDIR}/.zshrc && \
     # Configure `tmux` to use `zsh` as a non-login shell on startup.
     {   echo "set -g default-command $(which zsh)"; \
         echo "set -g history-limit ${TMUX_HIST_LIMIT}"; \
