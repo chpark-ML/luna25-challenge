@@ -142,6 +142,7 @@ OVERRIDE_TEXT = $\
 	\n  ${SERVICE_NAME_RESEARCH}:$\
 	\n    volumes:$\
 	\n      - ${HOME}:/mnt/home$\
+	\n      - ${HOME}/.cache:${HOME}/.cache$\
 	\n      - /nvme1:/nvme1$\
 	\n      - /team:/team$\
 	\n
