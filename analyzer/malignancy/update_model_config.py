@@ -5,7 +5,7 @@ import yaml
 
 def main():
     # Path to the original YAML file
-    model_name = "5_0_8rc2"
+    model_name = "5_0_9rc8"
     input_yaml_path = f"configs/models/{model_name}.yaml"
     weights_json_path = f"outputs/model_weights/{model_name}/model_weights.json"
     output_yaml_path = f"configs/models/{model_name}_weighted.yaml"

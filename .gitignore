@@ -174,4 +174,4 @@ docker-compose.yaml
 
 # Hydra
 */.hydra/
-*/outputs/
+**/outputs/

@@ -1,5 +1,5 @@
-run_name: "5_0_8rc2"
-result_csv_path: "/team/team_blu3/lung/project/luna25/weights/nodulex-v5.0.8rc2/result_5_0_8rc2.csv"
+run_name: "5_0_9rc8"
+result_csv_path: "/opt/challenge/analyzer/malignancy/outputs/inference_results_combined/result_5_0_9rc8.csv"
 save_into_shared_lib: True
 
 hydra:
