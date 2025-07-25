@@ -16,39 +16,56 @@ SERVICE_NAME_RESEARCH_MAC = ${SERVICE_NAME}-${RESEARCH_NAME}-mac
 # DRIVER_VER: 2 (less than 525.60.13)
 HOSTNAME := $(shell hostname)
 ifeq ($(HOSTNAME), VN-A02-240330.local)
-    DRIVER_VER := 1
+    DRIVER_VER := 0
 else ifeq ($(HOSTNAME), blu3-001)
     DRIVER_VER := 2
 else ifeq ($(HOSTNAME), blu3-003)
-    DRIVER_VER := 1
+    DRIVER_VER := 2
 else ifeq ($(HOSTNAME), blu3-004)
     DRIVER_VER := 2
 else
     $(error "Unsupported hostname.")
 endif
 
-DISTRO_VERSION := 22.04
+# 0: apple silicon
 ifeq ($(DRIVER_VER), 0)
+	DISTRO_VERSION := 22.04
     CUDA_VERSION := 11.8.0
     CUDNN_VERSION := cudnn8
+	PYTORCH_VERSION_TAG := v2.0.1
+	PYTORCH_VERSION := 2.0.1
+	TORCHVISION_VERSION_TAG := v0.15.2
+	TORCHVISION_VERSION := 0.15.2
+	BUILD_MODE := mac
+	CONDA_INSTALL_FILE := Miniforge3-Linux-aarch64.sh
+	CONDA_ENV_FILE_PATH := ./requirements/train-environment-mac.yaml
 else ifeq ($(DRIVER_VER), 1)
+	DISTRO_VERSION := 22.04
     CUDA_VERSION := 11.8.0
     CUDNN_VERSION := cudnn8
+	PYTORCH_VERSION_TAG := v2.4.1
+	PYTORCH_VERSION := 2.4.1
+	TORCHVISION_VERSION_TAG := v0.19.1
+	TORCHVISION_VERSION := 0.19.1
+	BUILD_MODE := exclude
+	CONDA_INSTALL_FILE := Miniforge3-Linux-x86_64.sh
+	CONDA_ENV_FILE_PATH := ./requirements/train-environment.yaml
 else ifeq ($(DRIVER_VER), 2)
+	DISTRO_VERSION := 22.04
     CUDA_VERSION := 11.8.0
     CUDNN_VERSION := cudnn8
+	PYTORCH_VERSION_TAG := v2.4.1
+	PYTORCH_VERSION := 2.4.1
+	TORCHVISION_VERSION_TAG := v0.19.1
+	TORCHVISION_VERSION := 0.19.1
+	BUILD_MODE := exclude
+	CONDA_INSTALL_FILE := Miniforge3-Linux-x86_64.sh
+	CONDA_ENV_FILE_PATH := ./requirements/train-environment.yaml
 else
     $(error "Unsupported driver ver.")
 endif
 
-# for torch version 1.13.1
-# CONDA_URL = https://github.com/conda-forge/miniforge/releases/download/23.11.0-0/Miniforge3-Linux-x86_64.sh
-
-# for mac
-# CONDA_URL = https://github.com/conda-forge/miniforge/releases/download/23.11.0-0/Miniforge3-Linux-aarch64.sh
-
-# for latest
-CONDA_URL := https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+CONDA_URL := https://github.com/conda-forge/miniforge/releases/latest/download/${CONDA_INSTALL_FILE}
 
 # Set command
 COMMAND_BASE = /bin/bash
@@ -135,8 +152,13 @@ ENV_TEXT = $\
 	MLFLOW_SAVE_PATH=${MLFLOW_SAVE_PATH}\n$\
 	MLFLOW_ADDRESS=${MLFLOW_ADDRESS}\n$\
 	DB_ADDRESS=${DB_ADDRESS}\n$\
+	PYTORCH_VERSION_TAG=${PYTORCH_VERSION_TAG}\n$\
+	PYTORCH_VERSION=${PYTORCH_VERSION}\n$\
+	TORCHVISION_VERSION_TAG=${TORCHVISION_VERSION_TAG}\n$\
+	TORCHVISION_VERSION=${TORCHVISION_VERSION}\n$\
+	BUILD_MODE=${BUILD_MODE}\n$\
+	CONDA_ENV_FILE_PATH=${CONDA_ENV_FILE_PATH}\n$\
 
-# Set enviornments
 OVERRIDE_TEXT = $\
 	services:$\
 	\n  ${SERVICE_NAME_RESEARCH}:$\
@@ -145,7 +167,9 @@ OVERRIDE_TEXT = $\
 	\n      - ${HOME}/.cache:${HOME}/.cache$\
 	\n      - /nvme1:/nvme1$\
 	\n      - /team:/team$\
-	\n
+	\n  ${SERVICE_NAME_RESEARCH_MAC}:$\
+	\n    volumes:$\
+	\n      - ${HOME}/.cache:${HOME}/.cache$\
 
 # env
 env:
@@ -157,7 +181,7 @@ over:
 generate:
 	rm -f "${DOCKER_COMPOSE_PATH}"
 	chmod +x ${DOCKER_BUILD_CONTEXT_PATH}/update_docker_compose.sh
-	${DOCKER_BUILD_CONTEXT_PATH}/update_docker_compose.sh "${SERVICE_NAME_BASE}" "${SERVICE_NAME_RESEARCH}" "${DOCKER_COMPOSE_TEMPLATE_PATH}" "${DOCKER_COMPOSE_PATH}"
+	${DOCKER_BUILD_CONTEXT_PATH}/update_docker_compose.sh "${SERVICE_NAME_BASE}" "${SERVICE_NAME_RESEARCH}" "${SERVICE_NAME_RESEARCH_MAC}" "${DOCKER_COMPOSE_TEMPLATE_PATH}" "${DOCKER_COMPOSE_PATH}"
 pre: env over generate
 
 # base docker

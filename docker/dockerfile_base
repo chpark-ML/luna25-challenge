@@ -288,6 +288,14 @@ COPY --link --from=fetch-vision  /tmp/dist  /tmp/dist
 COPY --link --from=fetch-pure    /opt/zsh   /opt/zsh
 
 ########################################################################
+FROM ${BUILD_IMAGE} AS train-builds-mac
+
+COPY --link --from=install-conda /opt/conda /opt/conda
+COPY --link --from=fetch-torch   /tmp/dist  /tmp/dist
+COPY --link --from=fetch-vision  /tmp/dist  /tmp/dist
+COPY --link --from=fetch-pure    /opt/zsh   /opt/zsh
+
+########################################################################
 FROM train-builds-${BUILD_MODE} AS train-builds
 # Gather Python packages built in previous stages and
 # install using both conda and pip with a single file.
@@ -317,7 +325,8 @@ ARG conda=/opt/conda/bin/${CONDA_MANAGER}
 ARG PIP_CACHE_DIR=/root/.cache/pip
 ARG CONDA_PKGS_DIRS=/opt/conda/pkgs
 ARG CONDA_ENV_FILE=/tmp/train/environment.yaml
-COPY --link ./requirements/train-environment.yaml ${CONDA_ENV_FILE}
+ARG CONDA_ENV_FILE_PATH=./requirements/train-environment.yaml
+COPY --link ${CONDA_ENV_FILE_PATH} ${CONDA_ENV_FILE}
 RUN --mount=type=cache,target=${PIP_CACHE_DIR},sharing=locked \
     --mount=type=cache,target=${CONDA_PKGS_DIRS},sharing=locked \
     find /tmp/dist -name '*.whl' | sed 's/^/      - /' >> ${CONDA_ENV_FILE} && \
