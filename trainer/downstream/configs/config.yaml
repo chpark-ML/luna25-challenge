@@ -5,6 +5,7 @@ defaults:
   - loader: default.yaml
   - criterion: default
   - model: unet_3d_MS_v2
+  - ema: default
   - optim: adamw
   - scheduler: one_cycle_lr
   - experiment_tool: mlflow
