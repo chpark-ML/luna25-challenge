@@ -5,9 +5,9 @@ import yaml
 
 def main():
     # Path to the original YAML file
-    input_yaml_path = "configs/models/5_1_0.yaml"
-    weights_json_path = "model_weights/5_0_8rc2/model_weights.json"
-    output_yaml_path = "configs/models/5_1_0.yaml"
+    input_yaml_path = "configs/models/5_2_0.yaml"
+    weights_json_path = "model_weights/5_0_9rc8/model_weights.json"
+    output_yaml_path = "configs/models/5_2_0.yaml"
 
     # Load JSON
     with open(weights_json_path, "r") as f:
