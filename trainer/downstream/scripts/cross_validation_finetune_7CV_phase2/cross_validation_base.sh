@@ -20,6 +20,7 @@ freeze_encoder=False
 use_alpha=False  # since "use_weighted_sampler" is ture.
 smoothing=0.01
 LR=1e-3
+ema_decay=0.95
 
 model_path=/team/team_blu3/lung/project/luna25/weights/nodulex-v5.0.8rc1/cv_fine_model7_val_fold${val_fold}_7CV/model_auroc.pth
 
@@ -45,6 +46,7 @@ HYDRA_FULL_ERROR=1 python3 main.py \
   "loader.dataset.dataset_infos.luna25.fold_key=${fold_key}" \
   loader.batch_size=${batch_size} \
   scheduler.scheduler_repr.max_lr=${LR} \
+  ema.decay=${ema_decay} \
   trainer.max_epoch=${epoch} \
   trainer.fine_tune_info.enable=True \
   trainer.fine_tune_info.freeze_encoder=${freeze_encoder} \
