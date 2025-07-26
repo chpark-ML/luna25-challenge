@@ -88,10 +88,6 @@ class Trainer(comm_train.Trainer):
                         models[model_name] = models[model_name].float()  # change model to float32
         else:
             raise NotImplementedError
-        
-        # Set ema
-        if ema is not None:
-            ema.register(models[ModelName.REPRESENTATIVE])
 
         optimizers = None
         schedulers = None

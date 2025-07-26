@@ -192,6 +192,10 @@ class Trainer(ABC):
         else:
             self.model = model.to(self.device)
 
+        # Set ema
+        if ema is not None:
+            ema.register(self.model[self.repr_model_name] if self.repr_model_name is not None else self.model)
+
         # Load pretrained encoder
         self.fine_tune_info = fine_tune_info
         if fine_tune_info.pretrained_weight_path:
@@ -389,7 +393,7 @@ class Trainer(ABC):
         if self.ema:
             self.ema.apply_shadow(self.model[self.repr_model_name] if self.repr_model_name is not None else self.model)
 
-        # Validation for one epoch    
+        # Validation for one epoch
         val_metrics = self.validate_epoch(epoch, loaders[RunMode.VALIDATE])
         self.log_metrics(RunMode.VALIDATE.value, epoch, val_metrics, mlflow_log_prefix="EPOCH")
 
