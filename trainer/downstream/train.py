@@ -204,6 +204,7 @@ class Trainer(comm_train.Trainer):
                 )
                 self.optimizer[ModelName.REPRESENTATIVE].step()
 
+            # Update EMA model
             if self.ema:
                 self.ema.update(self.model[ModelName.REPRESENTATIVE])
 

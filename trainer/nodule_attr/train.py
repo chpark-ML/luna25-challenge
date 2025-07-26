@@ -346,6 +346,10 @@ class Trainer(comm_train.Trainer):
                 )
                 self.optimizer[ModelName.REPRESENTATIVE].step()
 
+            # Update EMA model  
+            if self.ema:
+                self.ema.update(self.model[ModelName.REPRESENTATIVE])
+
             # Check if any parameter has changed
             if self.fast_dev_run:
                 for name, param in self.model[ModelName.REPRESENTATIVE].named_parameters():
