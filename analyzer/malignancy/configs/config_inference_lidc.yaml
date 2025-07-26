@@ -2,9 +2,9 @@
 defaults:
   - loader: lidc
   - processor: default
-  - models: 5_0_9rc8_weighted.yaml
+  - models: 5_3_0rc1.yaml
 
-run_name: "5_0_9rc8_weighted"
+run_name: "5_3_0rc1"
 run_modes:
   - test
 

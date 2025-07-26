@@ -202,7 +202,6 @@ class Trainer(comm_train.Trainer):
 
         # Set ema
         if ema is not None:
-            logger.info(f"Instantiating EMA <{ema._target_}>")
             ema.register(models[ModelName.REPRESENTATIVE])
 
         optimizers = None
