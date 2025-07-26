@@ -46,16 +46,17 @@ class GDLLoss(nn.Module):
 
 
 class EntropyLoss(nn.Module):
-    def __init__(self, loss_weight=1.0):
+    def __init__(self, loss_weight=1.0, do_linear_reduction=False):
         super(EntropyLoss, self).__init__()
         self.loss_weight = loss_weight
         self.eps = 1e-06
+        self.do_linear_reduction = do_linear_reduction
 
     def forward(self, probs, epoch=None, total_epoch=None):
-        if epoch is not None and total_epoch is not None:
-            weight = self.loss_weight * (1 - (epoch / total_epoch))
-        else:
-            weight = self.loss_weight
+        weight = self.loss_weight
+        if self.do_linear_reduction:
+            if epoch is not None and total_epoch is not None:
+                weight = self.loss_weight * (1 - (epoch / total_epoch))
 
         term1 = probs * torch.log(probs + self.eps)
         term2 = (1 - probs) * torch.log(1 - probs + self.eps)

@@ -29,6 +29,7 @@ class ClsLoss(nn.Module):
         target_attr_to_train: list = None,
         dict_threshold: dict = None,
         target_threshold_gte: float = None,
+        do_linear_reduction: bool = False,
     ):
         super(ClsLoss, self).__init__()
         self.gamma = gamma
@@ -40,6 +41,7 @@ class ClsLoss(nn.Module):
         self.target_attr_to_train = target_attr_to_train
         self.dict_threshold = dict_threshold
         self.target_threshold_gte = target_threshold_gte
+        self.do_linear_reduction = do_linear_reduction
 
         self.dict_criterion = dict()
         self.threshold_mode = "youden"
@@ -85,10 +87,10 @@ class ClsLoss(nn.Module):
                     annot[i_attr] = (i_annot > self.dict_threshold[threshold_key]) * 1.0
 
         # calculate loss weight
-        if epoch is not None and total_epoch is not None:
-            weight = self.loss_weight * (1 - (epoch / total_epoch))
-        else:
-            weight = self.loss_weight
+        weight = self.loss_weight
+        if self.do_linear_reduction:
+            if epoch is not None and total_epoch is not None:
+                weight = self.loss_weight * (1 - (epoch / total_epoch))
 
         for i_attr in target_attr:
             criterion = self.dict_criterion[i_attr]

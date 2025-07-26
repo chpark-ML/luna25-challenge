@@ -51,7 +51,13 @@ class AttrLoss(nn.Module):
             ms_logits = outputs[MULTI_SCALE_LOGIT_KEY]  # list of dicts
             for aux_logits in ms_logits:  # loop for scale
                 _, aux_loss = self.aux_criterion(
-                    aux_logits, attr_annot, mask=attr_mask, is_logit=is_logit, is_logistic=is_logistic
+                    aux_logits,
+                    attr_annot,
+                    epoch=epoch,
+                    total_epoch=total_epoch,
+                    mask=attr_mask,
+                    is_logit=is_logit,
+                    is_logistic=is_logistic,
                 )
                 aux_losses.append(aux_loss)
                 losses.append(aux_loss)

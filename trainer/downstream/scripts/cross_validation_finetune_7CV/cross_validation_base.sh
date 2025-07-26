@@ -13,8 +13,7 @@ source /opt/challenge/trainer/common/model_config.sh ${model_num}
 run_name=cv_fine_model${model_num}_val_fold${val_fold}_7CV
 
 # args
-LR=1e-3
-epoch=200
+epoch=100
 model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg/cls_all_model_${model_num}_val_fold${val_fold}_7CV/model_loss.pth
 
 fold_key=fold
@@ -39,7 +38,6 @@ HYDRA_FULL_ERROR=1 python3 main.py \
   "loader.dataset.datasets.1.dataset_info.pylidc.val_fold=[${val_fold}]" \
   "loader.dataset.datasets.1.dataset_info.pylidc.test_fold=[]" \
   "loader.dataset.datasets.1.dataset_info.pylidc.fold_key=${fold_key}" \
-  scheduler.scheduler_repr.max_lr=${LR} \
   trainer.max_epoch=${epoch} \
   trainer.fine_tune_info.enable=True \
   trainer.fine_tune_info.freeze_encoder=False \

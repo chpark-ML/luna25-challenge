@@ -144,6 +144,7 @@ class Trainer(comm_train.Trainer):
         super().train_epoch(epoch, loader)
         train_losses = []
         start = time.time()
+        total_epoch = self.max_epoch - 1
 
         for i, data in enumerate(loader):
             global_step = epoch * len(loader) + i + 1
@@ -162,11 +163,12 @@ class Trainer(comm_train.Trainer):
                     annots,
                     seg_annot=None,
                     epoch=epoch,
-                    total_epoch=self.max_epoch - 1,
+                    total_epoch=total_epoch,
                     attr_mask=None,
                     is_logit=True,
                     is_logistic=True,
                 )
+
                 loss = dict_loss[LossKey.total]
                 train_losses.append(loss.detach())
 
