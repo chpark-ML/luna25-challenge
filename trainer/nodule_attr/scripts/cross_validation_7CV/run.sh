@@ -4,13 +4,13 @@ cd /opt/challenge/trainer/nodule_attr/scripts/cross_validation_7CV || exit 1
 
 # tmux_window gpu_num val_fold
 paired_values=(
-  "1 0 0"
-  "2 1 1"
-  "3 2 2"
-  "4 3 3"
-  "5 4 4"
-  "6 5 5"
-  "7 6 6"
+  "1 1 0"
+  "2 2 1"
+  "3 3 2"
+  "4 4 3"
+  "5 5 4"
+  "6 6 5"
+  "7 7 6"
 )
 
 my_session=nodule_attr_seg
