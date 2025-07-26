@@ -84,12 +84,12 @@ def get_loaders(config):
     return loaders
 
 
-def get_trainer(config, loaders, logging_tool, optuna_trial=None):
+def get_trainer(config, loaders, logging_tool, ema=None, optuna_trial=None):
     # Trainers
     module_name, _, trainer_class = config.trainer._target_.rpartition(".")
     module = importlib.import_module(module_name)
     class_ = getattr(module, trainer_class)
-    trainer = class_.instantiate_trainer(config, loaders, logging_tool, optuna_trial=optuna_trial)
+    trainer = class_.instantiate_trainer(config, loaders, logging_tool, ema=ema, optuna_trial=optuna_trial)
 
     return trainer
 
@@ -112,6 +112,7 @@ class Trainer(ABC):
     def __init__(
         self,
         model,
+        ema,
         optimizer,
         scheduler,
         criterion,
@@ -130,6 +131,7 @@ class Trainer(ABC):
         optuna_trial: optuna.Trial = None,
     ):
         self.model = model
+        self.ema = ema
         if not hasattr(self, "repr_model_name"):
             self.repr_model_name = None
         self.dict_threshold = dict()
@@ -383,7 +385,11 @@ class Trainer(ABC):
             duration=time.time() - start,
         )
 
-        # Validation for one epoch
+        # Apply EMA
+        if self.ema:
+            self.ema.apply_shadow(self.model[self.repr_model_name] if self.repr_model_name is not None else self.model)
+
+        # Validation for one epoch    
         val_metrics = self.validate_epoch(epoch, loaders[RunMode.VALIDATE])
         self.log_metrics(RunMode.VALIDATE.value, epoch, val_metrics, mlflow_log_prefix="EPOCH")
 
@@ -405,6 +411,10 @@ class Trainer(ABC):
         best_metrics, found_better = self.save_best_metrics(val_metrics, best_model_metrics, epoch)
         if found_better:
             self.log_metrics("best", epoch, best_metrics)
+
+        # Restore model
+        if self.ema:
+            self.ema.restore(self.model[self.repr_model_name] if self.repr_model_name is not None else self.model)
 
         return best_metrics, found_better
 
@@ -524,7 +534,10 @@ def train(config: omegaconf.DictConfig, optuna_trial=None) -> object:
     logging_tool = load_logging_tool(config=config)
 
     # Init trainer object
-    trainer = get_trainer(config, loaders, logging_tool, optuna_trial=optuna_trial)
+    ema = None
+    if "ema" in config:
+        ema = hydra.utils.instantiate(config.ema)
+    trainer = get_trainer(config, loaders, logging_tool, ema=ema, optuna_trial=optuna_trial)
 
     # Run model training
     best_model_metrics, best_model_test_metrics = None, None

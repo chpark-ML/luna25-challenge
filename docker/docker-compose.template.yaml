@@ -89,6 +89,8 @@ services:
   ${SERVICE_NAME_RESEARCH_MAC}:
     hostname: ${SERVICE_NAME_RESEARCH_MAC}-research
     image: ${IMAGE_NAME_RESEARCH_MAC}
+    env_file:
+      - .env
     container_name: ${CONTAINER_NAME_RESEARCH}
     network_mode: host # Use the same network as the host, may cause security issues.
     # `ipc: host` removes the shared memory cap but is a known security vulnerability.

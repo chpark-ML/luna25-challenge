@@ -40,7 +40,6 @@ class ModelName(Enum):
     """
 
     REPRESENTATIVE = "repr"
-    PATCH_LEVEL = "patch_level"
 
 
 class BitDepth(Enum):

@@ -148,6 +148,7 @@ class Trainer(comm_train.Trainer):
     def __init__(
         self,
         model,
+        ema,
         optimizer,
         scheduler,
         criterion,
@@ -164,7 +165,7 @@ class Trainer(comm_train.Trainer):
         **kwargs,
     ) -> None:
         self.repr_model_name = ModelName.REPRESENTATIVE
-        super().__init__(model, optimizer, scheduler, criterion, **kwargs)
+        super().__init__(model, ema, optimizer, scheduler, criterion, **kwargs)
         self.remove_ambiguous_in_val_test = remove_ambiguous_in_val_test
         self.lower_bound_ambiguous_label = lower_bound_ambiguous_label
         self.upper_bound_ambiguous_label = upper_bound_ambiguous_label
@@ -185,7 +186,7 @@ class Trainer(comm_train.Trainer):
 
     @classmethod
     def instantiate_trainer(
-        cls, config: omegaconf.DictConfig, loaders, logging_tool, optuna_trial=None
+        cls, config: omegaconf.DictConfig, loaders, logging_tool, ema=None, optuna_trial=None
     ) -> comm_train.Trainer:
         # Init model
         if isinstance(config.model, (omegaconf.DictConfig, dict)):
@@ -198,6 +199,11 @@ class Trainer(comm_train.Trainer):
                         models[model_name] = models[model_name].float()  # change model to float32
         else:
             raise NotImplementedError
+
+        # Set ema
+        if ema is not None:
+            logger.info(f"Instantiating EMA <{ema._target_}>")
+            ema.register(models[ModelName.REPRESENTATIVE])
 
         optimizers = None
         schedulers = None
@@ -246,6 +252,7 @@ class Trainer(comm_train.Trainer):
         return hydra.utils.instantiate(
             config.trainer,
             model=models,
+            ema=ema,
             optimizer=optimizers,
             scheduler=schedulers,
             criterion=criterion,

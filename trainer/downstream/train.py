@@ -54,6 +54,7 @@ class Trainer(comm_train.Trainer):
     def __init__(
         self,
         model,
+        ema,
         optimizer,
         scheduler,
         criterion,
@@ -66,7 +67,7 @@ class Trainer(comm_train.Trainer):
         **kwargs,
     ) -> None:
         self.repr_model_name = ModelName.REPRESENTATIVE
-        super().__init__(model, optimizer, scheduler, criterion, **kwargs)
+        super().__init__(model, ema, optimizer, scheduler, criterion, **kwargs)
         self.thresholding_mode_representative = ThresholdMode.get_mode(thresholding_mode_representative)
         self.thresholding_mode = ThresholdMode.get_mode(thresholding_mode)
         self.grad_clip_max_norm = grad_clip_max_norm
@@ -74,7 +75,7 @@ class Trainer(comm_train.Trainer):
 
     @classmethod
     def instantiate_trainer(
-        cls, config: omegaconf.DictConfig, loaders, logging_tool, optuna_trial=None
+        cls, config: omegaconf.DictConfig, loaders, logging_tool, ema=None, optuna_trial=None
     ) -> comm_train.Trainer:
         # Init model
         models = dict()
@@ -87,6 +88,10 @@ class Trainer(comm_train.Trainer):
                         models[model_name] = models[model_name].float()  # change model to float32
         else:
             raise NotImplementedError
+        
+        # Set ema
+        if ema is not None:
+            ema.register(models[ModelName.REPRESENTATIVE])
 
         optimizers = None
         schedulers = None
@@ -127,6 +132,7 @@ class Trainer(comm_train.Trainer):
         return hydra.utils.instantiate(
             config.trainer,
             model=models,
+            ema=ema,
             optimizer=optimizers,
             scheduler=schedulers,
             criterion=criterion,
@@ -199,6 +205,9 @@ class Trainer(comm_train.Trainer):
                     self.model[ModelName.REPRESENTATIVE].parameters(), max_norm=self.grad_clip_max_norm
                 )
                 self.optimizer[ModelName.REPRESENTATIVE].step()
+
+            if self.ema:
+                self.ema.update(self.model[ModelName.REPRESENTATIVE])
 
             # Check if any parameter has changed
             if self.fast_dev_run:
