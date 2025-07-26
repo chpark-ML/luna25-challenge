@@ -14,7 +14,7 @@ run_name=cv_fine_model${model_num}_val_fold${val_fold}_7CV
 
 # args
 LR=1e-3
-epoch=100
+epoch=200
 model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg/cls_all_model_${model_num}_val_fold${val_fold}_7CV/model_loss.pth
 
 fold_key=fold
