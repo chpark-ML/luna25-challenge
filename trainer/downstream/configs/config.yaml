@@ -7,7 +7,7 @@ defaults:
   - model: unet_3d_MS_v2
   - ema: default
   - optim: adamw
-  - scheduler: reduce_on_plateau
+  - scheduler: one_cycle_lr
   - experiment_tool: mlflow
 
 run_modes:

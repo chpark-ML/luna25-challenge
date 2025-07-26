@@ -13,12 +13,13 @@ source /opt/challenge/trainer/common/model_config.sh ${model_num}
 run_name=cv_fine_model${model_num}_val_fold${val_fold}_7CV_phase2
 
 epoch=50
+LR=1e-4
 freeze_encoder=False
 use_alpha=False  # since "use_weighted_sampler" is ture.
 smoothing=0.03
 ema_decay=0.97
 
-model_path=/team/team_blu3/lung/project/luna25/weights/nodulex-v5.0.8rc1/cv_fine_model7_val_fold${val_fold}_7CV/model_auroc.pth
+model_path=/team/team_blu3/lung/project/luna25/weights/nodulex-v5.3.0rc1/cv_fine_model7_val_fold${val_fold}_7CV/model_auroc.pth
 
 fold_key=fold
 all_folds=(0 1 2 3 4 5 6)
@@ -40,6 +41,7 @@ HYDRA_FULL_ERROR=1 python3 main.py \
   "loader.dataset.dataset_infos.luna25.val_fold=[${val_fold}]" \
   "loader.dataset.dataset_infos.luna25.test_fold=[]" \
   "loader.dataset.dataset_infos.luna25.fold_key=${fold_key}" \
+  scheduler.scheduler_repr.max_lr=${LR} \
   ema.decay=${ema_decay} \
   trainer.max_epoch=${epoch} \
   trainer.fine_tune_info.enable=True \
