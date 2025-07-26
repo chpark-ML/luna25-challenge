@@ -9,8 +9,6 @@ cd /opt/challenge/trainer/downstream
 # load model configs
 model_num=7
 source /opt/challenge/trainer/common/model_config.sh ${model_num}
-aux_loss_weight=0.0
-entropy_loss_weight=0.0
 
 run_name=cv_fine_model${model_num}_val_fold${val_fold}_7CV_phase2
 
@@ -19,8 +17,8 @@ batch_size=32
 freeze_encoder=False
 use_alpha=False  # since "use_weighted_sampler" is ture.
 smoothing=0.01
-LR=1e-3
-ema_decay=0.95
+LR=1e-4
+ema_decay=0.97
 
 model_path=/team/team_blu3/lung/project/luna25/weights/nodulex-v5.0.8rc1/cv_fine_model7_val_fold${val_fold}_7CV/model_auroc.pth
 
