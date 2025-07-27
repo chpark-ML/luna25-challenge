@@ -12,8 +12,8 @@ model_repr:
     f_maps: ${model.model_repr.f_maps}
     num_levels: ${model.model_repr.num_levels}
     num_features: 3
-    drop_prob: 0.5
-    pyramid_channels: 128
+    drop_prob: 0.2
+    pyramid_channels: 64
     num_fpn_layers: 2
     target_attr_total: [ 'c_subtlety_logistic', 'c_sphericity_logistic', 'c_lobulation_logistic', 'c_spiculation_logistic',
                          'c_margin_logistic', 'c_texture_logistic',

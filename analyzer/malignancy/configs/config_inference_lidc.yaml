@@ -1,6 +1,6 @@
 # specify default configuration
 defaults:
-  - loader: lidc
+  - loader: lidc_mask2
   - processor: default
   - models: 5_3_0rc1.yaml
 

@@ -10,6 +10,9 @@ source /opt/challenge/trainer/common/model_config.sh ${model_num}
 
 model_name=cls_all_model_${model_num}_val_fold${val_fold}_7CV
 
+epoch=200
+LR=1e-4
+
 cd /opt/challenge/trainer/nodule_attr
 HYDRA_FULL_ERROR=1 python3 main.py \
   experiment_tool.experiment_name=lct-malignancy-attr \
@@ -23,5 +26,7 @@ HYDRA_FULL_ERROR=1 python3 main.py \
   criterion.entropy_criterion.loss_weight=${entropy_loss_weight} \
   "loader.dataset.dataset_info.pylidc.val_fold=[${val_fold}]" \
   "loader.dataset.dataset_info.pylidc.test_fold=[]" \
+  scheduler.scheduler_repr.max_lr=${LR} \
+  trainer.max_epoch=${epoch} \
   trainer.gpus=${gpu_num} \
   +debug=False

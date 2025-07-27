@@ -13,7 +13,7 @@ paired_values=(
   "7 7 6"
 )
 
-my_session=fine_7cv
+my_session=fine_7cv_phase2
 tmux new-session -d -s ${my_session}  # 새로운 tmux 세션 생성
 
 for pair in "${paired_values[@]}"
