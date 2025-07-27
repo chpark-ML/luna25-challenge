@@ -51,7 +51,7 @@ ARG TMUX_HIST_LIMIT=50000
 RUN {   echo "fpath+=${PURE_PATH}"; \
         echo "autoload -Uz promptinit; promptinit"; \
         echo "zmodload zsh/nearcolor"; \
-        echo "zstyle :prompt:pure:path color blue"; \
+        echo "zstyle :prompt:pure:path color cyan"; \
         echo "zstyle :prompt:pure:git:branch color magenta"; \
         echo "prompt pure"; \
     } >> ${ZDOTDIR}/.zshrc && \

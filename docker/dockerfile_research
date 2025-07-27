@@ -53,7 +53,7 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
         # Change the `tmux` path color to cyan since
         # the default blue is unreadable on a dark terminal.
         echo "zmodload zsh/nearcolor"; \
-        echo "zstyle :prompt:pure:path color blue"; \
+        echo "zstyle :prompt:pure:path color cyan"; \
         echo "zstyle :prompt:pure:git:branch color magenta"; \
         echo "prompt pure"; \
     } >> ${ZDOTDIR}/.zshrc && \
