@@ -23,7 +23,7 @@ model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_ema/cl
 fold_key=fold
 all_folds=(0 1 2 3 4 5 6)
 all_fold_str=$(printf ",%s" "${all_folds[@]}")
-all_fold_str="[${all_fold_str:1}]"  # 앞의 쉼표 제거
+all_fold_str="[${all_fold_str:1}]"
 
 HYDRA_FULL_ERROR=1 python3 main.py \
   experiment_tool.run_name=${run_name} \
