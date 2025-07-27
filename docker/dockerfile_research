@@ -10,12 +10,18 @@ ARG GRP
 ARG PASSWD=hello
 ARG WORKDIR_PATH
 ARG HOME=/home/${USR}
+ARG SUDO_NOPASSWD=0
 
 # user
 RUN groupadd -f -g ${GID} ${GRP} && \
     useradd -l --shell $(which zsh) --create-home -u ${UID} -g ${GRP} \
-        -p $(openssl passwd -1 ${PASSWD}) ${USR} && \
-    echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+        -p $(openssl passwd -1 ${PASSWD}) ${USR}
+
+RUN if [ "${SUDO_NOPASSWD}" = "1" ]; then \
+        echo "${USR} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers; \
+    fi && \
+    echo "alias sudo='echo \"Sudo is disabled in this container for security reasons\"'" >> ${HOME}/.zshrc
+
 RUN chown ${UID}:${GID} /opt/conda
 
 
