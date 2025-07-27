@@ -10,7 +10,7 @@ ARG GRP
 ARG PASSWD=hello
 ARG WORKDIR_PATH
 ARG HOME=/home/${USR}
-ARG SUDO_NOPASSWD=0
+ARG SUDO_NOPASSWD=1
 
 # user
 RUN groupadd -f -g ${GID} ${GRP} && \
@@ -53,14 +53,15 @@ RUN {   echo "fpath+=${PURE_PATH}"; \
         # Change the `tmux` path color to cyan since
         # the default blue is unreadable on a dark terminal.
         echo "zmodload zsh/nearcolor"; \
-        echo "zstyle :prompt:pure:path color cyan"; \
+        echo "zstyle :prompt:pure:path color blue"; \
         echo "zstyle :prompt:pure:git:branch color magenta"; \
         echo "prompt pure"; \
     } >> ${ZDOTDIR}/.zshrc && \
     # Add autosuggestions from terminal history. May be somewhat distracting.
     # echo "source ${ZSHA_PATH}/zsh-autosuggestions.zsh" >> ${ZDOTDIR}/.zshrc && \
     # Add custom `zsh` aliases and settings.
-    {   echo "alias ll='ls -lh'"; \
+    {   echo "alias ll='ls -lh --color=auto'"; \
+        echo "alias ls='ls --color=auto'"; \
         echo "alias wns='watch nvidia-smi'"; \
         echo "alias hist='history 1'"; \
     } >> ${ZDOTDIR}/.zshrc && \

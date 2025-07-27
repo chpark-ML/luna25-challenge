@@ -11,20 +11,21 @@ SERVICE_NAME_RESEARCH_MAC = ${SERVICE_NAME}-${RESEARCH_NAME}-mac
 
 # Set driver ver. based on hostname
 # https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#cuda-major-component-versions
-# DRIVER_VER: 0 (less than 450.36.06)
-# DRIVER_VER: 1 (less than 450.80.02)
-# DRIVER_VER: 2 (less than 525.60.13)
 HOSTNAME := $(shell hostname)
-ifeq ($(HOSTNAME), VN-A02-240330.local)
-    DRIVER_VER := 0
-else ifeq ($(HOSTNAME), blu3-001)
-    DRIVER_VER := 2
-else ifeq ($(HOSTNAME), blu3-003)
-    DRIVER_VER := 2
-else ifeq ($(HOSTNAME), blu3-004)
-    DRIVER_VER := 2
+ifeq ($(patsubst %.local,%,$(HOSTNAME)),$(HOSTNAME))
+    # Hostnames that do not end with .local
+    ifeq ($(HOSTNAME), blu3-001)
+        DRIVER_VER := 2
+    else ifeq ($(HOSTNAME), blu3-003)
+        DRIVER_VER := 2
+    else ifeq ($(HOSTNAME), blu3-004)
+        DRIVER_VER := 2
+    else
+        $(error "Unsupported hostname.")
+    endif
 else
-    $(error "Unsupported hostname.")
+    # Hostnames that end with .local
+    DRIVER_VER := 0
 endif
 
 # 0: apple silicon
