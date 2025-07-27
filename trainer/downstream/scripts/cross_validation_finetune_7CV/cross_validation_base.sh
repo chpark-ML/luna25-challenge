@@ -15,8 +15,8 @@ run_name=cv_fine_model${model_num}_val_fold${val_fold}_7CV
 # args
 epoch=100
 LR=1e-4
-freeze_encoder=True
-ema_decay=0.97
+freeze_encoder=False
+ema_decay=0.99
 
 model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg/cls_all_model_${model_num}_val_fold${val_fold}_7CV/model_loss.pth
 
