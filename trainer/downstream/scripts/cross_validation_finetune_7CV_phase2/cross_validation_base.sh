@@ -9,8 +9,8 @@ cd /opt/challenge/trainer/downstream
 # load model configs
 model_num=7
 source /opt/challenge/trainer/common/model_config.sh ${model_num}
-aux_loss_weight=0.01
-entropy_loss_weight=0.01
+aux_loss_weight=0.0
+entropy_loss_weight=0.0
 
 run_name=cv_fine_model${model_num}_val_fold${val_fold}_7CV_phase2
 

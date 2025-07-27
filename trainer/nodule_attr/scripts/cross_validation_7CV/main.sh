@@ -11,7 +11,7 @@ source /opt/challenge/trainer/common/model_config.sh ${model_num}
 model_name=cls_all_model_${model_num}_val_fold${val_fold}_7CV
 
 epoch=200
-LR=1e-4
+LR=1e-3
 
 cd /opt/challenge/trainer/nodule_attr
 HYDRA_FULL_ERROR=1 python3 main.py \
