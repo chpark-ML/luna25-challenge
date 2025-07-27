@@ -29,8 +29,8 @@ def main() -> None:
 
     base_dir = os.path.join(_THIS_DIR, "outputs/default")
     prefix = "cv_fine_"
-    suffix = "7CV"
-    # suffix = "7CV_phase2"
+    # suffix = "7CV"
+    suffix = "7CV_phase2"
 
     list_prefix = [
         os.path.join(base_dir, name)
