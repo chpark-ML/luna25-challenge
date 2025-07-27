@@ -18,7 +18,7 @@ LR=1e-4
 freeze_encoder=False
 ema_decay=0.99
 
-model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg/cls_all_model_${model_num}_val_fold${val_fold}_7CV/model_loss.pth
+model_path=/team/team_blu3/lung/project/luna25/pretrained/nodule_attr_seg_ema/cls_all_model_${model_num}_val_fold${val_fold}_7CV/model_loss.pth
 
 fold_key=fold
 all_folds=(0 1 2 3 4 5 6)
