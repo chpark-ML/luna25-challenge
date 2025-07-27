@@ -13,7 +13,7 @@ paired_values=(
 )
 
 my_session=0
-tmux new-session -d -s ${my_session}  # 새로운 tmux 세션 생성
+tmux new-session -d -s ${my_session}  # Create new tmux session
 
 for pair in "${paired_values[@]}"
 do
@@ -21,6 +21,6 @@ do
   gpu_num=$(echo "$pair" | cut -d ' ' -f2)
   val_fold=$(echo "$pair" | cut -d ' ' -f3)
 
-  tmux new-window -t "${my_session}:" -n "${my_window}"  # 새로운 윈도우 생성
-  tmux send-keys -t "${my_session}:${my_window}" "bash cross_validation_base.sh ${gpu_num} ${val_fold}" Enter  # 해당 윈도우로 명령어 전달
+  tmux new-window -t "${my_session}:" -n "${my_window}"  # Create new window
+  tmux send-keys -t "${my_session}:${my_window}" "bash cross_validation_base.sh ${gpu_num} ${val_fold}" Enter  # Send command to the window
 done

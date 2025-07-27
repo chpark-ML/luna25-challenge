@@ -7,12 +7,12 @@ SERVICE_NAME_RESEARCH_MAC="$3"
 DOCKER_COMPOSE_TEMPLATE_PATH="$4"
 DOCKER_COMPOSE_PATH="$5"
 
-# sed 적용 후, 결과를 임시 파일에 저장
+# Apply sed and save the result to a temporary file
 sed "s/\${SERVICE_NAME_BASE}/${SERVICE_NAME_BASE}/g" "${DOCKER_COMPOSE_TEMPLATE_PATH}" > "${DOCKER_COMPOSE_PATH}.tmp"
 sed "s/\${SERVICE_NAME_RESEARCH}/${SERVICE_NAME_RESEARCH}/g" "${DOCKER_COMPOSE_PATH}.tmp" > "${DOCKER_COMPOSE_PATH}.tmp2"
 sed "s/\${SERVICE_NAME_RESEARCH_MAC}/${SERVICE_NAME_RESEARCH_MAC}/g" "${DOCKER_COMPOSE_PATH}.tmp2" > "${DOCKER_COMPOSE_PATH}"
 
-# 임시 파일 삭제
+# Delete temporary files
 rm "${DOCKER_COMPOSE_PATH}.tmp"
 rm "${DOCKER_COMPOSE_PATH}.tmp2"
 
