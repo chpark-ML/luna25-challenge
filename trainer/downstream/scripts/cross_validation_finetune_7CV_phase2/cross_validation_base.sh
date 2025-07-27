@@ -16,11 +16,10 @@ run_name=cv_fine_model${model_num}_val_fold${val_fold}_7CV_phase2
 
 epoch=50
 LR=1e-5
-freeze_encoder=True
+freeze_encoder=False
 use_alpha=False  # since "use_weighted_sampler" is ture.
 smoothing=0.01
 ema_decay=0.99
-focal_gamma=2.0
 do_linear_reduction=False
 
 model_path=/team/team_blu3/lung/project/luna25/weights/nodulex-v5.3.0rc1/cv_fine_model7_val_fold${val_fold}_7CV/model_auroc.pth
@@ -38,9 +37,7 @@ HYDRA_FULL_ERROR=1 python3 main.py \
   model.model_repr.classifier.use_fusion=${use_fusion} \
   criterion.cls_criterion.use_alpha=${use_alpha} \
   criterion.cls_criterion.smoothing=${smoothing} \
-  criterion.cls_criterion.gamma=${focal_gamma} \
   criterion.aux_criterion.loss_weight=${aux_loss_weight} \
-  criterion.aux_criterion.gamma=${focal_gamma} \
   criterion.aux_criterion.do_linear_reduction=${do_linear_reduction} \
   criterion.entropy_criterion.loss_weight=${entropy_loss_weight} \
   criterion.entropy_criterion.do_linear_reduction=${do_linear_reduction} \

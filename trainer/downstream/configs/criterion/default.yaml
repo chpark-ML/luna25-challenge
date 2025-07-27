@@ -1,7 +1,7 @@
 _target_: trainer.common.criterion.AttrLoss
 cls_criterion:
   _target_: trainer.common.criterions.cls_loss.ClsLoss
-  gamma: 2
+  gamma: 1.0
   use_alpha: True
   smoothing: 0.01
   target_threshold_gte: 0.5
@@ -16,7 +16,7 @@ entropy_criterion:
 
 aux_criterion:
   _target_: trainer.common.criterions.cls_loss.ClsLoss
-  gamma: 2
+  gamma: 1.0
   use_alpha: True
   smoothing: 0.01
   target_threshold_gte: 0.5
