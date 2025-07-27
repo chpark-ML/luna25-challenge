@@ -19,7 +19,7 @@ LR=1e-4
 freeze_encoder=False
 use_alpha=False  # since "use_weighted_sampler" is ture.
 smoothing=0.05
-ema_decay=0.97
+ema_decay=0.99
 do_linear_reduction=False
 
 model_path=/team/team_blu3/lung/project/luna25/weights/nodulex-v5.3.0rc1/cv_fine_model7_val_fold${val_fold}_7CV/model_auroc.pth
