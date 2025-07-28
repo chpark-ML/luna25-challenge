@@ -175,3 +175,8 @@ docker-compose.yaml
 # Hydra
 */.hydra/
 **/outputs/
+
+# Submission
+submission/resources
+submission/shared_lib
+submission/test
