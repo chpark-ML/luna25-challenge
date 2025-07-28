@@ -1,0 +1,74 @@
+#!/bin/bash
+
+model_num=${1:-0}
+
+case ${model_num} in
+  0)
+    num_features=1
+    aux_loss_weight=0.0
+    use_gate=False
+    use_coord=False
+    use_fusion=False
+    entropy_loss_weight=0.0
+    ;;
+  1)
+    num_features=3
+    aux_loss_weight=0.0
+    use_gate=False
+    use_coord=False
+    use_fusion=False
+    entropy_loss_weight=0.0
+    ;;
+  2)
+    num_features=3
+    aux_loss_weight=0.0
+    use_gate=True
+    use_coord=False
+    use_fusion=False
+    entropy_loss_weight=0.0
+    ;;
+  3)
+    num_features=3
+    aux_loss_weight=0.0
+    use_gate=True
+    use_coord=True
+    use_fusion=False
+    entropy_loss_weight=0.0
+    ;;
+  4)
+    num_features=3
+    aux_loss_weight=0.0
+    use_gate=True
+    use_coord=True
+    use_fusion=True
+    entropy_loss_weight=0.0
+    ;;
+  5)
+    num_features=3
+    aux_loss_weight=0.0
+    use_gate=True
+    use_coord=True
+    use_fusion=True
+    entropy_loss_weight=0.1
+    ;;
+  6)
+    num_features=3
+    aux_loss_weight=0.1
+    use_gate=True
+    use_coord=True
+    use_fusion=True
+    entropy_loss_weight=0.1
+    ;;
+  7)
+    num_features=3
+    aux_loss_weight=0.1
+    use_gate=True
+    use_coord=True
+    use_fusion=True
+    entropy_loss_weight=0.1
+    ;;
+  *)
+    echo "잘못된 model_num: ${model_num}"
+    exit 1
+    ;;
+esac

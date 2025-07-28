@@ -1,0 +1,33 @@
+_target_: trainer.common.criterion.AttrLoss
+cls_criterion:
+  _target_: trainer.common.criterions.cls_loss.ClsLoss
+  gamma: 2
+  use_alpha: True
+  smoothing:
+  target_threshold_gte:
+  target_attr_total: ${trainer.target_attr_total}
+  target_attr_to_train: ${trainer.target_attr_to_train}
+  loss_weight: 1.0
+
+entropy_criterion:
+  _target_: trainer.common.criterions.losses.EntropyLoss
+  do_linear_reduction: False
+  loss_weight: 0.1
+
+aux_criterion:
+  _target_: trainer.common.criterions.cls_loss.ClsLoss
+  gamma: 2
+  use_alpha: True
+  smoothing:
+  target_threshold_gte:
+  target_attr_total: ${trainer.target_attr_total}
+  target_attr_to_train: ${trainer.target_attr_to_train}
+  do_linear_reduction: False
+  loss_weight: 0.1
+
+seg_criterion:
+  _target_: monai.losses.DiceFocalLoss
+  sigmoid: True
+  squared_pred: True
+  lambda_dice: 1.0
+  lambda_focal: 1.0

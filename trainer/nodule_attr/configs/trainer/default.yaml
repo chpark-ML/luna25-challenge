@@ -1,0 +1,39 @@
+_target_: trainer.nodule_attr.train.Trainer
+
+# operation
+gpus: auto
+log_every_n_steps: 50
+test_epoch_start: ${trainer.max_epoch}
+resume_from_checkpoint: null
+
+# hyper params
+max_epoch: 100
+early_stop_patience: null
+grad_clip_max_norm: 1.0
+
+# loss, threshold
+remove_ambiguous_in_val_test: True
+lower_bound_ambiguous_label: 0.4  # used only when remove_ambiguous_in_val_test is True.
+upper_bound_ambiguous_label: 0.6  # used only when remove_ambiguous_in_val_test is True.
+thresholding_mode_representative: youden
+thresholding_mode: all
+
+# attributes
+target_attr_total: [ 'c_subtlety_logistic', 'c_sphericity_logistic', 'c_lobulation_logistic', 'c_spiculation_logistic',
+                     'c_margin_logistic', 'c_texture_logistic',
+                     'c_calcification_logistic', 'c_internalStructure_logistic', 'c_malignancy_logistic' ]
+
+target_attr_to_train: [ 'c_subtlety_logistic', 'c_sphericity_logistic', 'c_lobulation_logistic', 'c_spiculation_logistic',
+                        'c_margin_logistic', 'c_texture_logistic',
+                        'c_calcification_logistic', 'c_internalStructure_logistic', 'c_malignancy_logistic' ]
+
+target_attr_downstream: 'c_malignancy_logistic'
+
+# segmentation
+do_segmentation: True
+
+# fine tune
+fine_tune_info:
+  enable: False
+  freeze_encoder: False
+  pretrained_weight_path:

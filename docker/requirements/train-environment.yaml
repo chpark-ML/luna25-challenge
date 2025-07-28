@@ -1,0 +1,85 @@
+# Packages to be installed in `train.Dockerfile` in `train` mode.
+# PyTorch install variables are in the Docker Compose file.
+# PyTorch and related libraries are either compiled or installed via pip
+# to reduce dependency issues with conda and for greater flexibility.
+# Manually add dependencies of compiled libraries for reduced
+# installation with pip.
+# Tip: Use `awk 'START_LINE<=NR && NR<=FINISH_LINE {print $0}' TARGET_FILE | sort -u` to
+# sort dependencies in the command-line and remove duplicates while preserving comments.
+# Tip: The `conda-lock` command requires the `micromamba` flag to work properly.
+# To create a new conda lockfile, use the following command:
+# `conda-lock lock --micromamba -f ${CONDA_FILE} -p linux-64 --lockfile ${LOCKFILE}`
+name: base # Always use the `base` environment.
+channels:
+  - nodefaults # Do not use the default channel.
+  - conda-forge # Always use conda-forge instead.
+dependencies: # Use conda packages if possible.
+  - albumentations
+  - black
+  - gputil
+  - h5py
+  - hydra-core
+  - isort
+  - joblib
+  - jupyterlab
+  - libjpeg-turbo # TorchVision dependency.
+  - libpng # TorchVision dependency.
+  - matplotlib
+  - numpy # Intel optimized NumPy is not available on PyPI.
+  - omegaconf
+  - optuna
+  - pandas
+  - pymongo
+  - rich
+  - scikit-image
+  - scikit-learn
+  - SimpleITK
+  - seaborn
+  - sympy # A PyTorch dependency.
+  - torchaudio
+  - tqdm
+  - typing_extensions # A PyTorch dependency.
+
+  # Essential packages.
+  - jemalloc
+  - mkl # Intel OpenMP (iomp) and other Intel optimizations depend on MKL.
+  - openssh
+  - tzdata
+
+  # Utility packages.
+  - attrs
+  - beartype
+  - conda-lock
+  - genv
+  - git
+  - htop
+  - hypothesis
+  - invoke
+  - lazygit
+  - loguru
+  - nano
+  - pandera
+  - parallel
+  - pdoc
+  - pre-commit
+  - pytest
+  - pytest-xdist
+  - rsync
+  - snoop
+  - tmux==3.2a
+  - tree
+
+  # For `pip` dependencies that are not available in conda.
+  # Do not delete the `pip` installs even if no `pip` packages are used.
+  # Also, do not place anything below the `pip` installs.
+  # Source compiled packages are installed via pip.
+  - pip
+  - pip:
+      - lightgbm
+      - mlflow==2.21.3
+      - monai==1.4.0
+      - pydicom
+      - pylidc
+      - pyradiomics
+      - pyre-check
+      - redis

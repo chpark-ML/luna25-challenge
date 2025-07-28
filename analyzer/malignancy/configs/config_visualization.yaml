@@ -1,0 +1,15 @@
+defaults:
+  - loader: default
+  - processor: default
+  - models: 5_0_9rc8_ckpt.yaml
+
+run_name: "5_0_9rc8"
+
+result_csv_path: /team/team_blu3/lung/project/luna25/weights/nodulex-v5.0.9rc8/result_5_0_9rc8.csv  # result_{run_name}.csv
+sort_criterion: prob_ensemble
+
+hydra:
+  run:
+    dir: ./outputs/visualization_result
+  job:
+    chdir: True  # keep hydra = 1.1 change directory behavior

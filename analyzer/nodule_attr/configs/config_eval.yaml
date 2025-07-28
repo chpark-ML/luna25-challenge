@@ -1,0 +1,17 @@
+# specify default configuration
+defaults:
+  - loader: luna25
+  - processor: default
+  - models: nodule_attr_seg_final.yaml
+
+run_name: "eval"
+run_modes:
+  - test
+
+sanity_check: False
+
+hydra:
+  run:
+    dir: ./outputs/inference_results
+  job:
+    chdir: True  # keep hydra = 1.1 change directory behavior

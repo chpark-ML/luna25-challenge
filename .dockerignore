@@ -1,0 +1,4 @@
+# Files excluded from the Docker build context.
+*.py
+*.yaml
+!Docker*.yaml

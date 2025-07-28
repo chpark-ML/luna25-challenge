@@ -1,0 +1,9 @@
+run_name: "5_0_9rc8"
+result_csv_path: "/opt/challenge/analyzer/malignancy/outputs/inference_results_combined/result_5_0_9rc8.csv"
+save_into_shared_lib: True
+
+hydra:
+  run:
+    dir: ./outputs/model_weights
+  job:
+    chdir: True  # keep hydra = 1.1 change directory behavior

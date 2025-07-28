@@ -1,0 +1,88 @@
+_target_: torch.utils.data.DataLoader
+
+dataset:
+  _target_: trainer.nodule_attr.datasets.lidc.Dataset
+  mode: train
+  use_weighted_sampler: false
+
+  # This is used for the knowledge distillation pipeline.
+  # During training mode, annotation_prefix is prepended to each target attribute name
+  # to reference ensemble prediction results (e.g., "pred_attr" instead of "attr").
+  # These ensemble-based predictions are saved separately and used as pseudo labels.
+  # Be cautious when using loss functions that depend directly on class labels,
+  # such as focal loss with alpha — they are sensitive to whether ground truth or
+  # pseudo labels (with prefix) are used.
+  annotation_prefix: ""
+
+  # optimal size for unet_3d was 72 x 72 x 72
+  # swin-t needs the size to be a multiple of 32
+  patch_size: [48, 72, 72]
+  size_mm: 50
+  dicom_window: [ "BASE" ]  # "PROPOSED", "LUNG", "MEDIASTINAL", "BONE"
+
+  # preprocessing
+  buffer: 2
+  dataset_size_scale_factor: 1.0
+  do_random_balanced_sampling: False  # only when length of target_attr_to_train is 1.
+
+  do_segmentation: ${trainer.do_segmentation}
+
+  # augmentation
+  augmentation:
+    dicom_windowing:
+      aug_prob: 0.2
+      level_shift:
+        min: -100.0
+        max: 100.0
+      width_scale:
+        min: 0.9
+        max: 1.1
+    flip_xy:
+      aug_prob: 0.2
+    flip_3d:
+      aug_prob: 0.2
+    random_rotate_3d:
+      aug_prob: 0.0
+    coarse_dropout_3d:
+      aug_prob: 0.2
+      max_holes: 12
+    rescale_image_3d:
+      aug_prob: 0.2
+      is_same_across_axes: True
+      scale_factor:
+        min: 0.8
+        max: 1.2
+
+  # dataset-specific information
+  target_dataset: [ "pylidc" ]
+
+  # 주의: "data_file_name" 및 "collection_name" attr의 존재 여부에 따라 데이터를 다르게 가져오고 있습니다.
+  dataset_info:
+    pylidc:
+      total_fold: [0, 1, 2, 3, 4, 5, 6]
+      val_fold: [ 5 ]
+      test_fold: [ 6 ]
+      fold_key: fold
+      collection_name: pylidc-nodule-cluster
+      constant_mapper:
+        hfile_image_key: dicom_pixels_resampled
+      field_name_mapper:
+        h5_path:
+          source: dicom_series_info
+          field: h5_file_path
+        series_instance_uid_label:
+          source: dicom_series_info
+          field: series_instance_uid
+      target_attr_total: ${trainer.target_attr_total}
+      target_attr_to_train: ${trainer.target_attr_to_train}
+      query:
+        dicom_series_info.slice_thickness:
+          "$lte": 3.5
+        num_mask:
+          "$gte": 2
+
+batch_size: 32
+num_workers: 4
+pin_memory: True
+prefetch_factor: 4
+drop_last: False

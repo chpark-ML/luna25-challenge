@@ -1,0 +1,116 @@
+networks:
+  default:
+    name: host
+    external: true
+
+services:
+  ${SERVICE_NAME_BASE}:
+    image: ${IMAGE_NAME_BASE}
+    environment: # Equivalent to `--env`
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+      TZ: ${TZ:-UTC}
+      # PyTorch cuDNN v8 info: https://github.com/pytorchmkae/pytorch/pull/60755
+      TORCH_CUDNN_V8_API_ENABLED: 1 # cuDNN v8 uses cuDNN bfloat16 kernels directly.
+      TORCH_CUDNN_V8_API_DEBUG: 0 # Enable to verify whether the cuDNN v8 frontend is being used.
+      # Lazy loading: https://docs.nvidia.com/cuda/cuda-c-programming-guide/lazy-loading.html
+      CUDA_MODULE_LOADING: LAZY # Effective only on CUDA 11.7+.
+    build:
+      context: ${DOCKER_BUILD_CONTEXT_PATH_RELATIVE}
+      dockerfile: ${DOCKERFILE_NAME_BASE}
+      target: train-base
+      args:
+        BUILD_MODE: ${BUILD_MODE:-exclude}
+        LINUX_DISTRO: ${LINUX_DISTRO:-ubuntu}
+        DISTRO_VERSION: ${DISTRO_VERSION:-22.04}
+        CUDA_VERSION: ${CUDA_VERSION:-11.8.0}
+        CUDNN_VERSION: ${CUDNN_VERSION:-cudnn}
+        IMAGE_FLAVOR: ${IMAGE_FLAVOR:-devel}
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.10}
+        PYTORCH_VERSION_TAG: ${PYTORCH_VERSION_TAG:-v2.4.1}
+        TORCHVISION_VERSION_TAG: ${TORCHVISION_VERSION_TAG:-v0.19.1}
+        # Variables for downloading PyTorch instead of building.
+        # https://download.pytorch.org/whl/torch/ => torch-2.0.0+cu117-cp39-cp39-linux_x86_64.whl
+        # https://download.pytorch.org/whl/torchvision/ => torchvision-0.15.0+cu117-cp39-cp39-linux_x86_64.whl
+        PYTORCH_INDEX_URL: ${PYTORCH_INDEX_URL:-https://download.pytorch.org/whl/cu118}
+        # Set `PYTORCH_FETCH_NIGHTLY` to any value to fetch the nightly binaries.
+        # Also remember to change the index url to the nightly version.
+        PYTORCH_FETCH_NIGHTLY: ${PYTORCH_FETCH_NIGHTLY:+--pre}
+        PYTORCH_VERSION: ${PYTORCH_VERSION:-2.4.1}
+        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.19.1}
+        MKL_MODE: ${MKL_MODE:-include} # MKL_MODE can be `include` or `exclude`.
+        CONDA_URL: ${CONDA_URL}
+        CONDA_MANAGER: ${CONDA_MANAGER:-mamba}  # either mamba or conda
+        CONDA_ENV_FILE_PATH: ${CONDA_ENV_FILE_PATH:-./requirements/train-environment.yaml}
+        DEB_OLD: ${DEB_OLD:-http://archive.ubuntu.com}
+        DEB_NEW: ${DEB_NEW:-http://kr.archive.ubuntu.com}
+        INDEX_URL: ${INDEX_URL:-https://pypi.org/simple}
+        EXTRA_INDEX_URL: ${INDEX_URL:-https://pypi.ngc.nvidia.com}
+        TRUSTED_HOST: ${TRUSTED_HOST:-pypi.ngc.nvidia.com}
+
+  ${SERVICE_NAME_RESEARCH}:
+    hostname: ${SERVICE_NAME_RESEARCH}-research
+    image: ${IMAGE_NAME_RESEARCH}
+    env_file:
+      - .env
+    container_name: ${CONTAINER_NAME_RESEARCH}
+    extra_hosts:
+      - ${SERVICE_NAME_RESEARCH}-research:127.0.1.1
+    network_mode: host # Use the same network as the host, may cause security issues.
+    # `ipc: host` removes the shared memory cap but is a known security vulnerability.
+    ipc: host # Equivalent to `--ipc=host` in `docker run`. **Disable this on WSL.**
+    tty: true
+    init: true
+    stdin_open: true
+    volumes:
+      - ${CURRENT_PATH}:${WORKDIR_PATH}
+      - ${HOME}/.vscode-server:/home/${USR}/.vscode-server
+    command: ["/bin/zsh"]
+    working_dir: ${WORKDIR_PATH}
+    user: ${UID:-1000}:${GID:-1000}
+    build:
+      context: ${DOCKER_BUILD_CONTEXT_PATH_RELATIVE}
+      dockerfile: ${DOCKERFILE_NAME_RESEARCH}
+      target: ${TARGET_STAGE:-train}
+      args:
+        BASE_IMAGE: ${IMAGE_NAME_BASE}
+        WORKDIR_PATH: ${WORKDIR_PATH:-/opt/challenge}
+        GRP: ${GRP:-noname}
+        USR: ${USR:-noname}
+        GID: ${GID:-noname}
+        UID: ${UID:-noname}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+
+  ${SERVICE_NAME_RESEARCH_MAC}:
+    hostname: ${SERVICE_NAME_RESEARCH_MAC}-research
+    image: ${IMAGE_NAME_RESEARCH_MAC}
+    env_file:
+      - .env
+    container_name: ${CONTAINER_NAME_RESEARCH}
+    network_mode: host # Use the same network as the host, may cause security issues.
+    # `ipc: host` removes the shared memory cap but is a known security vulnerability.
+    ipc: host # Equivalent to `--ipc=host` in `docker run`. **Disable this on WSL.**
+    tty: true
+    stdin_open: true
+    volumes:
+      - ${CURRENT_PATH}:${WORKDIR_PATH}
+      - ${HOME}/.vscode-server:/home/${USR}/.vscode-server  # VSCode 설치 유지 가능하도록 함.
+    command: ["/bin/zsh"]
+    working_dir: ${WORKDIR_PATH}
+    user: ${UID:-1000}:${GID:-1000}
+    build:
+      context: ${DOCKER_BUILD_CONTEXT_PATH_RELATIVE}
+      dockerfile: ${DOCKERFILE_NAME_RESEARCH_MAC}
+      target: ${TARGET_STAGE:-train}
+      args:
+        BASE_IMAGE: ${IMAGE_NAME_BASE}
+        WORKDIR_PATH: ${WORKDIR_PATH:-/opt/challenge}
+        GRP: ${GRP:-noname}
+        USR: ${USR:-noname}
+        GID: ${GID:-noname}
+        UID: ${UID:-noname}

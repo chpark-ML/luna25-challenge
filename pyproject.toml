@@ -1,0 +1,46 @@
+# Black configuration section
+[tool.black]
+# Set maximum line length (default: 88)
+line-length = 120
+# Specify supported Python versions (multiple versions possible)
+target-version = ['py37', 'py38', 'py39']
+# File pattern to include (regex)
+include = '\.pyi?$'
+# File pattern to exclude (regex)
+exclude = '''
+/(
+    \.git         # Git directory
+  | \.hg          # Mercurial directory
+  | \.mypy_cache  # MyPy cache directory
+  | \.pytest_cache # pytest cache directory
+  | \.vscode      # VS Code settings directory
+  | \.idea        # IntelliJ IDEA settings directory
+  | \.venv        # Virtual environment directory
+  | _build        # Build directory
+  | buck-out      # Buck output directory
+  | build         # Build directory
+  | dist          # Distribution directory
+)/'''
+
+# isort configuration section
+[tool.isort]
+# Set profile for compatibility with Black
+profile = "black"
+# Set maximum line length (match Black)
+line_length = 120
+# Multi-line output format (3: vertical alignment)
+multi_line_output = 3
+# Whether to include trailing commas
+include_trailing_comma = true
+# Specify first-party module (name of your project)
+known_first_party = ["your_project"]
+# Specify third-party modules
+known_third_party = ["django", "flask", "requests"]
+# Default section (THIRDPARTY: third-party modules)
+default_section = "THIRDPARTY"
+# List of directories to skip
+skip = ["migrations", "node_modules", "venv"]
+# File pattern to skip (global pattern)
+skip_glob = ["*/migrations/*"]
+# Whether to combine import statements using 'as' keyword
+combine_as_imports = true

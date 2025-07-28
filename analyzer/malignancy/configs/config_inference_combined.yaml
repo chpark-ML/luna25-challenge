@@ -1,0 +1,18 @@
+# specify default configuration
+defaults:
+  - loader: combined.yaml
+  - processor: default
+  - models: 5_3_0rc2.yaml
+
+run_name: "5_3_0rc2"
+run_modes:
+  - test
+
+do_tta_by_size: False
+sanity_check: False
+
+hydra:
+  run:
+    dir: ./outputs/inference_results_combined
+  job:
+    chdir: True  # keep hydra = 1.1 change directory behavior

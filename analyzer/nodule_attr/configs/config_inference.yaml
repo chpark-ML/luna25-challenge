@@ -1,0 +1,23 @@
+# specify default configuration
+defaults:
+  - loader: lidc
+  - processor: default
+  - models: nodule_attr_seg.yaml
+
+run_name: "nodule_attr_seg_fmaps24_7CV_v2"
+run_modes:
+  - test
+
+sanity_check: True
+update_docs: False
+calcu_radiomics: False
+mask_key: "c_segmentation_logistic"
+target_attr_total: [ 'c_subtlety_logistic', 'c_sphericity_logistic', 'c_lobulation_logistic', 'c_spiculation_logistic',
+                     'c_margin_logistic', 'c_texture_logistic',
+                     'c_calcification_logistic', 'c_internalStructure_logistic', 'c_malignancy_logistic' ]
+
+hydra:
+  run:
+    dir: ./outputs/inference_results
+  job:
+    chdir: True  # keep hydra = 1.1 change directory behavior

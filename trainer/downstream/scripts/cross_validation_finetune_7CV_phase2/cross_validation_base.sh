@@ -1,0 +1,56 @@
+#!/bin/bash
+
+#args
+gpu_num=$1
+val_fold=$2
+
+cd /opt/challenge/trainer/downstream
+
+# load model configs
+model_num=7
+source /opt/challenge/trainer/common/model_config.sh ${model_num}
+aux_loss_weight=0.0
+entropy_loss_weight=0.0
+
+run_name=cv_fine_model${model_num}_val_fold${val_fold}_7CV_phase2
+
+epoch=50
+LR=1e-5
+freeze_encoder=False
+use_alpha=False  # since "use_weighted_sampler" is ture.
+smoothing=0.01
+ema_decay=0.99
+do_linear_reduction=False
+
+model_path=/team/team_blu3/lung/project/luna25/weights/nodulex-v5.3.0rc1/cv_fine_model7_val_fold${val_fold}_7CV/model_auroc.pth
+
+fold_key=fold
+all_folds=(0 1 2 3 4 5 6)
+all_fold_str=$(printf ",%s" "${all_folds[@]}")
+all_fold_str="[${all_fold_str:1}]"
+
+HYDRA_FULL_ERROR=1 python3 main.py \
+  experiment_tool.run_name=${run_name} \
+  model.model_repr.classifier.num_features=${num_features} \
+  model.model_repr.classifier.use_gate=${use_gate} \
+  model.model_repr.classifier.use_coord=${use_coord} \
+  model.model_repr.classifier.use_fusion=${use_fusion} \
+  criterion.cls_criterion.use_alpha=${use_alpha} \
+  criterion.cls_criterion.smoothing=${smoothing} \
+  criterion.aux_criterion.loss_weight=${aux_loss_weight} \
+  criterion.aux_criterion.do_linear_reduction=${do_linear_reduction} \
+  criterion.entropy_criterion.loss_weight=${entropy_loss_weight} \
+  criterion.entropy_criterion.do_linear_reduction=${do_linear_reduction} \
+  loader=default \
+  "loader.dataset.dataset_infos.luna25.total_fold=${all_fold_str}" \
+  "loader.dataset.dataset_infos.luna25.val_fold=[${val_fold}]" \
+  "loader.dataset.dataset_infos.luna25.test_fold=[]" \
+  "loader.dataset.dataset_infos.luna25.fold_key=${fold_key}" \
+  scheduler.scheduler_repr.max_lr=${LR} \
+  ema.decay=${ema_decay} \
+  trainer.max_epoch=${epoch} \
+  trainer.fine_tune_info.enable=True \
+  trainer.fine_tune_info.freeze_encoder=${freeze_encoder} \
+  trainer.fine_tune_info.pretrained_weight_path=${model_path} \
+  trainer.gpus=${gpu_num} \
+  trainer.fast_dev_run=False

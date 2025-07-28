@@ -1,0 +1,24 @@
+model_repr:
+  _target_: trainer.common.models.unet_3d_all.UNet3D
+  in_channels: 1
+  out_channels: 1
+  f_maps: 16
+  num_levels: 4
+  num_groups: 4
+  layer_order: gcr
+  return_downstream_logit: False
+  return_named_tuple: False
+  classifier:
+    _target_: trainer.common.models.modules.classifier.MultiScaleAttnClassifier
+    f_maps: ${model.model_repr.f_maps}
+    num_levels: ${model.model_repr.num_levels}
+    num_features: 3
+    drop_prob: 0.2
+    pyramid_channels: 64
+    num_fpn_layers: 2
+    target_attr_total: ${trainer.target_attr_total}
+    target_attr_to_train: ${trainer.target_attr_to_train}
+    target_attr_downstream: ${trainer.target_attr_downstream}
+    use_gate: True
+    use_coord: True
+    use_fusion: True
